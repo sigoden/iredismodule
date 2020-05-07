@@ -1,13 +1,13 @@
 use crate::raw;
 use crate::{handle_status, Ctx, Error};
-use core::ffi::c_void;
+
 
 pub struct BlockClient {
     pub inner: *mut raw::RedisModuleBlockedClient,
 }
 
 impl BlockClient {
-    pub fn unblock<T>(&self, data: T) -> Result<(), Error> {
+    pub fn unblock<T>(&self, _data: T) -> Result<(), Error> {
         unimplemented!()
     }
     pub fn abort(&self) -> Result<(), Error> {
@@ -16,7 +16,7 @@ impl BlockClient {
             "Cloud not abort block client",
         )
     }
-    pub fn set_disconnect_callback<F, T>(&self, callback: F)
+    pub fn set_disconnect_callback<F, T>(&self, _callback: F)
     where
         F: FnOnce(&Ctx, T),
     {

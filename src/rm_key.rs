@@ -1,7 +1,7 @@
 use crate::num_traits::FromPrimitive;
 use crate::raw;
-use crate::{handle_status, Ctx, Error, Str};
-use std::ffi::CString;
+use crate::{handle_status, Error, Str};
+
 use std::os::raw::c_int;
 use std::time::Duration;
 
@@ -86,26 +86,26 @@ impl WriteKey {
             "Could not set expire",
         )
     }
-    pub fn string_set(&mut self, str: &str) -> Result<(), Error> {
+    pub fn string_set(&mut self, _str: &str) -> Result<(), Error> {
         unimplemented!()
     }
     pub fn string_dma(&mut self) {
         unimplemented!()
     }
-    pub fn string_truncate(&mut self, newlen: u32) -> Result<(), Error> {
+    pub fn string_truncate(&mut self, _newlen: u32) -> Result<(), Error> {
         unimplemented!()
     }
-    pub fn list_push(&mut self, pos: ListWhere, str: &str) -> Result<(), Error> {
+    pub fn list_push(&mut self, _pos: ListWhere, _str: &str) -> Result<(), Error> {
         unimplemented!()
     }
-    pub fn list_pop(&mut self, pos: ListWhere) -> Result<Str, Error> {
+    pub fn list_pop(&mut self, _pos: ListWhere) -> Result<Str, Error> {
         unimplemented!()
     }
     pub fn zset_add(
         &mut self,
-        score: f64,
-        str: &Str,
-        flag: ZaddInputFlag,
+        _score: f64,
+        _str: &Str,
+        _flag: ZaddInputFlag,
     ) -> Result<ZaddOutputFlag, Error> {
         unimplemented!()
     }

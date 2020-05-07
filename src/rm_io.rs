@@ -1,6 +1,6 @@
 use std::ffi::CString;
 use std::os::raw::c_char;
-use std::slice;
+
 
 use crate::raw;
 use crate::{CmdFmtFlags, LogLevel, RedisBuffer, Str};
@@ -88,10 +88,10 @@ pub struct Digest {
 }
 
 impl Digest {
-    pub fn add_string_buffer(&mut self, ele: &str) {
+    pub fn add_string_buffer(&mut self, _ele: &str) {
         unimplemented!()
     }
-    pub fn add_long_long(&mut self, ll: i128) {
+    pub fn add_long_long(&mut self, _ll: i128) {
         unimplemented!()
     }
     pub fn end_sequeue(&mut self) {

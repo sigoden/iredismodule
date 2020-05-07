@@ -2,7 +2,7 @@ use crate::raw;
 use crate::{handle_status, Error};
 use std::ffi::CString;
 use std::fmt;
-use std::ptr;
+
 use std::slice;
 use std::str;
 

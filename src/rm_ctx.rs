@@ -194,10 +194,10 @@ impl Ctx {
     }
     pub fn block_client<F, G>(
         &self,
-        reply_callbck: F,
-        timeout_callback: F,
-        free_privdata: G,
-        timeout: Duration,
+        _reply_callbck: F,
+        _timeout_callback: F,
+        _free_privdata: G,
+        _timeout: Duration,
     ) -> BlockClient {
         unimplemented!()
     }
@@ -210,17 +210,17 @@ impl Ctx {
     pub fn get_block_client_handle(&self) -> BlockClient {
         unimplemented!()
     }
-    pub fn subscribe_to_keyspace_events<F>(&self, types: KeySpaceTypes, callback: F) {
+    pub fn subscribe_to_keyspace_events<F>(&self, _types: KeySpaceTypes, _callback: F) {
         unimplemented!()
     }
-    pub fn register_cluster_message_receiver<F>(&self, msg_type: MsgType, callback: F) {
+    pub fn register_cluster_message_receiver<F>(&self, _msg_type: MsgType, _callback: F) {
         unimplemented!()
     }
     pub fn send_cluster_message(
         &self,
-        target_id: Option<ClusterNode>,
-        msg_type: MsgType,
-        msg: &str,
+        _target_id: Option<ClusterNode>,
+        _msg_type: MsgType,
+        _msg: &str,
     ) -> Result<(), Error> {
         unimplemented!()
     }
@@ -300,9 +300,9 @@ impl Ctx {
 
 bitflags! {
     pub struct ClusterFlags: u64 {
-        const None = raw:: REDISMODULE_CLUSTER_FLAG_NONE as u64;
-        const NoFailover = raw::REDISMODULE_CLUSTER_FLAG_NO_FAILOVER as u64;
-        const noReplication = raw::REDISMODULE_CLUSTER_FLAG_NO_REDIRECTION as u64;
+        const NONE = raw:: REDISMODULE_CLUSTER_FLAG_NONE as u64;
+        const NO_FAILOVER = raw::REDISMODULE_CLUSTER_FLAG_NO_FAILOVER as u64;
+        const NO_REPLICATION = raw::REDISMODULE_CLUSTER_FLAG_NO_REDIRECTION as u64;
     }
 }
 

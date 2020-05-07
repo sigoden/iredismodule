@@ -1,10 +1,10 @@
 use std::cell::RefCell;
-use std::ffi::{c_void, CString};
+use std::ffi::{CString};
 use std::fmt;
 use std::time::Duration;
 
 use crate::raw;
-use crate::{Ctx, Error};
+use crate::{Error};
 
 /// wrap RedisModule_Milliseconds
 pub fn milliseconds() -> Duration {
@@ -38,12 +38,12 @@ pub fn get_cluster_size() -> usize {
 }
 
 /// wrap RedisModule_ZsetAddFlagsToCoreFlags
-pub fn zset_add_flags_to_core_flags(flag: i32) -> i32 {
+pub fn zset_add_flags_to_core_flags(_flag: i32) -> i32 {
     unimplemented!()
 }
 
 /// wrap RedisModule_ZsetAddFlagsFromCoreFlags
-pub fn zset_add_flags_from_core_flags(flag: i32) -> i32 {
+pub fn zset_add_flags_from_core_flags(_flag: i32) -> i32 {
     unimplemented!()
 }
 
@@ -77,19 +77,19 @@ pub enum CmdStrFlags {
 impl fmt::Display for CmdStrFlags {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Write => write!(f, "write"),
-            Readonly => write!(f, "readonly"),
-            Admin => write!(f, "admin"),
-            DenyOOM => write!(f, "deny-oom"),
-            DenyScript => write!(f, "deny-script"),
-            AllowLoading => write!(f, "allow-loading"),
-            Pubsub => write!(f, "pubsub"),
-            Random => write!(f, "random"),
-            AllowStale => write!(f, "allow-stale"),
-            NoMonitor => write!(f, "no-monitor"),
-            Fast => write!(f, "fast"),
-            GetkeysApi => write!(f, "getkeys-api"),
-            NoCluster => write!(f, "no-cluster"),
+            Self::Write => write!(f, "write"),
+            Self::Readonly => write!(f, "readonly"),
+            Self::Admin => write!(f, "admin"),
+            Self::DenyOOM => write!(f, "deny-oom"),
+            Self::DenyScript => write!(f, "deny-script"),
+            Self::AllowLoading => write!(f, "allow-loading"),
+            Self::Pubsub => write!(f, "pubsub"),
+            Self::Random => write!(f, "random"),
+            Self::AllowStale => write!(f, "allow-stale"),
+            Self::NoMonitor => write!(f, "no-monitor"),
+            Self::Fast => write!(f, "fast"),
+            Self::GetkeysApi => write!(f, "getkeys-api"),
+            Self::NoCluster => write!(f, "no-cluster"),
         }
     }
 }
@@ -133,14 +133,14 @@ impl Default for CmdFmtFlags {
 impl fmt::Display for CmdFmtFlags {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            C => write!(f, "c"),
-            S => write!(f, "s"),
-            B => write!(f, "b"),
-            L => write!(f, "l"),
-            V => write!(f, "v"),
-            A => write!(f, "a"),
-            R => write!(f, "r"),
-            X => write!(f, "!"),
+            Self::C => write!(f, "c"),
+            Self::S => write!(f, "s"),
+            Self::B => write!(f, "b"),
+            Self::L => write!(f, "l"),
+            Self::V => write!(f, "v"),
+            Self::A => write!(f, "a"),
+            Self::R => write!(f, "r"),
+            Self::X => write!(f, "!"),
         }
     }
 }
