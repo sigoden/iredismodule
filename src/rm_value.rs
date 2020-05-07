@@ -1,13 +1,12 @@
 use crate::error::Error;
 
 pub type RedisResult = Result<RedisValue, Error>;
-pub const REDIS_OK: RedisResult = Ok(RedisValue::SimpleStringStatic("OK"));
 
 #[derive(Debug, PartialEq)]
 pub enum RedisValue {
-    SimpleStringStatic(&'static str),
     SimpleString(String),
     BulkString(String),
+    Buffer(Vec<u8>),
     Integer(i64),
     Float(f64),
     Array(Vec<RedisValue>),
@@ -54,6 +53,12 @@ impl From<&str> for RedisValue {
 impl From<&String> for RedisValue {
     fn from(s: &String) -> Self {
         s.to_owned().into()
+    }
+}
+
+impl From<Vec<u8>> for RedisValue {
+    fn from(b: Vec<u8>) -> Self {
+        RedisValue::Buffer(b)
     }
 }
 

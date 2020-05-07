@@ -1,11 +1,10 @@
+use std::cell::RefCell;
+use std::ffi::{c_void, CString};
 use std::fmt;
 use std::time::Duration;
-use std::cell::RefCell;
 
-use std::os::raw::{c_char, c_double, c_int, c_long, c_longlong};
 use crate::raw;
-use crate::error::Error;
-
+use crate::{Ctx, Error};
 
 /// wrap RedisModule_Milliseconds
 pub fn milliseconds() -> Duration {
@@ -18,6 +17,14 @@ pub fn handle_status(status: i32, message: &str) -> Result<(), Error> {
     } else {
         Err(Error::generic(message))
     }
+}
+
+pub fn is_module_busy(name: &str) -> Result<(), Error> {
+    let name = CString::new(name).unwrap();
+    handle_status(
+        unsafe { raw::RedisModule_IsModuleNameBusy.unwrap()(name.as_ptr()) },
+        "Cloud not check busy",
+    )
 }
 
 /// wrap RedisModule_GetMyClusterID
@@ -95,14 +102,27 @@ impl CmdStrFlags {
         flag.to_string()
     }
     pub fn multi(flags: &[CmdStrFlags]) -> String {
-        flags.into_iter().map(|v| v.to_string()).collect::<Vec<String>>().join(" ")
+        flags
+            .into_iter()
+            .map(|v| v.to_string())
+            .collect::<Vec<String>>()
+            .join(" ")
     }
 }
 
-pub(crate) const OK: i32 = raw::REDISMODULE_OK as i32;
-pub(crate) const ERR: i32 = raw::REDISMODULE_ERR as i32;
+pub(crate) const CODE_OK: i32 = raw::REDISMODULE_OK as i32;
+pub(crate) const CODE_ERR: i32 = raw::REDISMODULE_ERR as i32;
 
-pub enum CmdFmtFlags { C, S, B, L, V, A, R, X } 
+pub enum CmdFmtFlags {
+    C,
+    S,
+    B,
+    L,
+    V,
+    A,
+    R,
+    X,
+}
 
 impl Default for CmdFmtFlags {
     fn default() -> Self {
@@ -113,21 +133,25 @@ impl Default for CmdFmtFlags {
 impl fmt::Display for CmdFmtFlags {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            C=> write!(f, "c"),
-            S=> write!(f, "s"),
-            B=> write!(f, "b"),
-            L=> write!(f, "l"),
-            V=> write!(f, "v"),
-            A=> write!(f, "a"),
-            R=> write!(f, "r"),
-            X=> write!(f, "!"),
+            C => write!(f, "c"),
+            S => write!(f, "s"),
+            B => write!(f, "b"),
+            L => write!(f, "l"),
+            V => write!(f, "v"),
+            A => write!(f, "a"),
+            R => write!(f, "r"),
+            X => write!(f, "!"),
         }
     }
 }
 
 impl CmdFmtFlags {
     pub fn multi(flags: &[CmdFmtFlags]) -> String {
-        flags.into_iter().map(|v| v.to_string()).collect::<Vec<String>>().join("")
+        flags
+            .into_iter()
+            .map(|v| v.to_string())
+            .collect::<Vec<String>>()
+            .join("")
     }
 }
 
@@ -181,9 +205,7 @@ impl CtxFlags {
     }
 }
 
-pub type TimerID = i32;
-pub struct ClusterNodeList {
-}
+pub struct ClusterNodeList {}
 
 pub type ClusterNode = String;
 pub type MsgType = u8;
@@ -194,12 +216,25 @@ impl Drop for ClusterNodeList {
     }
 }
 
-pub enum KeySpaceTypes {
-}
+pub enum KeySpaceTypes {}
 
 pub struct RedisType {
     name: &'static str,
     version: i32,
     type_methods: raw::RedisModuleTypeMethods,
     pub raw_type: RefCell<*mut raw::RedisModuleType>,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum LogLevel {
+    Debug,
+    Notice,
+    Verbose,
+    Warning,
+}
+
+impl Into<CString> for LogLevel {
+    fn into(self) -> CString {
+        CString::new(format!("{:?}", self).to_lowercase()).unwrap()
+    }
 }

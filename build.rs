@@ -16,7 +16,7 @@ fn main() {
 
     // Determine if the `experimental-api` feature is enabled
     fn experimental_api() -> bool {
-        std::env::var_os("CARGO_FEATURE_EXPERIMENTAL_API").is_some()
+        std::env::var_os("CARGO_FEATURE_NO_EXPERIMENTAL_API").is_none()
     }
 
     let mut build = cc::Build::new();

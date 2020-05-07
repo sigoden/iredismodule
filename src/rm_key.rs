@@ -1,12 +1,14 @@
 use crate::num_traits::FromPrimitive;
 use crate::raw;
-use crate::{Ctx, handle_status, Error, Str};
+use crate::{handle_status, Ctx, Error, Str};
+use std::ffi::CString;
+use std::os::raw::c_int;
 use std::time::Duration;
-use std::os::raw::{c_int};
 
 pub struct ReadKey {
     pub inner: *mut raw::RedisModuleKey,
     ctx: *mut raw::RedisModuleCtx,
+    keyname: Str,
 }
 
 impl Drop for ReadKey {
@@ -16,17 +18,73 @@ impl Drop for ReadKey {
 }
 
 impl ReadKey {
-    pub fn value_length(&self) -> u32 {
-        // RedisModule_ValueLength
-        unimplemented!()
+    pub fn create(ctx: *mut raw::RedisModuleCtx, keyname: &str) -> Self {
+        let keyname = Str::create(ctx, keyname);
+        let mode = raw::REDISMODULE_READ as c_int;
+        let inner = unsafe {
+            raw::RedisModule_OpenKey.unwrap()(ctx, keyname.inner, mode) as *mut raw::RedisModuleKey
+        };
+        ReadKey {
+            inner,
+            ctx,
+            keyname,
+        }
+    }
+    pub fn value_length(&self) -> usize {
+        unsafe { raw::RedisModule_ValueLength.unwrap()(self.inner) }
     }
     pub fn get_expire(&self) -> Option<Duration> {
-        // RedisModule_GetExpire
-        unimplemented!()
+        let result: i64 = unsafe { raw::RedisModule_GetExpire.unwrap()(self.inner) };
+        if result != 0 {
+            None
+        } else {
+            Some(Duration::from_millis(result as u64))
+        }
+    }
+}
+
+pub struct WriteKey {
+    pub inner: *mut raw::RedisModuleKey,
+    ctx: *mut raw::RedisModuleCtx,
+    keyname: Str,
+}
+
+impl Drop for WriteKey {
+    fn drop(&mut self) {
+        unsafe { raw::RedisModule_CloseKey.unwrap()(self.inner) }
+    }
+}
+
+impl WriteKey {
+    pub fn create(ctx: *mut raw::RedisModuleCtx, keyname: &str) -> Self {
+        let keyname = Str::create(ctx, keyname);
+        let mode = (raw::REDISMODULE_READ | raw::REDISMODULE_WRITE) as c_int;
+        let inner = unsafe {
+            raw::RedisModule_OpenKey.unwrap()(ctx, keyname.inner, mode) as *mut raw::RedisModuleKey
+        };
+        WriteKey {
+            inner,
+            ctx,
+            keyname,
+        }
+    }
+    pub fn delete(&mut self) -> Result<(), Error> {
+        handle_status(
+            unsafe { raw::RedisModule_DeleteKey.unwrap()(self.inner) },
+            "Could not delete key",
+        )
+    }
+    pub fn unlink(&mut self) -> Result<(), Error> {
+        handle_status(
+            unsafe { raw::RedisModule_UnlinkKey.unwrap()(self.inner) },
+            "Could not unlink key",
+        )
     }
     pub fn set_expire(&mut self, expire: Duration) -> Result<(), Error> {
-        // RedisModule_SetExpire
-        unimplemented!()
+        handle_status(
+            unsafe { raw::RedisModule_SetExpire.unwrap()(self.inner, expire.as_millis() as i64) },
+            "Could not set expire",
+        )
     }
     pub fn string_set(&mut self, str: &str) -> Result<(), Error> {
         unimplemented!()
@@ -43,34 +101,13 @@ impl ReadKey {
     pub fn list_pop(&mut self, pos: ListWhere) -> Result<Str, Error> {
         unimplemented!()
     }
-    pub fn zset_add(&mut self, score: f64, str: &Str, flag: ZaddInputFlag) -> Result<ZaddOutputFlag, Error> {
+    pub fn zset_add(
+        &mut self,
+        score: f64,
+        str: &Str,
+        flag: ZaddInputFlag,
+    ) -> Result<ZaddOutputFlag, Error> {
         unimplemented!()
-    }
-}
-
-pub struct WriteKey {
-    pub inner: *mut raw::RedisModuleKey,
-    ctx: *mut raw::RedisModuleCtx,
-}
-
-impl Drop for WriteKey {
-    fn drop(&mut self) {
-        unsafe { raw::RedisModule_CloseKey.unwrap()(self.inner) }
-    }
-}
-
-impl WriteKey {
-    pub fn delete(&mut self) -> Result<(), Error> {
-        handle_status(
-            unsafe { raw::RedisModule_DeleteKey.unwrap()(self.inner) },
-            "Could not delete key"
-        )
-    }
-    pub fn unlink(&mut self) -> Result<(), Error> {
-        handle_status(
-            unsafe { raw::RedisModule_UnlinkKey.unwrap()(self.inner) },
-            "Could not unlink key"
-        )
     }
 }
 
@@ -78,9 +115,7 @@ pub fn key_type(key: *mut raw::RedisModuleKey) -> Option<KeyType> {
     if key.is_null() {
         None
     } else {
-        Some(unsafe {
-            raw::RedisModule_KeyType.unwrap()(key)
-        }.into())
+        Some(unsafe { raw::RedisModule_KeyType.unwrap()(key) }.into())
     }
 }
 
@@ -99,7 +134,6 @@ impl From<c_int> for KeyType {
     }
 }
 
-
 const REDISMODULE_LIST_HEAD_SIZE: isize = raw::REDISMODULE_LIST_HEAD as isize;
 const REDISMODULE_LIST_TAIL_SIZE: isize = raw::REDISMODULE_LIST_TAIL as isize;
 
@@ -115,10 +149,6 @@ impl From<c_int> for ListWhere {
     }
 }
 
-pub enum ZaddInputFlag {
+pub enum ZaddInputFlag {}
 
-}
-
-pub enum ZaddOutputFlag {
-
-}
+pub enum ZaddOutputFlag {}

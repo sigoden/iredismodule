@@ -1,7 +1,8 @@
-use num_traits::FromPrimitive;
-use std::os::raw::{c_int};
 use crate::raw;
-use crate::{RedisResult, RedisValue, Error};
+use crate::{Error, RedisResult, RedisValue};
+use num_traits::FromPrimitive;
+use std::os::raw::c_int;
+use std::slice;
 
 pub struct CallReply {
     pub inner: *mut raw::RedisModuleCallReply,
@@ -12,21 +13,32 @@ impl CallReply {
         CallReply { inner }
     }
     pub fn get_type(&self) -> ReplyType {
-        unsafe {
-            raw::RedisModule_CallReplyType.unwrap()(self.inner).into()
-        }
+        unsafe { raw::RedisModule_CallReplyType.unwrap()(self.inner).into() }
     }
     pub fn get_string(&self) -> String {
-        unimplemented!()
+        unsafe {
+            let mut len = 0;
+            let reply_string: *mut u8 =
+                raw::RedisModule_CallReplyStringPtr.unwrap()(self.inner, &mut len) as *mut u8;
+            String::from_utf8(
+                slice::from_raw_parts(reply_string, len)
+                    .into_iter()
+                    .map(|v| *v)
+                    .collect(),
+            )
+            .unwrap()
+        }
     }
-    pub fn get_integer(&self) -> i128 {
-        unimplemented!()
+    pub fn get_integer(&self) -> i64 {
+        unsafe { raw::RedisModule_CallReplyInteger.unwrap()(self.inner) }
     }
     pub fn get_array_element(&self, idx: usize) -> CallReply {
-        unimplemented!()
+        CallReply::create(unsafe {
+            raw::RedisModule_CallReplyArrayElement.unwrap()(self.inner, idx)
+        })
     }
     pub fn get_length(&self) -> usize {
-        unimplemented!()
+        unsafe { raw::RedisModule_CallReplyLength.unwrap()(self.inner) }
     }
 }
 
@@ -39,7 +51,7 @@ impl Drop for CallReply {
 impl Into<RedisResult> for CallReply {
     fn into(self) -> RedisResult {
         let reply_type = self.get_type();
-        match reply_type { 
+        match reply_type {
             ReplyType::Error => Err(Error::generic(&self.get_string())),
             ReplyType::Unknown => Err(Error::generic("Error on method call")),
             ReplyType::Array => {
@@ -80,4 +92,3 @@ impl From<c_int> for ReplyType {
         ReplyType::from_i32(v).unwrap()
     }
 }
-

@@ -51,8 +51,6 @@ impl From<std::str::Utf8Error> for Error {
 impl Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            // Both underlying errors already impl `Display`, so we defer to
-            // their implementations.
             Error::WrongArity => write!(f, "Wrong Arity"),
             Error::Generic(ref err) => write!(f, "{}", err),
             Error::FromUtf8(ref err) => write!(f, "{}", err),
@@ -65,10 +63,6 @@ impl Display for Error {
 impl error::Error for Error {
     fn cause(&self) -> Option<&dyn error::Error> {
         match *self {
-            // N.B. Both of these implicitly cast `err` from their concrete
-            // types (either `&io::Error` or `&num::ParseIntError`)
-            // to a trait object `&Error`. This works because both error types
-            // implement `Error`.
             Error::WrongArity => None,
             Error::Generic(ref err) => Some(err),
             Error::FromUtf8(ref err) => Some(err),
