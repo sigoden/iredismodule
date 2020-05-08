@@ -1,16 +1,16 @@
 use redis_module::{redis_command, redis_module};
 
 use redis_module::{
-    parse_args, raw, Ctx, Error, ListPosition, RedisResult, StatusCode,
+    parse_args, raw, Context, Error, ListPosition, RedisResult, StatusCode,
 };
 use std::os::raw::c_int;
 
-fn hello_simple(ctx: &Ctx, _args: Vec<String>) -> RedisResult {
+fn hello_simple(ctx: &Context, _args: Vec<String>) -> RedisResult {
     let db = ctx.get_select_db();
     Ok(db.into())
 }
 
-fn hello_push_native(ctx: &Ctx, args: Vec<String>) -> RedisResult {
+fn hello_push_native(ctx: &Context, args: Vec<String>) -> RedisResult {
     if args.len() != 3 {
         return Err(Error::WrongArity);
     }
@@ -20,7 +20,7 @@ fn hello_push_native(ctx: &Ctx, args: Vec<String>) -> RedisResult {
     Ok(len.into())
 }
 
-fn hello_push_call(ctx: &Ctx, args: Vec<String>) -> RedisResult {
+fn hello_push_call(ctx: &Context, args: Vec<String>) -> RedisResult {
     if args.len() != 3 {
         return Err(Error::WrongArity);
     }
@@ -33,7 +33,7 @@ pub extern "C" fn init(
     argc: c_int,
 ) -> c_int {
     let args = parse_args(argv, argc).unwrap();
-    let ctx_ = Ctx::new(ctx);
+    let ctx_ = Context::new(ctx);
     ctx_.log_debug(&format!(
         "Module loaded with ARGV[{}] = {:?}\n",
         args.len(),

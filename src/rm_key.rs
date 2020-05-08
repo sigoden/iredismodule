@@ -5,7 +5,7 @@ use std::os::raw::{c_int, c_void};
 use std::time::Duration;
 
 use crate::raw;
-use crate::{handle_status, Ctx, Error, RedisString, RedisType};
+use crate::{handle_status, Context, Error, RedisString, RedisType};
 
 pub struct ReadKey {
     pub inner: *mut raw::RedisModuleKey,
@@ -151,7 +151,7 @@ impl WriteKey {
         unimplemented!()
     }
     pub fn list_push(&mut self, position: ListPosition, value: &str) -> Result<(), Error> {
-        let value = Ctx::new(self.ctx).create_string(value);
+        let value = Context::new(self.ctx).create_string(value);
         handle_status(
             unsafe { raw::RedisModule_ListPush.unwrap()(self.inner, position as i32, value.inner) },
             "Cloud not push list",

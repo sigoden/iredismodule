@@ -10,7 +10,7 @@ mod rm;
 mod rm_block_client;
 mod rm_buffer;
 mod rm_call_reply;
-mod rm_ctx;
+mod rm_context;
 mod rm_io;
 mod rm_key;
 mod rm_key_type;
@@ -24,10 +24,10 @@ pub use rm::{
     get_cluster_size, get_my_cluster_id, handle_status, is_module_busy, milliseconds, parse_args,
     CtxFlags, KeySpaceTypes, LogLevel, StatusCode,
 };
-use rm_ctx::take_data;
+use rm_context::take_data;
 
-pub use rm_ctx::cluster::{ClusterNode, ClusterNodeList, MsgType};
-pub use rm_ctx::{ClusterFlags, Ctx};
+pub use rm_context::cluster::{ClusterNode, ClusterNodeList, MsgType};
+pub use rm_context::{ClusterFlags, Context};
 
 pub use raw::RedisModuleTimerID as TimerID;
 

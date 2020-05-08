@@ -11,13 +11,13 @@ pub mod block_client;
 pub mod cluster;
 pub mod timer;
 
-pub struct Ctx {
+pub struct Context {
     pub inner: *mut raw::RedisModuleCtx,
 }
 
-impl Ctx {
+impl Context {
     pub fn new(inner: *mut raw::RedisModuleCtx) -> Self {
-        Ctx { inner }
+        Context { inner }
     }
     pub fn is_keys_position_request(&self) -> bool {
         // We want this to be available in tests where we don't have an actual Redis to call

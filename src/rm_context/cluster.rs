@@ -1,7 +1,7 @@
 use crate::raw;
-use crate::{Ctx, Error};
+use crate::{Context, Error};
 
-impl Ctx {
+impl Context {
     pub fn get_cluster_nodes_list() -> Option<ClusterNodeList> {
         unimplemented!()
     }

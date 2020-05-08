@@ -1,5 +1,5 @@
 use crate::raw;
-use crate::{handle_status, Ctx, Error};
+use crate::{handle_status, Context, Error};
 
 pub struct BlockClient {
     pub inner: *mut raw::RedisModuleBlockedClient,
@@ -17,7 +17,7 @@ impl BlockClient {
     }
     pub fn set_disconnect_callback<F, T>(&self, _callback: F)
     where
-        F: FnOnce(&Ctx, T),
+        F: FnOnce(&Context, T),
     {
         unimplemented!()
     }

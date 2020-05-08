@@ -16,12 +16,12 @@ macro_rules! redis_command {
             argv: *mut *mut raw::RedisModuleString,
             argc: c_int,
         ) -> c_int {
-            let ctx_ = $crate::Ctx::new(ctx);
+            let context = $crate::Context::new(ctx);
             let response = $crate::parse_args(argv, argc)
-                .map(|args| $command_handler(&ctx_, args))
+                .map(|args| $command_handler(&context, args))
                 .unwrap_or_else(|e| Err(e));
 
-            ctx_.reply(response) as c_int
+            context.reply(response) as c_int
         }
         /////////////////////
 
