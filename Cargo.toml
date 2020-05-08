@@ -21,3 +21,7 @@ experimental-api = []
 [[example]]
 name = "simple"
 crate-type = ["cdylib"]
+
+[[example]]
+name = "helloworld"
+crate-type = ["cdylib"]

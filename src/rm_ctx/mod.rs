@@ -1,8 +1,8 @@
 use crate::raw;
 use crate::{
-    handle_status, CallReply, CmdFmtFlags,
+    handle_status, CallReply,
     Error, KeySpaceTypes, LogLevel, ReadKey, RedisResult, RedisValue, RedisString,
-    WriteKey, StatusCode,
+    WriteKey, StatusCode, FMT,
 };
 use bitflags::bitflags;
 use std::ffi::CString;
@@ -58,7 +58,7 @@ impl Ctx {
             Ok(RedisValue::BulkString(s)) => unsafe {
                 raw::RedisModule_ReplyWithString.unwrap()(
                     self.inner,
-                    RedisString::new(self.inner, &s).inner,
+                    RedisString::create(self.inner, &s).inner,
                 ).into()
             },
 
@@ -99,59 +99,51 @@ impl Ctx {
                 let msg = CString::new(s.to_string()).unwrap();
                 raw::RedisModule_ReplyWithError.unwrap()(self.inner, msg.as_ptr()).into()
             },
-            Err(Error::ParseInt(s)) => unsafe {
-                let msg = CString::new(s.to_string()).unwrap();
-                raw::RedisModule_ReplyWithError.unwrap()(self.inner, msg.as_ptr()).into()
-            },
-            Err(Error::ParseFloat(s)) => unsafe {
-                let msg = CString::new(s.to_string()).unwrap();
-                raw::RedisModule_ReplyWithError.unwrap()(self.inner, msg.as_ptr()).into()
-            },
         }
     }
 
-    pub fn call(&self, command: &str, args: &[&str], flags: &[CmdFmtFlags]) -> RedisResult {
-        let terminated_args: Vec<RedisString> = args.iter().map(|s| RedisString::new(self.inner, s)).collect();
+    pub fn call(&self, command: &str, args: &[String]) -> RedisResult {
+        let terminated_args: Vec<RedisString> = args
+            .iter()
+            .map(|s| RedisString::create(self.inner, s.as_str()))
+            .collect();
 
         let inner_args: Vec<*mut raw::RedisModuleString> =
             terminated_args.iter().map(|s| s.inner).collect();
 
         let cmd = CString::new(command).unwrap();
-        let fmt = CString::new(CmdFmtFlags::multi(flags)).unwrap();
 
         let reply_: *mut raw::RedisModuleCallReply = unsafe {
             let p_call = raw::RedisModule_Call.unwrap();
             p_call(
                 self.inner,
                 cmd.as_ptr(),
-                fmt.as_ptr(),
+                FMT,
                 inner_args.as_ptr() as *mut i8,
                 terminated_args.len(),
             )
         };
+        self.log_debug("after call");
         CallReply::new(reply_).into()
     }
 
-    pub fn replicate(
-        &self,
-        command: &str,
-        args: &[&str],
-        flags: &[CmdFmtFlags],
-    ) -> Result<(), Error> {
-        let terminated_args: Vec<RedisString> = args.iter().map(|s| RedisString::new(self.inner, s)).collect();
+    pub fn replicate(&self, command: &str, args: &[String]) -> Result<(), Error> {
+        let terminated_args: Vec<RedisString> = args
+            .iter()
+            .map(|s| RedisString::create(self.inner, s.as_str()))
+            .collect();
 
         let inner_args: Vec<*mut raw::RedisModuleString> =
             terminated_args.iter().map(|s| s.inner).collect();
 
         let cmd = CString::new(command).unwrap();
-        let fmt = CString::new(CmdFmtFlags::multi(flags)).unwrap();
 
         let result = unsafe {
             let p_call = raw::RedisModule_Replicate.unwrap();
             p_call(
                 self.inner,
                 cmd.as_ptr(),
-                fmt.as_ptr(),
+                FMT,
                 inner_args.as_ptr() as *mut i8,
                 terminated_args.len(),
             )
@@ -167,11 +159,11 @@ impl Ctx {
     pub fn get_client_id(&self) -> u64 {
         unsafe { raw::RedisModule_GetClientId.unwrap()(self.inner) as u64 }
     }
-    pub fn get_select_db(&self) -> i32 {
-        unsafe { raw::RedisModule_GetSelectedDb.unwrap()(self.inner) as i32 }
+    pub fn get_select_db(&self) -> i64 {
+        unsafe { raw::RedisModule_GetSelectedDb.unwrap()(self.inner) as i64 }
     }
-    pub fn get_context_flags(&self) -> u32 {
-        unsafe { raw::RedisModule_GetContextFlags.unwrap()(self.inner) as u32 }
+    pub fn get_context_flags(&self) -> u64 {
+        unsafe { raw::RedisModule_GetContextFlags.unwrap()(self.inner) as u64 }
     }
     pub fn select_db(&self, newid: i32) -> Result<(), Error> {
         handle_status(
@@ -179,11 +171,22 @@ impl Ctx {
             "Cloud not select db",
         )
     }
+    pub fn create_string(&self, value: &str) -> RedisString {
+        RedisString::create(self.inner, value)
+    }
     pub fn open_read_key(&self, keyname: &str) -> ReadKey {
-        ReadKey::create(self.inner, keyname)
+        let keyname = self.create_string(keyname);
+        ReadKey::new(self.inner, &keyname)
+    }
+    pub fn open_read_key_rs(&self, keyname: &RedisString) -> ReadKey {
+        ReadKey::new(self.inner, keyname)
     }
     pub fn open_write_key(&self, keyname: &str) -> WriteKey {
-        WriteKey::create(self.inner, keyname)
+        let keyname = self.create_string(keyname);
+        WriteKey::new(self.inner, &keyname)
+    }
+    pub fn open_write_key_rs(&self, keyname: &RedisString) -> WriteKey {
+        WriteKey::new(self.inner, keyname)
     }
     pub fn subscribe_to_keyspace_events<F>(&self, _types: KeySpaceTypes, _callback: F) {
         unimplemented!()

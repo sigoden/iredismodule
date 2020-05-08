@@ -1,12 +1,12 @@
 use std::ffi::{CString, CStr};
-use std::fmt;
 use std::time::Duration;
+use std::slice;
 use std::os::raw::{c_char, c_int};
 use num_traits::FromPrimitive;
 use bitflags::bitflags;
 
 use crate::raw;
-use crate::{Error};
+use crate::{Error, RedisString};
 
 /// wrap RedisModule_Milliseconds
 pub fn milliseconds() -> Duration {
@@ -15,6 +15,20 @@ pub fn milliseconds() -> Duration {
             raw::RedisModule_Milliseconds.unwrap()()
         } as u64
     )
+}
+
+pub fn parse_args(
+    argv: *mut *mut raw::RedisModuleString,
+    argc: c_int
+) -> Result<Vec<String>, Error> {
+    unsafe { slice::from_raw_parts(argv, argc as usize) }
+        .into_iter()
+        .map(|&arg| {
+            RedisString::ptr_to_str(arg)
+                .map(|v| v.to_owned())
+                .map_err(|_| Error::generic("Expect utf8 string"))
+        })
+        .collect()
 }
 
 pub fn handle_status(status: i32, message: &str) -> Result<(), Error> {
@@ -50,58 +64,7 @@ pub fn get_cluster_size() -> usize {
 }
 
 
-#[derive(Debug, PartialEq)]
-pub enum CmdStrFlags {
-    Write,
-    Readonly,
-    Admin,
-    DenyOOM,
-    DenyScript,
-    AllowLoading,
-    Pubsub,
-    Random,
-    AllowStale,
-    NoMonitor,
-    Fast,
-    GetkeysApi,
-    NoCluster,
-}
-
-impl fmt::Display for CmdStrFlags {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Write => write!(f, "write"),
-            Self::Readonly => write!(f, "readonly"),
-            Self::Admin => write!(f, "admin"),
-            Self::DenyOOM => write!(f, "deny-oom"),
-            Self::DenyScript => write!(f, "deny-script"),
-            Self::AllowLoading => write!(f, "allow-loading"),
-            Self::Pubsub => write!(f, "pubsub"),
-            Self::Random => write!(f, "random"),
-            Self::AllowStale => write!(f, "allow-stale"),
-            Self::NoMonitor => write!(f, "no-monitor"),
-            Self::Fast => write!(f, "fast"),
-            Self::GetkeysApi => write!(f, "getkeys-api"),
-            Self::NoCluster => write!(f, "no-cluster"),
-        }
-    }
-}
-
-impl CmdStrFlags {
-    pub fn none() -> String {
-        "".to_string()
-    }
-    pub fn one(flag: CmdStrFlags) -> String {
-        flag.to_string()
-    }
-    pub fn multi(flags: &[CmdStrFlags]) -> String {
-        flags
-            .into_iter()
-            .map(|v| v.to_string())
-            .collect::<Vec<String>>()
-            .join(" ")
-    }
-}
+pub(crate) const FMT: *const i8 = b"v\0".as_ptr() as *const i8;
 
 #[derive(Primitive, Debug, PartialEq)]
 pub enum StatusCode {
@@ -113,50 +76,6 @@ impl From<c_int> for StatusCode {
         StatusCode::from_i32(v).unwrap()
     }
 }
-
-
-pub enum CmdFmtFlags {
-    C,
-    S,
-    B,
-    L,
-    V,
-    A,
-    R,
-    X,
-}
-
-impl Default for CmdFmtFlags {
-    fn default() -> Self {
-        CmdFmtFlags::V
-    }
-}
-
-impl fmt::Display for CmdFmtFlags {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::C => write!(f, "c"),
-            Self::S => write!(f, "s"),
-            Self::B => write!(f, "b"),
-            Self::L => write!(f, "l"),
-            Self::V => write!(f, "v"),
-            Self::A => write!(f, "a"),
-            Self::R => write!(f, "r"),
-            Self::X => write!(f, "!"),
-        }
-    }
-}
-
-impl CmdFmtFlags {
-    pub fn multi(flags: &[CmdFmtFlags]) -> String {
-        flags
-            .into_iter()
-            .map(|v| v.to_string())
-            .collect::<Vec<String>>()
-            .join("")
-    }
-}
-
 
 bitflags! {
     pub struct CtxFlags: u32 {

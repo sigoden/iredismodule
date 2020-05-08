@@ -7,8 +7,6 @@ use std::fmt::Display;
 pub enum Error {
     WrongArity,
     Generic(GenericError),
-    ParseInt(std::num::ParseIntError),
-    ParseFloat(std::num::ParseFloatError),
 }
 
 impl Error {
@@ -19,31 +17,31 @@ impl Error {
 
 impl From<String> for Error {
     fn from(err: String) -> Error {
-        Error::Generic(GenericError::new(&err))
+        Error::generic(&err)
     }
 }
 
 impl From<std::num::ParseIntError> for Error {
-    fn from(err: std::num::ParseIntError) -> Error {
-        Error::ParseInt(err)
+    fn from(_: std::num::ParseIntError) -> Error {
+        Error::generic("Expect int value")
     }
 }
 
 impl From<std::num::ParseFloatError> for Error {
-    fn from(err: std::num::ParseFloatError) -> Error {
-        Error::ParseFloat(err)
+    fn from(_: std::num::ParseFloatError) -> Error {
+        Error::generic("Expect float value")
     }
 }
 
 impl From<std::str::Utf8Error> for Error {
-    fn from(err: std::str::Utf8Error) -> Self {
-        Error::Generic(GenericError::new(&err.to_string()))
+    fn from(_: std::str::Utf8Error) -> Self {
+        Error::generic("Expect utf8 string")
     }
 }
 
 impl From<std::string::FromUtf8Error> for Error {
-    fn from(err: std::string::FromUtf8Error) -> Error {
-        Error::Generic(GenericError::new(&err.to_string()))
+    fn from(_: std::string::FromUtf8Error) -> Error {
+        Error::generic("Expect utf8 string")
     }
 }
 
@@ -53,8 +51,6 @@ impl Display for Error {
         match *self {
             Error::WrongArity => write!(f, "Wrong Arity"),
             Error::Generic(ref err) => write!(f, "{}", err),
-            Error::ParseInt(ref err) => write!(f, "{}", err),
-            Error::ParseFloat(ref err) => write!(f, "{}", err),
         }
     }
 }
@@ -64,8 +60,6 @@ impl error::Error for Error {
         match *self {
             Error::WrongArity => None,
             Error::Generic(ref err) => Some(err),
-            Error::ParseInt(ref err) => Some(err),
-            Error::ParseFloat(ref err) => Some(err),
         }
     }
 }
@@ -85,7 +79,7 @@ impl GenericError {
 
 impl<'a> Display for GenericError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Generic error: {}", self.message)
+        write!(f, "{}", self.message)
     }
 }
 

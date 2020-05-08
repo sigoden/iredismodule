@@ -2,7 +2,7 @@ use crate::raw;
 use crate::{handle_status, Error};
 use std::ffi::CString;
 use std::fmt;
-use std::ops;
+use std::convert::TryInto;
 
 use std::slice;
 use std::str;
@@ -14,15 +14,28 @@ pub struct RedisString {
 }
 
 impl RedisString {
-    pub fn new(ctx: *mut raw::RedisModuleCtx, s: &str) -> RedisString {
-        let str = CString::new(s).unwrap();
-        let inner = unsafe { raw::RedisModule_CreateString.unwrap()(ctx, str.as_ptr(), s.len()) };
+    pub fn create(ctx: *mut raw::RedisModuleCtx, value: &str) -> RedisString {
+        let str = CString::new(value).unwrap();
+        let inner = unsafe { raw::RedisModule_CreateString.unwrap()(ctx, str.as_ptr(), value.len()) };
 
         RedisString {
             ctx,
             inner,
         }
     }
+    pub fn new(ctx: *mut raw::RedisModuleCtx, inner: *mut raw::RedisModuleString) -> RedisString {
+        RedisString {
+            ctx,
+            inner,
+        }
+    }
+    pub fn ptr_to_str<'a>(ptr: *const raw::RedisModuleString) -> Result<&'a str, Error> {
+        let mut len = 0;
+        let bytes = unsafe { raw::RedisModule_StringPtrLen.unwrap()(ptr, &mut len) };
+
+        str::from_utf8(unsafe { slice::from_raw_parts(bytes as *const u8, len) }).map_err(|e| e.into())
+    }
+
     pub fn append(&mut self, s: &str) -> Result<(), Error> {
         handle_status(
             unsafe {
@@ -37,6 +50,18 @@ impl RedisString {
             "Could not append buffer",
         )
     }
+
+    pub fn len(&self) -> usize {
+        let mut len = 0;
+        unsafe { raw::RedisModule_StringPtrLen.unwrap()(self.inner, &mut len) };
+        len
+    }
+}
+
+impl Clone for RedisString {
+    fn clone(&self) -> Self {
+        Self::new(self.ctx, self.inner)
+    }
 }
 
 impl Drop for RedisString {
@@ -47,59 +72,17 @@ impl Drop for RedisString {
     }
 }
 
+impl AsRef<str> for RedisString {
+    fn as_ref(&self) -> &str {
+        RedisString::ptr_to_str(self.inner).unwrap()
+    }
+}
+
 impl fmt::Display for RedisString {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let value = self.to_str().map_err(|_| fmt::Error)?;
-        write!(f, "{}", value)
-    }
-}
-
-impl ops::Deref for RedisString {
-    type Target = RedisStr;
-    #[inline]
-    fn deref(&self) -> &RedisStr {
-        unsafe { RedisStr::from_ptr(self.inner) }
-    }
-}
-
-impl AsRef<RedisStr> for RedisString {
-    #[inline]
-    fn as_ref(&self) -> &RedisStr {
-        self
-    }
-}
-
-pub struct RedisStr {
-    pub inner: *const raw::RedisModuleString,
-}
-
-impl RedisStr {
-    pub unsafe fn from_ptr<'a>(inner: *const raw::RedisModuleString) -> &'a Self {
-        &*({ inner as *const RedisStr })
-    }
-    pub fn get_longlong(&self) -> Result<i64, Error> {
-        let mut ll: i64 = 0;
-        handle_status(
-            unsafe { raw::RedisModule_StringToLongLong.unwrap()(self.inner, &mut ll) },
-            "Cloud not get value",
-        )?;
-        Ok(ll)
-    }
-    pub fn get_double(&self) -> Result<f64, Error> {
-        let mut d: f64 = 0.0;
-        handle_status(
-            unsafe { raw::RedisModule_StringToDouble.unwrap()(self.inner, &mut d) },
-            "Cloud not get value",
-        )?;
-        Ok(d)
-    }
-    pub fn get_buffer(&self) -> &[u8] {
         let mut len = 0;
         let bytes = unsafe { raw::RedisModule_StringPtrLen.unwrap()(self.inner, &mut len) };
-        unsafe { slice::from_raw_parts(bytes as *const u8, len) }
-    }
-    pub fn to_str(&self) -> Result<&str, Error> {
-        let buffer = self.get_buffer();
-        Ok(str::from_utf8(&buffer)?)
+        let value = str::from_utf8(unsafe { slice::from_raw_parts(bytes as *const u8, len) }).map_err(|e| fmt::Error)?;
+        write!(f, "{}", value)
     }
 }

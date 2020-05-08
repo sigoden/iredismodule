@@ -3,7 +3,7 @@ use std::os::raw::c_char;
 
 
 use crate::raw;
-use crate::{CmdFmtFlags, LogLevel, RedisBuffer, RedisString, Error};
+use crate::{LogLevel, RedisBuffer, RedisString, Error, FMT};
 pub struct IO {
     pub inner: *mut raw::RedisModuleIO,
 }
@@ -63,21 +63,20 @@ impl IO {
     pub fn load_float(&self) -> f32 {
         unsafe { raw::RedisModule_LoadFloat.unwrap()(self.inner) }
     }
-    pub fn emit_aof(&self, command: &str, args: &[&str], flags: &[CmdFmtFlags]) {
+    pub fn emit_aof(&self, command: &str, args: &[String]) {
         let terminated_args: Vec<CString> =
-            args.iter().map(|s| CString::new(*s).unwrap()).collect();
+            args.iter().map(|s| CString::new(s.as_str()).unwrap()).collect();
 
         let inner_args: Vec<_> = terminated_args.iter().map(|s| s.as_ptr()).collect();
 
         let cmd = CString::new(command).unwrap();
-        let fmt = CString::new(CmdFmtFlags::multi(flags)).unwrap();
 
         unsafe {
             let p_call = raw::RedisModule_EmitAOF.unwrap();
             p_call(
                 self.inner,
                 cmd.as_ptr(),
-                fmt.as_ptr(),
+                FMT,
                 inner_args.as_ptr() as *mut i8,
                 terminated_args.len(),
             )
