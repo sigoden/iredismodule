@@ -5,7 +5,7 @@ use std::os::raw::{c_int, c_void};
 use std::time::Duration;
 
 use crate::raw;
-use crate::{handle_status, Context, Error, RedisString, RedisType};
+use crate::{handle_status, Context, Error, RedisType, RedisStr};
 
 pub struct ReadKey {
     pub inner: *mut raw::RedisModuleKey,
@@ -19,7 +19,7 @@ impl Drop for ReadKey {
 }
 
 impl ReadKey {
-    pub fn new(ctx: *mut raw::RedisModuleCtx, keyname: &RedisString) -> Self {
+    pub fn new(ctx: *mut raw::RedisModuleCtx, keyname: &RedisStr) -> Self {
         let mode = raw::REDISMODULE_READ as c_int;
         let inner = unsafe {
             raw::RedisModule_OpenKey.unwrap()(ctx, keyname.inner, mode) as *mut raw::RedisModuleKey
@@ -95,7 +95,7 @@ impl Deref for WriteKey {
 }
 
 impl WriteKey {
-    pub fn new(ctx: *mut raw::RedisModuleCtx, keyname: &RedisString) -> Self {
+    pub fn new(ctx: *mut raw::RedisModuleCtx, keyname: &RedisStr) -> Self {
         let mode = (raw::REDISMODULE_READ | raw::REDISMODULE_WRITE) as c_int;
         let inner = unsafe {
             raw::RedisModule_OpenKey.unwrap()(ctx, keyname.inner, mode) as *mut raw::RedisModuleKey
@@ -138,7 +138,7 @@ impl WriteKey {
             "Could not set expire",
         )
     }
-    pub fn string_set(&mut self, value: &RedisString) -> Result<(), Error> {
+    pub fn string_set(&mut self, value: &RedisStr) -> Result<(), Error> {
         handle_status(
             unsafe { raw::RedisModule_StringSet.unwrap()(self.inner, value.inner) },
             "Cloud not set key string",
@@ -150,34 +150,27 @@ impl WriteKey {
     pub fn string_truncate(&mut self, _newlen: u32) -> Result<(), Error> {
         unimplemented!()
     }
-    pub fn list_push(&mut self, position: ListPosition, value: &str) -> Result<(), Error> {
-        let value = Context::new(self.ctx).create_string(value);
-        handle_status(
-            unsafe { raw::RedisModule_ListPush.unwrap()(self.inner, position as i32, value.inner) },
-            "Cloud not push list",
-        )
-    }
-    pub fn list_push_rs(
+    pub fn list_push(
         &mut self,
         position: ListPosition,
-        value: &RedisString,
+        value: &RedisStr,
     ) -> Result<(), Error> {
         handle_status(
             unsafe { raw::RedisModule_ListPush.unwrap()(self.inner, position as i32, value.inner) },
             "Cloud not push list",
         )
     }
-    pub fn list_pop(&mut self, pos: ListPosition) -> Result<RedisString, Error> {
+    pub fn list_pop(&mut self, pos: ListPosition) -> Result<RedisStr, Error> {
         let p = unsafe { raw::RedisModule_ListPop.unwrap()(self.inner, pos as i32) };
         if p.is_null() {
             return Err(Error::generic("Cloud not pop list"));
         }
-        Ok(RedisString::new(self.ctx, p))
+        Ok(unsafe { RedisStr::new(p) })
     }
     pub fn zset_add(
         &mut self,
         _score: f64,
-        _str: &RedisString,
+        _str: &RedisStr,
         _flag: ZaddInputFlag,
     ) -> Result<ZaddOutputFlag, Error> {
         unimplemented!()

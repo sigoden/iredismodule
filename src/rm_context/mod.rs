@@ -1,7 +1,7 @@
 use crate::raw;
 use crate::{
     handle_status, CallReply, Error, KeySpaceTypes, LogLevel, ReadKey, RedisResult, RedisString,
-    RedisValue, StatusCode, WriteKey, FMT,
+    RedisStr, RedisValue, StatusCode, WriteKey, FMT,
 };
 use bitflags::bitflags;
 use std::ffi::CString;
@@ -105,14 +105,9 @@ impl Context {
         }
     }
 
-    pub fn call(&self, command: &str, args: &[String]) -> RedisResult {
-        let terminated_args: Vec<RedisString> = args
-            .iter()
-            .map(|s| RedisString::create(self.inner, s.as_str()))
-            .collect();
-
-        let inner_args: Vec<*mut raw::RedisModuleString> =
-            terminated_args.iter().map(|s| s.inner).collect();
+    pub fn call(&self, command: &str, args: &[RedisStr]) -> RedisResult {
+        let args: Vec<*mut raw::RedisModuleString> =
+            args.iter().map(|s| s.inner).collect();
 
         let cmd = CString::new(command).unwrap();
 
@@ -122,22 +117,16 @@ impl Context {
                 self.inner,
                 cmd.as_ptr(),
                 FMT,
-                inner_args.as_ptr() as *mut i8,
-                terminated_args.len(),
+                args.as_ptr() as *mut i8,
+                args.len(),
             )
         };
-        self.log_debug("after call");
         CallReply::new(reply_).into()
     }
 
-    pub fn replicate(&self, command: &str, args: &[String]) -> Result<(), Error> {
-        let terminated_args: Vec<RedisString> = args
-            .iter()
-            .map(|s| RedisString::create(self.inner, s.as_str()))
-            .collect();
-
-        let inner_args: Vec<*mut raw::RedisModuleString> =
-            terminated_args.iter().map(|s| s.inner).collect();
+    pub fn replicate(&self, command: &str, args: &[RedisStr]) -> Result<(), Error> {
+        let args: Vec<*mut raw::RedisModuleString> =
+            args.iter().map(|s| s.inner).collect();
 
         let cmd = CString::new(command).unwrap();
 
@@ -147,8 +136,8 @@ impl Context {
                 self.inner,
                 cmd.as_ptr(),
                 FMT,
-                inner_args.as_ptr() as *mut i8,
-                terminated_args.len(),
+                args.as_ptr() as *mut i8,
+                args.len(),
             )
         };
         handle_status(result, "Cloud not replicate")
@@ -177,18 +166,10 @@ impl Context {
     pub fn create_string(&self, value: &str) -> RedisString {
         RedisString::create(self.inner, value)
     }
-    pub fn open_read_key(&self, keyname: &str) -> ReadKey {
-        let keyname = self.create_string(keyname);
-        ReadKey::new(self.inner, &keyname)
-    }
-    pub fn open_read_key_rs(&self, keyname: &RedisString) -> ReadKey {
+    pub fn open_read_key(&self, keyname: &RedisStr) -> ReadKey {
         ReadKey::new(self.inner, keyname)
     }
-    pub fn open_write_key(&self, keyname: &str) -> WriteKey {
-        let keyname = self.create_string(keyname);
-        WriteKey::new(self.inner, &keyname)
-    }
-    pub fn open_write_key_rs(&self, keyname: &RedisString) -> WriteKey {
+    pub fn open_write_key(&self, keyname: &RedisStr) -> WriteKey {
         WriteKey::new(self.inner, keyname)
     }
     pub fn subscribe_to_keyspace_events<F>(&self, _types: KeySpaceTypes, _callback: F) {

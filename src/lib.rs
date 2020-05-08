@@ -39,5 +39,5 @@ pub use rm_key::{
     AccessMode, KeyType, ListPosition, ReadKey, WriteKey, ZaddInputFlag, ZaddOutputFlag,
 };
 pub use rm_key_type::RedisType;
-pub use rm_string::RedisString;
+pub use rm_string::{RedisString, RedisStr};
 pub use rm_value::{RedisResult, RedisValue};

@@ -1,7 +1,7 @@
 use redis_module::{redis_command, redis_module};
-use redis_module::{Context, Error, RedisResult};
+use redis_module::{Context, Error, RedisResult, RedisStr};
 
-fn simple_mul(_ctx: &Context, args: Vec<String>) -> RedisResult {
+fn simple_mul(_ctx: &Context, args: Vec<RedisStr>) -> RedisResult {
     if args.len() < 2 {
         return Err(Error::WrongArity);
     }
@@ -9,7 +9,7 @@ fn simple_mul(_ctx: &Context, args: Vec<String>) -> RedisResult {
     let nums = args
         .into_iter()
         .skip(1)
-        .map(|s| s.parse::<i64>().map_err(|e| e.into()))
+        .map(|s| s.get_longlong())
         .collect::<Result<Vec<i64>, Error>>()?;
 
     let product = nums.iter().product();

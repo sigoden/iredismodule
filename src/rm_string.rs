@@ -83,3 +83,41 @@ impl fmt::Display for RedisString {
         write!(f, "{}", value)
     }
 }
+
+#[repr(C)]
+pub struct RedisStr {
+    pub inner: *mut raw::RedisModuleString,
+}
+
+impl RedisStr {
+    pub unsafe fn new(inner: *mut raw::RedisModuleString) -> Self {
+        debug_assert!(!inner.is_null());
+        RedisStr { inner }
+    }
+
+    pub fn get_longlong(&self) -> Result<i64, Error> {
+        let mut ll: i64 = 0;
+        handle_status(
+            unsafe { raw::RedisModule_StringToLongLong.unwrap()(self.inner, &mut ll) },
+            "Cloud not get value",
+        )?;
+        Ok(ll)
+    }
+    pub fn get_double(&self) -> Result<f64, Error> {
+        let mut d: f64 = 0.0;
+        handle_status(
+            unsafe { raw::RedisModule_StringToDouble.unwrap()(self.inner, &mut d) },
+            "Cloud not get value",
+        )?;
+        Ok(d)
+    }
+    pub fn get_buffer(&self) -> &[u8] {
+        let mut len = 0;
+        let bytes = unsafe { raw::RedisModule_StringPtrLen.unwrap()(self.inner, &mut len) };
+        unsafe { slice::from_raw_parts(bytes as *const u8, len) }
+    }
+    pub fn to_str(&self) -> Result<&str, Error> {
+        let buffer = self.get_buffer();
+        Ok(str::from_utf8(&buffer)?)
+    }
+}

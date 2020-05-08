@@ -17,10 +17,7 @@ macro_rules! redis_command {
             argc: c_int,
         ) -> c_int {
             let context = $crate::Context::new(ctx);
-            let response = $crate::parse_args(argv, argc)
-                .map(|args| $command_handler(&context, args))
-                .unwrap_or_else(|e| Err(e));
-
+            let response = $command_handler(&context, $crate::parse_args(argv, argc));
             context.reply(response) as c_int
         }
         /////////////////////

@@ -6,24 +6,20 @@ use std::slice;
 use std::time::Duration;
 
 use crate::raw;
-use crate::{Error, RedisString};
+use crate::{Error, RedisStr};
 
 /// wrap RedisModule_Milliseconds
 pub fn milliseconds() -> Duration {
     Duration::from_millis(unsafe { raw::RedisModule_Milliseconds.unwrap()() } as u64)
 }
 
-pub fn parse_args(
+pub fn parse_args<'a>(
     argv: *mut *mut raw::RedisModuleString,
     argc: c_int,
-) -> Result<Vec<String>, Error> {
+) -> Vec<RedisStr> {
     unsafe { slice::from_raw_parts(argv, argc as usize) }
         .into_iter()
-        .map(|&arg| {
-            RedisString::ptr_to_str(arg)
-                .map(|v| v.to_owned())
-                .map_err(|_| Error::generic("Expect utf8 string"))
-        })
+        .map(|&arg| unsafe { RedisStr::new(arg) })
         .collect()
 }
 
