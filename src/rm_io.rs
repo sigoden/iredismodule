@@ -3,13 +3,13 @@ use std::os::raw::c_char;
 
 use crate::raw;
 use crate::{Error, LogLevel, RedisBuffer, RedisString, FMT};
-pub struct IO {
+pub struct RedisIO {
     pub inner: *mut raw::RedisModuleIO,
 }
 
-impl IO {
+impl RedisIO {
     pub fn new(inner: *mut raw::RedisModuleIO) -> Self {
-        IO { inner }
+        RedisIO { inner }
     }
     pub fn save_unsigned(&self, value: u64) {
         unsafe { raw::RedisModule_SaveUnsigned.unwrap()(self.inner, value) };
@@ -90,11 +90,11 @@ impl IO {
     }
 }
 
-pub struct Digest {
+pub struct RedisDigest {
     pub inner: raw::RedisModuleDigest,
 }
 
-impl Digest {
+impl RedisDigest {
     pub fn add_string_buffer(&mut self, _ele: &str) {
         unimplemented!()
     }

@@ -34,7 +34,7 @@ pub use raw::RedisModuleTimerID as TimerID;
 pub use rm_block_client::BlockClient;
 pub use rm_buffer::RedisBuffer;
 pub use rm_call_reply::CallReply;
-pub use rm_io::{Digest, IO};
+pub use rm_io::{RedisDigest, RedisIO};
 pub use rm_key::{
     AccessMode, KeyType, ListPosition, ReadKey, WriteKey, ZaddInputFlag, ZaddOutputFlag,
 };
