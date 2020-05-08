@@ -1,11 +1,11 @@
+use bitflags::bitflags;
 use num_traits::FromPrimitive;
+use std::ops::Deref;
 use std::os::raw::{c_int, c_void};
 use std::time::Duration;
-use std::ops::Deref;
-use bitflags::bitflags;
 
 use crate::raw;
-use crate::{Ctx, handle_status, Error, RedisString, RedisType};
+use crate::{handle_status, Ctx, Error, RedisString, RedisType};
 
 pub struct ReadKey {
     pub inner: *mut raw::RedisModuleKey,
@@ -24,10 +24,7 @@ impl ReadKey {
         let inner = unsafe {
             raw::RedisModule_OpenKey.unwrap()(ctx, keyname.inner, mode) as *mut raw::RedisModuleKey
         };
-        ReadKey {
-            inner,
-            ctx,
-        }
+        ReadKey { inner, ctx }
     }
 
     pub fn is_empty(&self) -> bool {
@@ -37,8 +34,7 @@ impl ReadKey {
 
     pub fn get_value<T>(&self, redis_type: &RedisType) -> Result<Option<&mut T>, Error> {
         self.verify_type(redis_type)?;
-        let value =
-            unsafe { raw::RedisModule_ModuleTypeGetValue.unwrap()(self.inner) as *mut T };
+        let value = unsafe { raw::RedisModule_ModuleTypeGetValue.unwrap()(self.inner) as *mut T };
 
         if value.is_null() {
             return Ok(None);
@@ -87,7 +83,7 @@ pub struct WriteKey {
 
 impl AsRef<ReadKey> for WriteKey {
     fn as_ref(&self) -> &ReadKey {
-         &self.readkey
+        &self.readkey
     }
 }
 
@@ -105,7 +101,7 @@ impl WriteKey {
             raw::RedisModule_OpenKey.unwrap()(ctx, keyname.inner, mode) as *mut raw::RedisModuleKey
         };
         WriteKey {
-            readkey: ReadKey { inner, ctx }
+            readkey: ReadKey { inner, ctx },
         }
     }
 
@@ -113,14 +109,14 @@ impl WriteKey {
         self.verify_type(redis_type)?;
         let value = Box::into_raw(Box::new(value)) as *mut c_void;
         handle_status(
-        unsafe {
+            unsafe {
                 raw::RedisModule_ModuleTypeSetValue.unwrap()(
                     self.inner,
                     *redis_type.raw_type.borrow(),
                     value,
                 )
             },
-            "Cloud not set value"
+            "Cloud not set value",
         )
     }
 
@@ -144,8 +140,8 @@ impl WriteKey {
     }
     pub fn string_set(&mut self, value: &RedisString) -> Result<(), Error> {
         handle_status(
-            unsafe { raw::RedisModule_StringSet.unwrap()(self.inner, value.inner ) },
-            "Cloud not set key string"
+            unsafe { raw::RedisModule_StringSet.unwrap()(self.inner, value.inner) },
+            "Cloud not set key string",
         )
     }
     pub fn string_dma<'a>(&mut self, mode: i32) {
@@ -157,18 +153,22 @@ impl WriteKey {
     pub fn list_push(&mut self, position: ListPosition, value: &str) -> Result<(), Error> {
         let value = Ctx::new(self.ctx).create_string(value);
         handle_status(
-            unsafe {  raw::RedisModule_ListPush.unwrap()(self.inner, position as i32, value.inner) },
-            "Cloud not push list"
+            unsafe { raw::RedisModule_ListPush.unwrap()(self.inner, position as i32, value.inner) },
+            "Cloud not push list",
         )
     }
-    pub fn list_push_rs(&mut self, position: ListPosition, value: &RedisString) -> Result<(), Error> {
+    pub fn list_push_rs(
+        &mut self,
+        position: ListPosition,
+        value: &RedisString,
+    ) -> Result<(), Error> {
         handle_status(
-            unsafe {  raw::RedisModule_ListPush.unwrap()(self.inner, position as i32, value.inner) },
-            "Cloud not push list"
+            unsafe { raw::RedisModule_ListPush.unwrap()(self.inner, position as i32, value.inner) },
+            "Cloud not push list",
         )
     }
     pub fn list_pop(&mut self, pos: ListPosition) -> Result<RedisString, Error> {
-        let p =  unsafe { raw::RedisModule_ListPop.unwrap()(self.inner, pos as i32) };
+        let p = unsafe { raw::RedisModule_ListPop.unwrap()(self.inner, pos as i32) };
         if p.is_null() {
             return Err(Error::generic("Cloud not pop list"));
         }

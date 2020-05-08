@@ -33,9 +33,7 @@ impl CallReply {
         unsafe { raw::RedisModule_CallReplyInteger.unwrap()(self.inner) }
     }
     pub fn get_array_element(&self, idx: usize) -> CallReply {
-        CallReply::new(unsafe {
-            raw::RedisModule_CallReplyArrayElement.unwrap()(self.inner, idx)
-        })
+        CallReply::new(unsafe { raw::RedisModule_CallReplyArrayElement.unwrap()(self.inner, idx) })
     }
     pub fn get_length(&self) -> usize {
         unsafe { raw::RedisModule_CallReplyLength.unwrap()(self.inner) }

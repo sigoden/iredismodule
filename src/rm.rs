@@ -1,25 +1,21 @@
-use std::ffi::{CString, CStr};
-use std::time::Duration;
-use std::slice;
-use std::os::raw::{c_char, c_int};
-use num_traits::FromPrimitive;
 use bitflags::bitflags;
+use num_traits::FromPrimitive;
+use std::ffi::{CStr, CString};
+use std::os::raw::{c_char, c_int};
+use std::slice;
+use std::time::Duration;
 
 use crate::raw;
 use crate::{Error, RedisString};
 
 /// wrap RedisModule_Milliseconds
 pub fn milliseconds() -> Duration {
-    Duration::from_millis(
-        unsafe {
-            raw::RedisModule_Milliseconds.unwrap()()
-        } as u64
-    )
+    Duration::from_millis(unsafe { raw::RedisModule_Milliseconds.unwrap()() } as u64)
 }
 
 pub fn parse_args(
     argv: *mut *mut raw::RedisModuleString,
-    argc: c_int
+    argc: c_int,
 ) -> Result<Vec<String>, Error> {
     unsafe { slice::from_raw_parts(argv, argc as usize) }
         .into_iter()
@@ -62,7 +58,6 @@ pub fn get_my_cluster_id() -> Result<String, Error> {
 pub fn get_cluster_size() -> usize {
     unsafe { raw::RedisModule_GetClusterSize.unwrap()() }
 }
-
 
 pub(crate) const FMT: *const i8 = b"v\0".as_ptr() as *const i8;
 

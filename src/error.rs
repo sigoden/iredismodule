@@ -45,7 +45,6 @@ impl From<std::string::FromUtf8Error> for Error {
     }
 }
 
-
 impl Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {

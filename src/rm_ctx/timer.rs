@@ -1,16 +1,15 @@
-use std::time::Duration;
-use std::os::raw::{c_void};
 use std::convert::TryInto;
+use std::os::raw::c_void;
+use std::time::Duration;
 
 use crate::raw;
-use crate::{Ctx, Error, TimerID, handle_status, take_data};
+use crate::{handle_status, take_data, Ctx, Error, TimerID};
 
 impl Ctx {
     pub fn create_timer<F, T>(&self, period: Duration, callback: F, data: T) -> TimerID
     where
         F: FnOnce(&Ctx, T),
     {
-
         // Store the user-provided data on the heap before passing ownership of it to Redis,
         // so that it will outlive the current scope.
         let data = Box::into_raw(Box::from(TimerProcData { data, callback }));

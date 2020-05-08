@@ -1,7 +1,9 @@
-use redis_module::{redis_module, redis_command};
+use redis_module::{redis_command, redis_module};
 
-use redis_module::{Ctx, Error, RedisResult, RedisString, raw, parse_args, StatusCode, ListPosition, RedisValue};
-use std::os::raw::{c_int};
+use redis_module::{
+    parse_args, raw, Ctx, Error, ListPosition, RedisResult, RedisString, RedisValue, StatusCode,
+};
+use std::os::raw::c_int;
 
 fn hello_simple(ctx: &Ctx, args: Vec<String>) -> RedisResult {
     let db = ctx.get_select_db();
@@ -28,11 +30,15 @@ fn hello_push_call(ctx: &Ctx, args: Vec<String>) -> RedisResult {
 pub extern "C" fn init(
     ctx: *mut raw::RedisModuleCtx,
     argv: *mut *mut raw::RedisModuleString,
-    argc: c_int
+    argc: c_int,
 ) -> c_int {
     let args = parse_args(argv, argc).unwrap();
     let ctx_ = Ctx::new(ctx);
-    ctx_.log_debug(&format!("Module loaded with ARGV[{}] = {:?}\n", args.len(), args));
+    ctx_.log_debug(&format!(
+        "Module loaded with ARGV[{}] = {:?}\n",
+        args.len(),
+        args
+    ));
     StatusCode::Ok as c_int
 }
 
@@ -60,4 +66,3 @@ redis_module! {
         // ["hello.leftpad", hello_leftpad, "", 1, 1, 1],
     ],
 }
-

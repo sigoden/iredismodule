@@ -1,8 +1,7 @@
 use crate::raw;
 use crate::{
-    handle_status, CallReply,
-    Error, KeySpaceTypes, LogLevel, ReadKey, RedisResult, RedisValue, RedisString,
-    WriteKey, StatusCode, FMT,
+    handle_status, CallReply, Error, KeySpaceTypes, LogLevel, ReadKey, RedisResult, RedisString,
+    RedisValue, StatusCode, WriteKey, FMT,
 };
 use bitflags::bitflags;
 use std::ffi::CString;
@@ -59,7 +58,8 @@ impl Ctx {
                 raw::RedisModule_ReplyWithString.unwrap()(
                     self.inner,
                     RedisString::create(self.inner, &s).inner,
-                ).into()
+                )
+                .into()
             },
 
             Ok(RedisValue::Buffer(b)) => unsafe {
@@ -67,7 +67,8 @@ impl Ctx {
                     self.inner,
                     b.as_ptr() as *const i8,
                     b.len(),
-                ).into()
+                )
+                .into()
             },
 
             Ok(RedisValue::Array(array)) => {
@@ -84,7 +85,9 @@ impl Ctx {
                 StatusCode::Ok
             }
 
-            Ok(RedisValue::Null) => unsafe { raw::RedisModule_ReplyWithNull.unwrap()(self.inner).into() },
+            Ok(RedisValue::Null) => unsafe {
+                raw::RedisModule_ReplyWithNull.unwrap()(self.inner).into()
+            },
 
             Ok(RedisValue::NoReply) => StatusCode::Ok,
 

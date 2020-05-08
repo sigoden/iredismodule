@@ -1,7 +1,6 @@
 use crate::raw;
 use crate::{handle_status, Ctx, Error};
 
-
 pub struct BlockClient {
     pub inner: *mut raw::RedisModuleBlockedClient,
 }

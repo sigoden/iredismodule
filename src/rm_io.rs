@@ -1,9 +1,8 @@
 use std::ffi::CString;
 use std::os::raw::c_char;
 
-
 use crate::raw;
-use crate::{LogLevel, RedisBuffer, RedisString, Error, FMT};
+use crate::{Error, LogLevel, RedisBuffer, RedisString, FMT};
 pub struct IO {
     pub inner: *mut raw::RedisModuleIO,
 }
@@ -39,7 +38,7 @@ impl IO {
             )
         };
     }
-    pub fn save_string(&self, value: &str)  {
+    pub fn save_string(&self, value: &str) {
         self.save_string_buffer(value.as_bytes())
     }
     pub fn load_string_buffer(&self) -> RedisBuffer {
@@ -64,8 +63,10 @@ impl IO {
         unsafe { raw::RedisModule_LoadFloat.unwrap()(self.inner) }
     }
     pub fn emit_aof(&self, command: &str, args: &[String]) {
-        let terminated_args: Vec<CString> =
-            args.iter().map(|s| CString::new(s.as_str()).unwrap()).collect();
+        let terminated_args: Vec<CString> = args
+            .iter()
+            .map(|s| CString::new(s.as_str()).unwrap())
+            .collect();
 
         let inner_args: Vec<_> = terminated_args.iter().map(|s| s.as_ptr()).collect();
 

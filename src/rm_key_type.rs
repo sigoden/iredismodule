@@ -3,7 +3,7 @@ use std::ffi::CString;
 use std::ptr;
 
 use crate::raw;
-use crate::{Ctx, LogLevel, Error};
+use crate::{Ctx, Error, LogLevel};
 
 pub struct RedisType {
     name: &'static str,
@@ -33,7 +33,10 @@ impl RedisType {
     pub fn create_data_type(&self, ctx: &Ctx) -> Result<(), Error> {
         if self.name.len() != 9 {
             let msg = "Redis requires the length of native type names to be exactly 9 characters";
-            ctx.log(LogLevel::Warning, &format!("{}, name is: '{}'", msg, self.name));
+            ctx.log(
+                LogLevel::Warning,
+                &format!("{}, name is: '{}'", msg, self.name),
+            );
             return Err(Error::generic(msg));
         }
 
@@ -56,7 +59,10 @@ impl RedisType {
 
         *self.raw_type.borrow_mut() = redis_type;
 
-        ctx.log(LogLevel::Notice, &format!("Created new data type '{}'", self.name));
+        ctx.log(
+            LogLevel::Notice,
+            &format!("Created new data type '{}'", self.name),
+        );
 
         Ok(())
     }

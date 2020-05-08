@@ -1,4 +1,4 @@
-use redis_module::{redis_module, redis_command};
+use redis_module::{redis_command, redis_module};
 
 use redis_module::{Ctx, Error, RedisResult};
 
