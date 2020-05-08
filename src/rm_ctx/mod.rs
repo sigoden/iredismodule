@@ -1,15 +1,16 @@
 use crate::raw;
-use crate::rm::{CODE_ERR, CODE_OK};
 use crate::{
-    handle_status, BlockClient, CallReply, ClusterNode, ClusterNodeList, CmdFmtFlags,
-    Error, KeySpaceTypes, LogLevel, MsgType, ReadKey, RedisResult, RedisValue, RedisString, TimerID,
-    WriteKey,
+    handle_status, CallReply, CmdFmtFlags,
+    Error, KeySpaceTypes, LogLevel, ReadKey, RedisResult, RedisValue, RedisString,
+    WriteKey, StatusCode,
 };
 use bitflags::bitflags;
-use std::convert::TryInto;
 use std::ffi::CString;
 use std::os::raw::{c_int, c_long, c_void};
-use std::time::Duration;
+
+pub mod block_client;
+pub mod cluster;
+pub mod timer;
 
 pub struct Ctx {
     pub inner: *mut raw::RedisModuleCtx,
@@ -39,26 +40,26 @@ impl Ctx {
     pub fn auto_memory(&self) {
         unsafe { raw::RedisModule_AutoMemory.unwrap()(self.inner) }
     }
-    pub fn reply(&self, r: RedisResult) -> Result<(), Error> {
-        let status = match r {
+    pub fn reply(&self, r: RedisResult) -> StatusCode {
+        match r {
             Ok(RedisValue::Integer(v)) => unsafe {
-                raw::RedisModule_ReplyWithLongLong.unwrap()(self.inner, v)
+                raw::RedisModule_ReplyWithLongLong.unwrap()(self.inner, v).into()
             },
 
             Ok(RedisValue::Float(v)) => unsafe {
-                raw::RedisModule_ReplyWithDouble.unwrap()(self.inner, v)
+                raw::RedisModule_ReplyWithDouble.unwrap()(self.inner, v).into()
             },
 
             Ok(RedisValue::SimpleString(s)) => unsafe {
                 let msg = CString::new(s).unwrap();
-                raw::RedisModule_ReplyWithSimpleString.unwrap()(self.inner, msg.as_ptr())
+                raw::RedisModule_ReplyWithSimpleString.unwrap()(self.inner, msg.as_ptr()).into()
             },
 
             Ok(RedisValue::BulkString(s)) => unsafe {
                 raw::RedisModule_ReplyWithString.unwrap()(
                     self.inner,
                     RedisString::new(self.inner, &s).inner,
-                )
+                ).into()
             },
 
             Ok(RedisValue::Buffer(b)) => unsafe {
@@ -66,7 +67,7 @@ impl Ctx {
                     self.inner,
                     b.as_ptr() as *const i8,
                     b.len(),
-                )
+                ).into()
             },
 
             Ok(RedisValue::Array(array)) => {
@@ -77,37 +78,36 @@ impl Ctx {
                 }
 
                 for elem in array {
-                    self.reply(Ok(elem))?;
+                    self.reply(Ok(elem));
                 }
 
-                CODE_OK
+                StatusCode::Ok
             }
 
-            Ok(RedisValue::Null) => unsafe { raw::RedisModule_ReplyWithNull.unwrap()(self.inner) },
+            Ok(RedisValue::Null) => unsafe { raw::RedisModule_ReplyWithNull.unwrap()(self.inner).into() },
 
-            Ok(RedisValue::NoReply) => CODE_OK,
+            Ok(RedisValue::NoReply) => StatusCode::Ok,
 
             Err(Error::WrongArity) => {
                 if self.is_keys_position_request() {
-                    CODE_ERR
+                    StatusCode::Err
                 } else {
-                    unsafe { raw::RedisModule_WrongArity.unwrap()(self.inner) }
+                    unsafe { raw::RedisModule_WrongArity.unwrap()(self.inner).into() }
                 }
             }
             Err(Error::Generic(s)) => unsafe {
                 let msg = CString::new(s.to_string()).unwrap();
-                raw::RedisModule_ReplyWithError.unwrap()(self.inner, msg.as_ptr())
+                raw::RedisModule_ReplyWithError.unwrap()(self.inner, msg.as_ptr()).into()
             },
             Err(Error::ParseInt(s)) => unsafe {
                 let msg = CString::new(s.to_string()).unwrap();
-                raw::RedisModule_ReplyWithError.unwrap()(self.inner, msg.as_ptr())
+                raw::RedisModule_ReplyWithError.unwrap()(self.inner, msg.as_ptr()).into()
             },
             Err(Error::ParseFloat(s)) => unsafe {
                 let msg = CString::new(s.to_string()).unwrap();
-                raw::RedisModule_ReplyWithError.unwrap()(self.inner, msg.as_ptr())
+                raw::RedisModule_ReplyWithError.unwrap()(self.inner, msg.as_ptr()).into()
             },
-        };
-        handle_status(status, "Could not reply")
+        }
     }
 
     pub fn call(&self, command: &str, args: &[&str], flags: &[CmdFmtFlags]) -> RedisResult {
@@ -185,42 +185,7 @@ impl Ctx {
     pub fn open_write_key(&self, keyname: &str) -> WriteKey {
         WriteKey::create(self.inner, keyname)
     }
-    pub fn set_cluster_flags(&self, flags: u64) {
-        unsafe { raw::RedisModule_SetClusterFlags.unwrap()(self.inner, flags) }
-    }
-    pub fn block_client<F, G>(
-        &self,
-        _reply_callbck: F,
-        _timeout_callback: F,
-        _free_privdata: G,
-        _timeout: Duration,
-    ) -> BlockClient {
-        unimplemented!()
-    }
-    pub fn is_blocked_reply_request(&self) -> bool {
-        unimplemented!()
-    }
-    pub fn is_blocked_timeout_request(&self) -> bool {
-        unimplemented!()
-    }
-    pub fn get_block_client_handle(&self) -> BlockClient {
-        unimplemented!()
-    }
     pub fn subscribe_to_keyspace_events<F>(&self, _types: KeySpaceTypes, _callback: F) {
-        unimplemented!()
-    }
-    pub fn register_cluster_message_receiver<F>(&self, _msg_type: MsgType, _callback: F) {
-        unimplemented!()
-    }
-    pub fn send_cluster_message(
-        &self,
-        _target_id: Option<ClusterNode>,
-        _msg_type: MsgType,
-        _msg: &str,
-    ) -> Result<(), Error> {
-        unimplemented!()
-    }
-    pub fn get_cluster_nodes_list() -> Option<ClusterNodeList> {
         unimplemented!()
     }
     pub fn log(&self, level: LogLevel, message: &str) {
@@ -232,66 +197,6 @@ impl Ctx {
     pub fn log_debug(&self, message: &str) {
         self.log(LogLevel::Notice, message);
     }
-
-    pub fn create_timer<F, T>(&self, period: Duration, callback: F, data: T) -> TimerID
-    where
-        F: FnOnce(&Ctx, T),
-    {
-        let cb_data = CtxDataCallback { data, callback };
-
-        // Store the user-provided data on the heap before passing ownership of it to Redis,
-        // so that it will outlive the current scope.
-        let data = Box::from(cb_data);
-
-        // Take ownership of the data inside the box and obtain a raw pointer to pass to Redis.
-        let data = Box::into_raw(data);
-
-        let timer_id = unsafe {
-            raw::RedisModule_CreateTimer.unwrap()(
-                self.inner,
-                period
-                    .as_millis()
-                    .try_into()
-                    .expect("Value must fit in 64 bits"),
-                Some(ctx_data_callback::<F, T>),
-                data as *mut c_void,
-            )
-        };
-
-        timer_id as TimerID
-    }
-    pub fn stop_timer<T>(&self, id: TimerID) -> Result<T, Error> {
-        let mut data: *mut c_void = std::ptr::null_mut();
-
-        handle_status(
-            unsafe { raw::RedisModule_StopTimer.unwrap()(self.inner, id, &mut data) },
-            "Cloud not stop timer",
-        )?;
-
-        let data: T = take_data(data);
-        return Ok(data);
-    }
-
-    pub fn get_timer_info<T>(&self, id: TimerID) -> Result<(Duration, &T), Error> {
-        let mut remaining: u64 = 0;
-        let mut data: *mut c_void = std::ptr::null_mut();
-
-        handle_status(
-            unsafe {
-                raw::RedisModule_GetTimerInfo.unwrap()(self.inner, id, &mut remaining, &mut data)
-            },
-            "Cloud not get timer info",
-        )?;
-
-        // Cast the *mut c_void supplied by the Redis API to a raw pointer of our custom type.
-        let data = data as *mut T;
-
-        // Dereference the raw pointer (we know this is safe, since Redis should return our
-        // original pointer which we know to be good) and turn it into a safe reference
-        let data = unsafe { &*data };
-
-        Ok((Duration::from_millis(remaining), data))
-    }
 }
 
 bitflags! {
@@ -302,28 +207,7 @@ bitflags! {
     }
 }
 
-extern "C" fn ctx_data_callback<F, T>(ctx: *mut raw::RedisModuleCtx, data: *mut c_void)
-where
-    F: FnOnce(&Ctx, T),
-{
-    let ctx = &Ctx::new(ctx);
-
-    if data.is_null() {
-        ctx.log_debug("[callback] Data must not null!");
-        return;
-    }
-
-    let cb_data: CtxDataCallback<F, T> = take_data(data);
-    (cb_data.callback)(ctx, cb_data.data);
-}
-
-#[repr(C)]
-pub(crate) struct CtxDataCallback<F: FnOnce(&Ctx, T), T> {
-    data: T,
-    callback: F,
-}
-
-fn take_data<T>(data: *mut c_void) -> T {
+pub(crate) fn take_data<T>(data: *mut c_void) -> T {
     // Cast the *mut c_void supplied by the Redis API to a raw pointer of our custom type.
     let data = data as *mut T;
 

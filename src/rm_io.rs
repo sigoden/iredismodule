@@ -24,12 +24,11 @@ impl IO {
     pub fn load_signed(&self) -> i64 {
         unsafe { raw::RedisModule_LoadSigned.unwrap()(self.inner) }
     }
-    pub fn save_string(&self, value: &RedisString) {
+    pub fn save_redis_string(&self, value: &RedisString) {
         unsafe { raw::RedisModule_SaveString.unwrap()(self.inner, value.inner) }
     }
-    pub fn load_string(&self) -> Result<String, Error> {
-        let buffer = self.load_string_buffer();
-        buffer.to_string().map_err(|e| e.into())
+    pub fn load_redis_string(&self) -> *mut raw::RedisModuleString {
+        unsafe { raw::RedisModule_LoadString.unwrap()(self.inner) }
     }
     pub fn save_string_buffer(&self, value: &[u8]) {
         unsafe {
@@ -40,10 +39,17 @@ impl IO {
             )
         };
     }
+    pub fn save_string(&self, value: &str)  {
+        self.save_string_buffer(value.as_bytes())
+    }
     pub fn load_string_buffer(&self) -> RedisBuffer {
         let mut len = 0;
         let bytes = unsafe { raw::RedisModule_LoadStringBuffer.unwrap()(self.inner, &mut len) };
         RedisBuffer::new(bytes, len)
+    }
+    pub fn load_string(&self) -> Result<String, Error> {
+        let buffer = self.load_string_buffer();
+        buffer.to_string().map_err(|e| e.into())
     }
     pub fn save_double(&self, value: f64) {
         unsafe { raw::RedisModule_SaveDouble.unwrap()(self.inner, value) };

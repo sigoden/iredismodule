@@ -75,7 +75,7 @@ pub struct RedisStr {
 
 impl RedisStr {
     pub unsafe fn from_ptr<'a>(inner: *const raw::RedisModuleString) -> &'a Self {
-        &*(inner as *const RedisStr)
+        &*({ inner as *const RedisStr })
     }
     pub fn get_longlong(&self) -> Result<i64, Error> {
         let mut ll: i64 = 0;

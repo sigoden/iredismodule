@@ -1,7 +1,8 @@
 use std::ffi::{CString, CStr};
 use std::fmt;
 use std::time::Duration;
-use std::os::raw::{c_char};
+use std::os::raw::{c_char, c_int};
+use num_traits::FromPrimitive;
 use bitflags::bitflags;
 
 use crate::raw;
@@ -102,8 +103,17 @@ impl CmdStrFlags {
     }
 }
 
-pub(crate) const CODE_OK: i32 = raw::REDISMODULE_OK as i32;
-pub(crate) const CODE_ERR: i32 = raw::REDISMODULE_ERR as i32;
+#[derive(Primitive, Debug, PartialEq)]
+pub enum StatusCode {
+    Ok = raw::REDISMODULE_OK as isize,
+    Err = raw::REDISMODULE_ERR as isize,
+}
+impl From<c_int> for StatusCode {
+    fn from(v: c_int) -> Self {
+        StatusCode::from_i32(v).unwrap()
+    }
+}
+
 
 pub enum CmdFmtFlags {
     C,
@@ -150,37 +160,26 @@ impl CmdFmtFlags {
 
 bitflags! {
     pub struct CtxFlags: u32 {
-        const Lua = raw::REDISMODULE_CTX_FLAGS_LUA;
-        const Multi = raw::REDISMODULE_CTX_FLAGS_MULTI;
-        const Master = raw::REDISMODULE_CTX_FLAGS_MASTER;
-        const Slave = raw::REDISMODULE_CTX_FLAGS_SLAVE;
-        const Readonly = raw::REDISMODULE_CTX_FLAGS_READONLY;
-        const Cluster = raw::REDISMODULE_CTX_FLAGS_CLUSTER;
-        const Aof = raw::REDISMODULE_CTX_FLAGS_AOF;
-        const Rdb = raw::REDISMODULE_CTX_FLAGS_RDB;
-        const Maxmemory = raw::REDISMODULE_CTX_FLAGS_MAXMEMORY;
-        const Evict = raw::REDISMODULE_CTX_FLAGS_EVICT;
-        const Oom = raw::REDISMODULE_CTX_FLAGS_OOM;
-        const Oom_warning = raw::REDISMODULE_CTX_FLAGS_OOM_WARNING;
-        const Replicated = raw::REDISMODULE_CTX_FLAGS_REPLICATED;
-        const Loading = raw::REDISMODULE_CTX_FLAGS_LOADING;
-        const Replica_is_stale = raw::REDISMODULE_CTX_FLAGS_REPLICA_IS_STALE;
-        const Replica_is_connecting = raw::REDISMODULE_CTX_FLAGS_REPLICA_IS_CONNECTING;
-        const Replica_is_transferring = raw::REDISMODULE_CTX_FLAGS_REPLICA_IS_TRANSFERRING;
-        const Replica_is_online = raw::REDISMODULE_CTX_FLAGS_REPLICA_IS_ONLINE;
-        const Active_child = raw::REDISMODULE_CTX_FLAGS_ACTIVE_CHILD;
-        const Multi_dirty = raw::REDISMODULE_CTX_FLAGS_MULTI_DIRTY;
-    }
-}
-
-pub struct ClusterNodeList {}
-
-pub type ClusterNode = String;
-pub type MsgType = u8;
-
-impl Drop for ClusterNodeList {
-    fn drop(&mut self) {
-        // unsafe { raw::RedisModule_FreeClusterNodesList().unwrap()(self.inner) }
+        const LUA = raw::REDISMODULE_CTX_FLAGS_LUA;
+        const MULTI = raw::REDISMODULE_CTX_FLAGS_MULTI;
+        const MASTER = raw::REDISMODULE_CTX_FLAGS_MASTER;
+        const SLAVE = raw::REDISMODULE_CTX_FLAGS_SLAVE;
+        const READONLY = raw::REDISMODULE_CTX_FLAGS_READONLY;
+        const CLUSTER = raw::REDISMODULE_CTX_FLAGS_CLUSTER;
+        const AOF = raw::REDISMODULE_CTX_FLAGS_AOF;
+        const RDB = raw::REDISMODULE_CTX_FLAGS_RDB;
+        const MAXMEMORY = raw::REDISMODULE_CTX_FLAGS_MAXMEMORY;
+        const EVICT = raw::REDISMODULE_CTX_FLAGS_EVICT;
+        const OOM = raw::REDISMODULE_CTX_FLAGS_OOM;
+        const OOM_WARNING = raw::REDISMODULE_CTX_FLAGS_OOM_WARNING;
+        const REPLICATED = raw::REDISMODULE_CTX_FLAGS_REPLICATED;
+        const LOADING = raw::REDISMODULE_CTX_FLAGS_LOADING;
+        const REPLICA_IS_STALE = raw::REDISMODULE_CTX_FLAGS_REPLICA_IS_STALE;
+        const REPLICA_IS_CONNECTING = raw::REDISMODULE_CTX_FLAGS_REPLICA_IS_CONNECTING;
+        const REPLICA_IS_TRANSFERRING = raw::REDISMODULE_CTX_FLAGS_REPLICA_IS_TRANSFERRING;
+        const REPLICA_IS_ONLINE = raw::REDISMODULE_CTX_FLAGS_REPLICA_IS_ONLINE;
+        const ACTIVE_CHILD = raw::REDISMODULE_CTX_FLAGS_ACTIVE_CHILD;
+        const MULTI_DIRTY = raw::REDISMODULE_CTX_FLAGS_MULTI_DIRTY;
     }
 }
 
