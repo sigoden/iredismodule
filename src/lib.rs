@@ -12,7 +12,7 @@ mod rm_call_reply;
 mod rm_ctx;
 mod rm_io;
 mod rm_key;
-mod rm_str;
+mod rm_string;
 mod rm_value;
 
 pub use error::Error;
@@ -30,5 +30,5 @@ pub use rm_call_reply::CallReply;
 pub use rm_ctx::{ClusterFlags, Ctx};
 pub use rm_io::{IO, Digest};
 pub use rm_key::{KeyType, ListWhere, ReadKey, WriteKey, ZaddInputFlag, ZaddOutputFlag};
-pub use rm_str::Str;
+pub use rm_string::{RedisString, RedisStr};
 pub use rm_value::{RedisResult, RedisValue};

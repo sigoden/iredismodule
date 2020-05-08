@@ -7,7 +7,6 @@ use std::fmt::Display;
 pub enum Error {
     WrongArity,
     Generic(GenericError),
-    FromUtf8(std::string::FromUtf8Error),
     ParseInt(std::num::ParseIntError),
     ParseFloat(std::num::ParseFloatError),
 }
@@ -21,12 +20,6 @@ impl Error {
 impl From<String> for Error {
     fn from(err: String) -> Error {
         Error::Generic(GenericError::new(&err))
-    }
-}
-
-impl From<std::string::FromUtf8Error> for Error {
-    fn from(err: std::string::FromUtf8Error) -> Error {
-        Error::FromUtf8(err)
     }
 }
 
@@ -48,12 +41,18 @@ impl From<std::str::Utf8Error> for Error {
     }
 }
 
+impl From<std::string::FromUtf8Error> for Error {
+    fn from(err: std::string::FromUtf8Error) -> Error {
+        Error::Generic(GenericError::new(&err.to_string()))
+    }
+}
+
+
 impl Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Error::WrongArity => write!(f, "Wrong Arity"),
             Error::Generic(ref err) => write!(f, "{}", err),
-            Error::FromUtf8(ref err) => write!(f, "{}", err),
             Error::ParseInt(ref err) => write!(f, "{}", err),
             Error::ParseFloat(ref err) => write!(f, "{}", err),
         }
@@ -65,7 +64,6 @@ impl error::Error for Error {
         match *self {
             Error::WrongArity => None,
             Error::Generic(ref err) => Some(err),
-            Error::FromUtf8(ref err) => Some(err),
             Error::ParseInt(ref err) => Some(err),
             Error::ParseFloat(ref err) => Some(err),
         }

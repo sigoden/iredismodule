@@ -1,6 +1,6 @@
 use crate::num_traits::FromPrimitive;
 use crate::raw;
-use crate::{handle_status, Error, Str};
+use crate::{handle_status, Error, RedisString};
 
 use std::os::raw::c_int;
 use std::time::Duration;
@@ -8,7 +8,7 @@ use std::time::Duration;
 pub struct ReadKey {
     pub inner: *mut raw::RedisModuleKey,
     ctx: *mut raw::RedisModuleCtx,
-    keyname: Str,
+    keyname: RedisString,
 }
 
 impl Drop for ReadKey {
@@ -19,7 +19,7 @@ impl Drop for ReadKey {
 
 impl ReadKey {
     pub fn create(ctx: *mut raw::RedisModuleCtx, keyname: &str) -> Self {
-        let keyname = Str::create(ctx, keyname);
+        let keyname = RedisString::create(ctx, keyname);
         let mode = raw::REDISMODULE_READ as c_int;
         let inner = unsafe {
             raw::RedisModule_OpenKey.unwrap()(ctx, keyname.inner, mode) as *mut raw::RedisModuleKey
@@ -46,7 +46,7 @@ impl ReadKey {
 pub struct WriteKey {
     pub inner: *mut raw::RedisModuleKey,
     ctx: *mut raw::RedisModuleCtx,
-    keyname: Str,
+    keyname: RedisString,
 }
 
 impl Drop for WriteKey {
@@ -57,7 +57,7 @@ impl Drop for WriteKey {
 
 impl WriteKey {
     pub fn create(ctx: *mut raw::RedisModuleCtx, keyname: &str) -> Self {
-        let keyname = Str::create(ctx, keyname);
+        let keyname = RedisString::create(ctx, keyname);
         let mode = (raw::REDISMODULE_READ | raw::REDISMODULE_WRITE) as c_int;
         let inner = unsafe {
             raw::RedisModule_OpenKey.unwrap()(ctx, keyname.inner, mode) as *mut raw::RedisModuleKey
@@ -98,13 +98,13 @@ impl WriteKey {
     pub fn list_push(&mut self, _pos: ListWhere, _str: &str) -> Result<(), Error> {
         unimplemented!()
     }
-    pub fn list_pop(&mut self, _pos: ListWhere) -> Result<Str, Error> {
+    pub fn list_pop(&mut self, _pos: ListWhere) -> Result<RedisString, Error> {
         unimplemented!()
     }
     pub fn zset_add(
         &mut self,
         _score: f64,
-        _str: &Str,
+        _str: &RedisString,
         _flag: ZaddInputFlag,
     ) -> Result<ZaddOutputFlag, Error> {
         unimplemented!()

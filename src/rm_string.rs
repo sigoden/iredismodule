@@ -2,35 +2,32 @@ use crate::raw;
 use crate::{handle_status, Error};
 use std::ffi::CString;
 use std::fmt;
+use std::ops;
 
 use std::slice;
 use std::str;
 
 #[derive(Debug)]
-pub struct Str {
+pub struct RedisString {
     pub inner: *mut raw::RedisModuleString,
-    ctx: Option<*mut raw::RedisModuleCtx>,
+    ctx: *mut raw::RedisModuleCtx,
 }
 
-impl Str {
-    pub fn new(inner: *mut raw::RedisModuleString) -> Str {
-        Str { ctx: None, inner }
-    }
-    pub fn create(ctx: *mut raw::RedisModuleCtx, s: &str) -> Str {
+impl RedisString {
+    pub fn create(ctx: *mut raw::RedisModuleCtx, s: &str) -> RedisString {
         let str = CString::new(s).unwrap();
         let inner = unsafe { raw::RedisModule_CreateString.unwrap()(ctx, str.as_ptr(), s.len()) };
 
-        Str {
-            ctx: Some(ctx),
+        RedisString {
+            ctx,
             inner,
         }
     }
     pub fn append(&mut self, s: &str) -> Result<(), Error> {
-        self.ensure_ctx()?;
         handle_status(
             unsafe {
                 raw::RedisModule_StringAppendBuffer.unwrap()(
-                    self.ctx.unwrap(),
+                    self.ctx,
                     self.inner,
                     s.as_ptr() as *mut i8,
                     s.len(),
@@ -40,11 +37,45 @@ impl Str {
             "Could not append buffer",
         )
     }
-    pub fn ensure_ctx(&self) -> Result<(), Error> {
-        match self.ctx {
-            Some(_) => Ok(()),
-            None => Err(Error::generic("Nacked str")),
+}
+
+impl Drop for RedisString {
+    fn drop(&mut self) {
+        unsafe {
+            raw::RedisModule_FreeString.unwrap()(self.ctx, self.inner);
         }
+    }
+}
+
+impl fmt::Display for RedisString {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let value = self.to_str().map_err(|_| fmt::Error)?;
+        write!(f, "{}", value)
+    }
+}
+
+impl ops::Deref for RedisString {
+    type Target = RedisStr;
+    #[inline]
+    fn deref(&self) -> &RedisStr {
+        unsafe { RedisStr::create(self.inner) }
+    }
+}
+
+impl AsRef<RedisStr> for RedisString {
+    #[inline]
+    fn as_ref(&self) -> &RedisStr {
+        self
+    }
+}
+
+pub struct RedisStr {
+    pub inner: *const raw::RedisModuleString,
+}
+
+impl RedisStr {
+    pub unsafe fn create<'a>(inner: *const raw::RedisModuleString) -> &'a Self {
+        &*(inner as *const RedisStr)
     }
     pub fn get_longlong(&self) -> Result<i64, Error> {
         let mut ll: i64 = 0;
@@ -67,22 +98,8 @@ impl Str {
         let bytes = unsafe { raw::RedisModule_StringPtrLen.unwrap()(self.inner, &mut len) };
         unsafe { slice::from_raw_parts(bytes as *const u8, len) }
     }
-}
-
-impl Drop for Str {
-    fn drop(&mut self) {
-        if self.ensure_ctx().is_ok() {
-            unsafe {
-                raw::RedisModule_FreeString.unwrap()(self.ctx.unwrap(), self.inner);
-            }
-        }
-    }
-}
-
-impl fmt::Display for Str {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    pub fn to_str(&self) -> Result<&str, Error> {
         let buffer = self.get_buffer();
-        let value = str::from_utf8(&buffer).map_err(|_| fmt::Error)?;
-        write!(f, "{}", value)
+        Ok(str::from_utf8(&buffer)?)
     }
 }

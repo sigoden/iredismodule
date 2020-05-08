@@ -2,7 +2,7 @@ use crate::raw;
 use crate::rm::{CODE_ERR, CODE_OK};
 use crate::{
     handle_status, BlockClient, CallReply, ClusterNode, ClusterNodeList, CmdFmtFlags, CtxFlags,
-    Error, KeySpaceTypes, LogLevel, MsgType, ReadKey, RedisResult, RedisValue, Str, TimerID,
+    Error, KeySpaceTypes, LogLevel, MsgType, ReadKey, RedisResult, RedisValue, RedisString, TimerID,
     WriteKey,
 };
 use bitflags::bitflags;
@@ -57,7 +57,7 @@ impl Ctx {
             Ok(RedisValue::BulkString(s)) => unsafe {
                 raw::RedisModule_ReplyWithString.unwrap()(
                     self.inner,
-                    Str::create(self.inner, &s).inner,
+                    RedisString::create(self.inner, &s).inner,
                 )
             },
 
@@ -98,10 +98,6 @@ impl Ctx {
                 let msg = CString::new(s.to_string()).unwrap();
                 raw::RedisModule_ReplyWithError.unwrap()(self.inner, msg.as_ptr())
             },
-            Err(Error::FromUtf8(s)) => unsafe {
-                let msg = CString::new(s.to_string()).unwrap();
-                raw::RedisModule_ReplyWithError.unwrap()(self.inner, msg.as_ptr())
-            },
             Err(Error::ParseInt(s)) => unsafe {
                 let msg = CString::new(s.to_string()).unwrap();
                 raw::RedisModule_ReplyWithError.unwrap()(self.inner, msg.as_ptr())
@@ -115,7 +111,7 @@ impl Ctx {
     }
 
     pub fn call(&self, command: &str, args: &[&str], flags: &[CmdFmtFlags]) -> RedisResult {
-        let terminated_args: Vec<Str> = args.iter().map(|s| Str::create(self.inner, s)).collect();
+        let terminated_args: Vec<RedisString> = args.iter().map(|s| RedisString::create(self.inner, s)).collect();
 
         let inner_args: Vec<*mut raw::RedisModuleString> =
             terminated_args.iter().map(|s| s.inner).collect();
@@ -142,7 +138,7 @@ impl Ctx {
         args: &[&str],
         flags: &[CmdFmtFlags],
     ) -> Result<(), Error> {
-        let terminated_args: Vec<Str> = args.iter().map(|s| Str::create(self.inner, s)).collect();
+        let terminated_args: Vec<RedisString> = args.iter().map(|s| RedisString::create(self.inner, s)).collect();
 
         let inner_args: Vec<*mut raw::RedisModuleString> =
             terminated_args.iter().map(|s| s.inner).collect();

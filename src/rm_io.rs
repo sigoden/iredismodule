@@ -3,7 +3,7 @@ use std::os::raw::c_char;
 
 
 use crate::raw;
-use crate::{CmdFmtFlags, LogLevel, RedisBuffer, Str};
+use crate::{CmdFmtFlags, LogLevel, RedisBuffer, RedisString, Error};
 pub struct IO {
     pub inner: *mut raw::RedisModuleIO,
 }
@@ -24,11 +24,12 @@ impl IO {
     pub fn load_signed(&self) -> i64 {
         unsafe { raw::RedisModule_LoadSigned.unwrap()(self.inner) }
     }
-    pub fn save_string(&self, value: &Str) {
+    pub fn save_string(&self, value: &RedisString) {
         unsafe { raw::RedisModule_SaveString.unwrap()(self.inner, value.inner) }
     }
-    pub fn load_string(&self) -> *mut raw::RedisModuleString {
-        unsafe { raw::RedisModule_LoadString.unwrap()(self.inner) }
+    pub fn load_string(&self) -> Result<String, Error> {
+        let buffer = self.load_string_buffer();
+        buffer.to_string().map_err(|e| e.into())
     }
     pub fn save_string_buffer(&self, value: &[u8]) {
         unsafe {
