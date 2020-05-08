@@ -9,7 +9,7 @@ pub struct IO {
 }
 
 impl IO {
-    pub fn create(inner: *mut raw::RedisModuleIO) -> Self {
+    pub fn new(inner: *mut raw::RedisModuleIO) -> Self {
         IO { inner }
     }
     pub fn save_unsigned(&self, value: u64) {

@@ -1,7 +1,7 @@
 use crate::raw;
 use crate::rm::{CODE_ERR, CODE_OK};
 use crate::{
-    handle_status, BlockClient, CallReply, ClusterNode, ClusterNodeList, CmdFmtFlags, CtxFlags,
+    handle_status, BlockClient, CallReply, ClusterNode, ClusterNodeList, CmdFmtFlags,
     Error, KeySpaceTypes, LogLevel, MsgType, ReadKey, RedisResult, RedisValue, RedisString, TimerID,
     WriteKey,
 };
@@ -16,7 +16,7 @@ pub struct Ctx {
 }
 
 impl Ctx {
-    pub fn create(inner: *mut raw::RedisModuleCtx) -> Self {
+    pub fn new(inner: *mut raw::RedisModuleCtx) -> Self {
         Ctx { inner }
     }
     pub fn is_keys_position_request(&self) -> bool {
@@ -57,7 +57,7 @@ impl Ctx {
             Ok(RedisValue::BulkString(s)) => unsafe {
                 raw::RedisModule_ReplyWithString.unwrap()(
                     self.inner,
-                    RedisString::create(self.inner, &s).inner,
+                    RedisString::new(self.inner, &s).inner,
                 )
             },
 
@@ -111,7 +111,7 @@ impl Ctx {
     }
 
     pub fn call(&self, command: &str, args: &[&str], flags: &[CmdFmtFlags]) -> RedisResult {
-        let terminated_args: Vec<RedisString> = args.iter().map(|s| RedisString::create(self.inner, s)).collect();
+        let terminated_args: Vec<RedisString> = args.iter().map(|s| RedisString::new(self.inner, s)).collect();
 
         let inner_args: Vec<*mut raw::RedisModuleString> =
             terminated_args.iter().map(|s| s.inner).collect();
@@ -129,7 +129,7 @@ impl Ctx {
                 terminated_args.len(),
             )
         };
-        CallReply::create(reply_).into()
+        CallReply::new(reply_).into()
     }
 
     pub fn replicate(
@@ -138,7 +138,7 @@ impl Ctx {
         args: &[&str],
         flags: &[CmdFmtFlags],
     ) -> Result<(), Error> {
-        let terminated_args: Vec<RedisString> = args.iter().map(|s| RedisString::create(self.inner, s)).collect();
+        let terminated_args: Vec<RedisString> = args.iter().map(|s| RedisString::new(self.inner, s)).collect();
 
         let inner_args: Vec<*mut raw::RedisModuleString> =
             terminated_args.iter().map(|s| s.inner).collect();
@@ -306,7 +306,7 @@ extern "C" fn ctx_data_callback<F, T>(ctx: *mut raw::RedisModuleCtx, data: *mut 
 where
     F: FnOnce(&Ctx, T),
 {
-    let ctx = &Ctx::create(ctx);
+    let ctx = &Ctx::new(ctx);
 
     if data.is_null() {
         ctx.log_debug("[callback] Data must not null!");

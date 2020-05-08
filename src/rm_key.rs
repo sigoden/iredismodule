@@ -19,7 +19,7 @@ impl Drop for ReadKey {
 
 impl ReadKey {
     pub fn create(ctx: *mut raw::RedisModuleCtx, keyname: &str) -> Self {
-        let keyname = RedisString::create(ctx, keyname);
+        let keyname = RedisString::new(ctx, keyname);
         let mode = raw::REDISMODULE_READ as c_int;
         let inner = unsafe {
             raw::RedisModule_OpenKey.unwrap()(ctx, keyname.inner, mode) as *mut raw::RedisModuleKey
@@ -108,7 +108,7 @@ impl Deref for WriteKey {
 
 impl WriteKey {
     pub fn create(ctx: *mut raw::RedisModuleCtx, keyname: &str) -> Self {
-        let keyname = RedisString::create(ctx, keyname);
+        let keyname = RedisString::new(ctx, keyname);
         let mode = (raw::REDISMODULE_READ | raw::REDISMODULE_WRITE) as c_int;
         let inner = unsafe {
             raw::RedisModule_OpenKey.unwrap()(ctx, keyname.inner, mode) as *mut raw::RedisModuleKey

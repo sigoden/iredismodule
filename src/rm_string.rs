@@ -14,7 +14,7 @@ pub struct RedisString {
 }
 
 impl RedisString {
-    pub fn create(ctx: *mut raw::RedisModuleCtx, s: &str) -> RedisString {
+    pub fn new(ctx: *mut raw::RedisModuleCtx, s: &str) -> RedisString {
         let str = CString::new(s).unwrap();
         let inner = unsafe { raw::RedisModule_CreateString.unwrap()(ctx, str.as_ptr(), s.len()) };
 
@@ -58,7 +58,7 @@ impl ops::Deref for RedisString {
     type Target = RedisStr;
     #[inline]
     fn deref(&self) -> &RedisStr {
-        unsafe { RedisStr::create(self.inner) }
+        unsafe { RedisStr::from_ptr(self.inner) }
     }
 }
 
@@ -74,7 +74,7 @@ pub struct RedisStr {
 }
 
 impl RedisStr {
-    pub unsafe fn create<'a>(inner: *const raw::RedisModuleString) -> &'a Self {
+    pub unsafe fn from_ptr<'a>(inner: *const raw::RedisModuleString) -> &'a Self {
         &*(inner as *const RedisStr)
     }
     pub fn get_longlong(&self) -> Result<i64, Error> {

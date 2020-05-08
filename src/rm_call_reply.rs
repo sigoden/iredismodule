@@ -9,7 +9,7 @@ pub struct CallReply {
 }
 
 impl CallReply {
-    pub fn create(inner: *mut raw::RedisModuleCallReply) -> Self {
+    pub fn new(inner: *mut raw::RedisModuleCallReply) -> Self {
         CallReply { inner }
     }
     pub fn get_type(&self) -> ReplyType {
@@ -33,7 +33,7 @@ impl CallReply {
         unsafe { raw::RedisModule_CallReplyInteger.unwrap()(self.inner) }
     }
     pub fn get_array_element(&self, idx: usize) -> CallReply {
-        CallReply::create(unsafe {
+        CallReply::new(unsafe {
             raw::RedisModule_CallReplyArrayElement.unwrap()(self.inner, idx)
         })
     }
