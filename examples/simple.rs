@@ -2,7 +2,7 @@ use redis_module::{redis_command, redis_module};
 
 use redis_module::{Ctx, Error, RedisResult};
 
-fn simple_mul(ctx: &Ctx, args: Vec<String>) -> RedisResult {
+fn simple_mul(_ctx: &Ctx, args: Vec<String>) -> RedisResult {
     if args.len() < 2 {
         return Err(Error::WrongArity);
     }

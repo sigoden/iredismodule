@@ -1,6 +1,6 @@
 use crate::raw;
 use crate::{handle_status, Error};
-use std::convert::TryInto;
+
 use std::ffi::CString;
 use std::fmt;
 
@@ -79,7 +79,7 @@ impl fmt::Display for RedisString {
         let mut len = 0;
         let bytes = unsafe { raw::RedisModule_StringPtrLen.unwrap()(self.inner, &mut len) };
         let value = str::from_utf8(unsafe { slice::from_raw_parts(bytes as *const u8, len) })
-            .map_err(|e| fmt::Error)?;
+            .map_err(|_e| fmt::Error)?;
         write!(f, "{}", value)
     }
 }

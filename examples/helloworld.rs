@@ -1,11 +1,11 @@
 use redis_module::{redis_command, redis_module};
 
 use redis_module::{
-    parse_args, raw, Ctx, Error, ListPosition, RedisResult, RedisString, RedisValue, StatusCode,
+    parse_args, raw, Ctx, Error, ListPosition, RedisResult, StatusCode,
 };
 use std::os::raw::c_int;
 
-fn hello_simple(ctx: &Ctx, args: Vec<String>) -> RedisResult {
+fn hello_simple(ctx: &Ctx, _args: Vec<String>) -> RedisResult {
     let db = ctx.get_select_db();
     Ok(db.into())
 }

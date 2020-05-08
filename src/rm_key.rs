@@ -144,7 +144,7 @@ impl WriteKey {
             "Cloud not set key string",
         )
     }
-    pub fn string_dma<'a>(&mut self, mode: i32) {
+    pub fn string_dma<'a>(&mut self, _mode: i32) {
         unimplemented!()
     }
     pub fn string_truncate(&mut self, _newlen: u32) -> Result<(), Error> {

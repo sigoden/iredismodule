@@ -1,15 +1,15 @@
 use std::time::Duration;
 
-use crate::raw;
+
 use crate::{take_data, BlockClient, Ctx, Error, RedisString};
 
 impl Ctx {
     pub fn block_client<F, G>(
         &self,
-        reply_callbck: F,
-        timeout_callback: F,
-        free_privdata: G,
-        timeout: Duration,
+        _reply_callbck: F,
+        _timeout_callback: F,
+        _free_privdata: G,
+        _timeout: Duration,
     ) -> BlockClient
     where
         F: FnOnce(&Ctx),
