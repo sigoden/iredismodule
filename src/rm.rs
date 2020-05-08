@@ -1,8 +1,8 @@
-use std::cell::RefCell;
 use std::ffi::{CString, CStr};
 use std::fmt;
 use std::time::Duration;
 use std::os::raw::{c_char};
+use bitflags::bitflags;
 
 use crate::raw;
 use crate::{Error};
@@ -147,53 +147,29 @@ impl CmdFmtFlags {
     }
 }
 
-pub struct CtxFlags(u32);
 
-impl CtxFlags {
-    pub fn new(i: u32) -> Self {
-        CtxFlags(i)
-    }
-    pub fn is_lua(&self) -> bool {
-        self.0 & raw::REDISMODULE_CTX_FLAGS_LUA != 0
-    }
-    pub fn is_multi(&self) -> bool {
-        self.0 & raw::REDISMODULE_CTX_FLAGS_MULTI != 0
-    }
-    pub fn is_master(&self) -> bool {
-        self.0 & raw::REDISMODULE_CTX_FLAGS_MASTER != 0
-    }
-    pub fn is_slave(&self) -> bool {
-        self.0 & raw::REDISMODULE_CTX_FLAGS_SLAVE != 0
-    }
-    pub fn is_readonly(&self) -> bool {
-        self.0 & raw::REDISMODULE_CTX_FLAGS_READONLY != 0
-    }
-    pub fn is_cluster(&self) -> bool {
-        self.0 & raw::REDISMODULE_CTX_FLAGS_CLUSTER != 0
-    }
-    pub fn is_aof(&self) -> bool {
-        self.0 & raw::REDISMODULE_CTX_FLAGS_AOF != 0
-    }
-    pub fn is_rdb(&self) -> bool {
-        self.0 & raw::REDISMODULE_CTX_FLAGS_RDB != 0
-    }
-    pub fn is_max_memory(&self) -> bool {
-        self.0 & raw::REDISMODULE_CTX_FLAGS_MAXMEMORY != 0
-    }
-    pub fn is_evict(&self) -> bool {
-        self.0 & raw::REDISMODULE_CTX_FLAGS_EVICT != 0
-    }
-    pub fn is_oom(&self) -> bool {
-        self.0 & raw::REDISMODULE_CTX_FLAGS_OOM != 0
-    }
-    pub fn is_oom_warning(&self) -> bool {
-        self.0 & raw::REDISMODULE_CTX_FLAGS_OOM_WARNING != 0
-    }
-    pub fn is_replicated(&self) -> bool {
-        self.0 & raw::REDISMODULE_CTX_FLAGS_REPLICATED != 0
-    }
-    pub fn is_loading(&self) -> bool {
-        self.0 & raw::REDISMODULE_CTX_FLAGS_LOADING != 0
+bitflags! {
+    pub struct CtxFlags: u32 {
+        const Lua = raw::REDISMODULE_CTX_FLAGS_LUA;
+        const Multi = raw::REDISMODULE_CTX_FLAGS_MULTI;
+        const Master = raw::REDISMODULE_CTX_FLAGS_MASTER;
+        const Slave = raw::REDISMODULE_CTX_FLAGS_SLAVE;
+        const Readonly = raw::REDISMODULE_CTX_FLAGS_READONLY;
+        const Cluster = raw::REDISMODULE_CTX_FLAGS_CLUSTER;
+        const Aof = raw::REDISMODULE_CTX_FLAGS_AOF;
+        const Rdb = raw::REDISMODULE_CTX_FLAGS_RDB;
+        const Maxmemory = raw::REDISMODULE_CTX_FLAGS_MAXMEMORY;
+        const Evict = raw::REDISMODULE_CTX_FLAGS_EVICT;
+        const Oom = raw::REDISMODULE_CTX_FLAGS_OOM;
+        const Oom_warning = raw::REDISMODULE_CTX_FLAGS_OOM_WARNING;
+        const Replicated = raw::REDISMODULE_CTX_FLAGS_REPLICATED;
+        const Loading = raw::REDISMODULE_CTX_FLAGS_LOADING;
+        const Replica_is_stale = raw::REDISMODULE_CTX_FLAGS_REPLICA_IS_STALE;
+        const Replica_is_connecting = raw::REDISMODULE_CTX_FLAGS_REPLICA_IS_CONNECTING;
+        const Replica_is_transferring = raw::REDISMODULE_CTX_FLAGS_REPLICA_IS_TRANSFERRING;
+        const Replica_is_online = raw::REDISMODULE_CTX_FLAGS_REPLICA_IS_ONLINE;
+        const Active_child = raw::REDISMODULE_CTX_FLAGS_ACTIVE_CHILD;
+        const Multi_dirty = raw::REDISMODULE_CTX_FLAGS_MULTI_DIRTY;
     }
 }
 
@@ -209,13 +185,6 @@ impl Drop for ClusterNodeList {
 }
 
 pub enum KeySpaceTypes {}
-
-pub struct RedisType {
-    name: &'static str,
-    version: i32,
-    type_methods: raw::RedisModuleTypeMethods,
-    pub raw_type: RefCell<*mut raw::RedisModuleType>,
-}
 
 #[derive(Clone, Copy, Debug)]
 pub enum LogLevel {

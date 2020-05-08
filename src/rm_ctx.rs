@@ -170,8 +170,8 @@ impl Ctx {
     pub fn get_select_db(&self) -> i32 {
         unsafe { raw::RedisModule_GetSelectedDb.unwrap()(self.inner) as i32 }
     }
-    pub fn get_context_flags(&self) -> CtxFlags {
-        unsafe { CtxFlags::new(raw::RedisModule_GetContextFlags.unwrap()(self.inner) as u32) }
+    pub fn get_context_flags(&self) -> u32 {
+        unsafe { raw::RedisModule_GetContextFlags.unwrap()(self.inner) as u32 }
     }
     pub fn select_db(&self, newid: i32) -> Result<(), Error> {
         handle_status(

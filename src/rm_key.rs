@@ -1,14 +1,14 @@
-use crate::num_traits::FromPrimitive;
-use crate::raw;
-use crate::{handle_status, Error, RedisString};
-
-use std::os::raw::c_int;
+use num_traits::FromPrimitive;
+use std::os::raw::{c_int, c_void};
 use std::time::Duration;
+use std::ops::Deref;
+use bitflags::bitflags;
+
+use crate::raw;
+use crate::{handle_status, Error, RedisString, RedisType};
 
 pub struct ReadKey {
     pub inner: *mut raw::RedisModuleKey,
-    ctx: *mut raw::RedisModuleCtx,
-    keyname: RedisString,
 }
 
 impl Drop for ReadKey {
@@ -26,9 +26,42 @@ impl ReadKey {
         };
         ReadKey {
             inner,
-            ctx,
-            keyname,
         }
+    }
+    pub unsafe fn from_ptr<'a>(inner: *mut raw::RedisModuleKey) -> &'a Self {
+        &*(inner as *const ReadKey)
+    }
+
+    pub fn is_empty(&self) -> bool {
+        let key_type: KeyType = unsafe { raw::RedisModule_KeyType.unwrap()(self.inner) }.into();
+        key_type == KeyType::Empty
+    }
+
+    pub fn get_value<T>(&self, redis_type: &RedisType) -> Result<Option<&mut T>, Error> {
+        self.verify_type(redis_type)?;
+        let value =
+            unsafe { raw::RedisModule_ModuleTypeGetValue.unwrap()(self.inner) as *mut T };
+
+        if value.is_null() {
+            return Ok(None);
+        }
+
+        let value = unsafe { &mut *value };
+        Ok(Some(value))
+    }
+
+    pub fn verify_type(&self, redis_type: &RedisType) -> Result<(), Error> {
+        let key_type: KeyType = unsafe { raw::RedisModule_KeyType.unwrap()(self.inner) }.into();
+        let err = Error::generic("Existing key has wrong Redis type");
+        if key_type != KeyType::Module {
+            return Err(err);
+        }
+        let raw_type = unsafe { raw::RedisModule_ModuleTypeGetType.unwrap()(self.inner) };
+
+        if raw_type != *redis_type.raw_type.borrow() {
+            return Err(err);
+        }
+        Ok(())
     }
     pub fn value_length(&self) -> usize {
         unsafe { raw::RedisModule_ValueLength.unwrap()(self.inner) }
@@ -41,17 +74,35 @@ impl ReadKey {
             Some(Duration::from_millis(result as u64))
         }
     }
+    pub fn key_type(&self) -> Option<i32> {
+        if self.inner.is_null() {
+            None
+        } else {
+            Some(unsafe { raw::RedisModule_KeyType.unwrap()(self.inner) })
+        }
+    }
 }
 
 pub struct WriteKey {
     pub inner: *mut raw::RedisModuleKey,
-    ctx: *mut raw::RedisModuleCtx,
-    keyname: RedisString,
 }
 
 impl Drop for WriteKey {
     fn drop(&mut self) {
         unsafe { raw::RedisModule_CloseKey.unwrap()(self.inner) }
+    }
+}
+
+impl AsRef<ReadKey> for WriteKey {
+    fn as_ref(&self) -> &ReadKey {
+        unsafe { ReadKey::from_ptr(self.inner) }
+    }
+}
+
+impl Deref for WriteKey {
+    type Target = ReadKey;
+    fn deref(&self) -> &Self::Target {
+        self.as_ref()
     }
 }
 
@@ -64,10 +115,24 @@ impl WriteKey {
         };
         WriteKey {
             inner,
-            ctx,
-            keyname,
         }
     }
+
+    pub fn set_value<T>(&self, redis_type: &RedisType, value: T) -> Result<(), Error> {
+        self.verify_type(redis_type)?;
+        let value = Box::into_raw(Box::new(value)) as *mut c_void;
+        handle_status(
+        unsafe {
+                raw::RedisModule_ModuleTypeSetValue.unwrap()(
+                    self.inner,
+                    *redis_type.raw_type.borrow(),
+                    value,
+                )
+            },
+            "Cloud not set value"
+        )
+    }
+
     pub fn delete(&mut self) -> Result<(), Error> {
         handle_status(
             unsafe { raw::RedisModule_DeleteKey.unwrap()(self.inner) },
@@ -86,10 +151,13 @@ impl WriteKey {
             "Could not set expire",
         )
     }
-    pub fn string_set(&mut self, _str: &str) -> Result<(), Error> {
-        unimplemented!()
+    pub fn string_set(&mut self, value: &RedisString) -> Result<(), Error> {
+        handle_status(
+            unsafe { raw::RedisModule_StringSet.unwrap()(self.inner, value.inner ) },
+            "Cloud not set key string"
+        )
     }
-    pub fn string_dma(&mut self) {
+    pub fn string_dma<'a>(&mut self, mode: i32) {
         unimplemented!()
     }
     pub fn string_truncate(&mut self, _newlen: u32) -> Result<(), Error> {
@@ -111,21 +179,31 @@ impl WriteKey {
     }
 }
 
-pub fn key_type(key: *mut raw::RedisModuleKey) -> Option<KeyType> {
-    if key.is_null() {
-        None
-    } else {
-        Some(unsafe { raw::RedisModule_KeyType.unwrap()(key) }.into())
+pub enum ListWhere {
+    Head = raw::REDISMODULE_LIST_HEAD as isize,
+    Tail = raw::REDISMODULE_LIST_TAIL as isize,
+}
+
+bitflags! {
+    pub struct AccessMode: i32 {
+        const Read = raw::REDISMODULE_READ as i32;
+        const Write = raw::REDISMODULE_WRITE as i32;
     }
 }
 
-const REDISMODULE_READ_ISIZE: isize = raw::REDISMODULE_READ as isize;
-const REDISMODULE_WRITE_ISIZE: isize = raw::REDISMODULE_WRITE as isize;
+pub enum ZaddInputFlag {}
+
+pub enum ZaddOutputFlag {}
 
 #[derive(Primitive, Debug, PartialEq)]
 pub enum KeyType {
-    Read = REDISMODULE_READ_ISIZE,
-    Write = REDISMODULE_WRITE_ISIZE,
+    Empty = raw::REDISMODULE_KEYTYPE_EMPTY as isize,
+    String = raw::REDISMODULE_KEYTYPE_STRING as isize,
+    List = raw::REDISMODULE_KEYTYPE_LIST as isize,
+    Hash = raw::REDISMODULE_KEYTYPE_HASH as isize,
+    Set = raw::REDISMODULE_KEYTYPE_SET as isize,
+    ZSet = raw::REDISMODULE_KEYTYPE_ZSET as isize,
+    Module = raw::REDISMODULE_KEYTYPE_MODULE as isize,
 }
 
 impl From<c_int> for KeyType {
@@ -133,22 +211,3 @@ impl From<c_int> for KeyType {
         KeyType::from_i32(v).unwrap()
     }
 }
-
-const REDISMODULE_LIST_HEAD_SIZE: isize = raw::REDISMODULE_LIST_HEAD as isize;
-const REDISMODULE_LIST_TAIL_SIZE: isize = raw::REDISMODULE_LIST_TAIL as isize;
-
-#[derive(Primitive, Debug, PartialEq)]
-pub enum ListWhere {
-    Head = REDISMODULE_LIST_HEAD_SIZE,
-    Tail = REDISMODULE_LIST_TAIL_SIZE,
-}
-
-impl From<c_int> for ListWhere {
-    fn from(v: c_int) -> Self {
-        ListWhere::from_i32(v).unwrap()
-    }
-}
-
-pub enum ZaddInputFlag {}
-
-pub enum ZaddOutputFlag {}
