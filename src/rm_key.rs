@@ -5,7 +5,7 @@ use std::os::raw::{c_int, c_void};
 use std::time::Duration;
 
 use crate::raw;
-use crate::{handle_status, Context, Error, RedisType, RedisStr};
+use crate::{handle_status, Context, Error, RedisType, RedisStr, RedisString};
 
 pub struct ReadKey {
     pub inner: *mut raw::RedisModuleKey,
@@ -160,12 +160,12 @@ impl WriteKey {
             "Cloud not push list",
         )
     }
-    pub fn list_pop(&mut self, pos: ListPosition) -> Result<RedisStr, Error> {
+    pub fn list_pop(&mut self, pos: ListPosition) -> Result<RedisString, Error> {
         let p = unsafe { raw::RedisModule_ListPop.unwrap()(self.inner, pos as i32) };
         if p.is_null() {
             return Err(Error::generic("Cloud not pop list"));
         }
-        Ok(unsafe { RedisStr::new(p) })
+        Ok(RedisString::new(self.ctx, p))
     }
     pub fn zset_add(
         &mut self,
