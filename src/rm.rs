@@ -1,14 +1,19 @@
 use std::cell::RefCell;
-use std::ffi::{CString};
+use std::ffi::{CString, CStr};
 use std::fmt;
 use std::time::Duration;
+use std::os::raw::{c_char};
 
 use crate::raw;
 use crate::{Error};
 
 /// wrap RedisModule_Milliseconds
 pub fn milliseconds() -> Duration {
-    unimplemented!()
+    Duration::from_millis(
+        unsafe {
+            raw::RedisModule_Milliseconds.unwrap()()
+        } as u64
+    )
 }
 
 pub fn handle_status(status: i32, message: &str) -> Result<(), Error> {
@@ -28,34 +33,21 @@ pub fn is_module_busy(name: &str) -> Result<(), Error> {
 }
 
 /// wrap RedisModule_GetMyClusterID
-pub fn get_cluster_id() -> String {
-    unimplemented!()
+pub fn get_my_cluster_id() -> Result<String, Error> {
+    let c_buf: *const c_char = unsafe { raw::RedisModule_GetMyClusterID.unwrap()() };
+    if c_buf.is_null() {
+        Err(Error::generic("Cluster is disabled"))
+    } else {
+        let c_str: &CStr = unsafe { CStr::from_ptr(c_buf) };
+        Ok(c_str.to_str()?.to_owned())
+    }
 }
 
 /// wrap RedisModule_GetClusterSize
 pub fn get_cluster_size() -> usize {
-    unimplemented!()
+    unsafe { raw::RedisModule_GetClusterSize.unwrap()() }
 }
 
-/// wrap RedisModule_ZsetAddFlagsToCoreFlags
-pub fn zset_add_flags_to_core_flags(_flag: i32) -> i32 {
-    unimplemented!()
-}
-
-/// wrap RedisModule_ZsetAddFlagsFromCoreFlags
-pub fn zset_add_flags_from_core_flags(_flag: i32) -> i32 {
-    unimplemented!()
-}
-
-// wrap RedisModule_GetRandomBytes
-pub fn get_random_bytes() -> String {
-    unimplemented!()
-}
-
-// wrap RedisModule_GetRandomHexChars
-pub fn get_random_hex_chars() -> String {
-    unimplemented!()
-}
 
 #[derive(Debug, PartialEq)]
 pub enum CmdStrFlags {

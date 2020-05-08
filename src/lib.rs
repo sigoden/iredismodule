@@ -17,8 +17,7 @@ mod rm_value;
 
 pub use error::Error;
 pub use rm::{
-    get_cluster_id, get_cluster_size, get_random_bytes, get_random_hex_chars, handle_status,
-    is_module_busy, milliseconds, zset_add_flags_from_core_flags, zset_add_flags_to_core_flags, 
+    get_cluster_size, handle_status, is_module_busy, milliseconds, get_my_cluster_id,
     ClusterNode, ClusterNodeList, CmdFmtFlags, CmdStrFlags, CtxFlags, KeySpaceTypes, LogLevel, 
     MsgType, RedisType,
 };
