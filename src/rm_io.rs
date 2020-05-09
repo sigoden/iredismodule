@@ -2,17 +2,23 @@ use std::ffi::CString;
 use std::os::raw::c_char;
 
 use crate::raw;
-use crate::{Error, LogLevel, RedisBuffer, RedisString, FMT};
+use crate::{Error, LogLevel, RedisBuffer, RedisString, FMT, Ptr};
+
+#[repr(C)]
 pub struct RedisIO {
     inner: *mut raw::RedisModuleIO,
+}
+
+impl Ptr for RedisIO {
+    type PtrType = raw::RedisModuleIO;
+    fn get_ptr(&self) -> *mut Self::PtrType {
+        self.inner
+    }
 }
 
 impl RedisIO {
     pub fn new(inner: *mut raw::RedisModuleIO) -> Self {
         RedisIO { inner }
-    }
-    pub fn get_ptr(&self) -> *mut raw::RedisModuleIO {
-        self.inner
     }
     pub fn save_unsigned(&self, value: u64) {
         unsafe { raw::RedisModule_SaveUnsigned.unwrap()(self.inner, value) };

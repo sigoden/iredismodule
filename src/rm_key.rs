@@ -5,11 +5,18 @@ use std::os::raw::{c_int, c_void};
 use std::time::Duration;
 
 use crate::raw;
-use crate::{handle_status, Context, Error, RedisType, RedisStr, RedisString};
+use crate::{handle_status, Context, Error, RedisType, RedisStr, RedisString, Ptr};
 
 pub struct ReadKey {
-    pub inner: *mut raw::RedisModuleKey,
+    inner: *mut raw::RedisModuleKey,
     ctx: *mut raw::RedisModuleCtx,
+}
+
+impl Ptr for ReadKey {
+    type PtrType = raw::RedisModuleKey;
+    fn get_ptr(&self) -> *mut Self::PtrType {
+        self.inner
+    }
 }
 
 impl Drop for ReadKey {

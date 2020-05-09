@@ -1,7 +1,7 @@
 use crate::raw;
 use crate::{
     handle_status, CallReply, Error, KeySpaceTypes, LogLevel, ReadKey, RedisResult, RedisString,
-    RedisStr, RedisValue, StatusCode, WriteKey, FMT,
+    RedisStr, RedisValue, StatusCode, WriteKey, FMT, Ptr
 };
 use bitflags::bitflags;
 use std::ffi::CString;
@@ -11,16 +11,21 @@ pub mod block_client;
 pub mod cluster;
 pub mod timer;
 
+#[repr(C)]
 pub struct Context {
     inner: *mut raw::RedisModuleCtx,
+}
+
+impl Ptr for Context {
+    type PtrType = raw::RedisModuleCtx;
+    fn get_ptr(&self) -> *mut Self::PtrType {
+        self.inner
+    }
 }
 
 impl Context {
     pub fn new(inner: *mut raw::RedisModuleCtx) -> Self {
         Context { inner }
-    }
-    pub fn get_ptr(&self) -> *mut raw::RedisModuleCtx {
-        self.inner
     }
     pub fn is_keys_position_request(&self) -> bool {
         // We want this to be available in tests where we don't have an actual Redis to call

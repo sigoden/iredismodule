@@ -22,7 +22,7 @@ use rm::FMT;
 pub use error::Error;
 pub use rm::{
     get_cluster_size, get_my_cluster_id, handle_status, is_module_busy, milliseconds, parse_args,
-    CtxFlags, KeySpaceTypes, LogLevel, StatusCode,
+    CtxFlags, KeySpaceTypes, LogLevel, StatusCode, Ptr,
 };
 use rm_context::take_data;
 

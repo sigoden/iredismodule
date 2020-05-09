@@ -8,6 +8,11 @@ use std::time::Duration;
 use crate::raw;
 use crate::{Error, RedisStr};
 
+pub trait Ptr {
+    type PtrType;
+    fn get_ptr(&self) -> *mut Self::PtrType;
+}
+
 /// wrap RedisModule_Milliseconds
 pub fn milliseconds() -> Duration {
     Duration::from_millis(unsafe { raw::RedisModule_Milliseconds.unwrap()() } as u64)

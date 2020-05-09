@@ -3,7 +3,7 @@ use std::ffi::CString;
 use std::ptr;
 
 use crate::raw;
-use crate::{Context, Error, LogLevel};
+use crate::{Context, Error, LogLevel, Ptr};
 
 pub struct RedisType {
     name: &'static str,

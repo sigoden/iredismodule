@@ -1,16 +1,21 @@
 use crate::raw;
-use crate::{handle_status, Context, Error};
+use crate::{handle_status, Context, Error, Ptr};
 
+#[repr(C)]
 pub struct BlockClient {
     inner: *mut raw::RedisModuleBlockedClient,
+}
+
+impl Ptr for BlockClient {
+    type PtrType = raw::RedisModuleBlockedClient;
+    fn get_ptr(&self) -> *mut Self::PtrType {
+        self.inner
+    }
 }
 
 impl BlockClient {
     pub fn unblock<T>(&self, _data: T) -> Result<(), Error> {
         unimplemented!()
-    }
-    pub fn get_ptr(&self) -> *mut raw::RedisModuleBlockedClient {
-        self.inner
     }
     pub fn abort(&self) -> Result<(), Error> {
         handle_status(

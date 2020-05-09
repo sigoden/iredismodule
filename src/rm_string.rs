@@ -1,5 +1,5 @@
 use crate::raw;
-use crate::{handle_status, Error};
+use crate::{handle_status, Error, Ptr};
 
 use std::ops::Deref;
 use std::ffi::CString;
@@ -99,6 +99,13 @@ impl fmt::Display for RedisString {
 #[repr(C)]
 pub struct RedisStr {
     inner: *mut raw::RedisModuleString,
+}
+
+impl Ptr for RedisStr {
+    type PtrType = raw::RedisModuleString;
+    fn get_ptr(&self) -> *mut Self::PtrType {
+        self.inner
+    }
 }
 
 impl RedisStr {

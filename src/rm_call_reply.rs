@@ -1,19 +1,24 @@
 use crate::raw;
-use crate::{Error, RedisResult, RedisValue};
+use crate::{Error, RedisResult, RedisValue, Ptr};
 use num_traits::FromPrimitive;
 use std::os::raw::c_int;
 use std::slice;
 
+#[repr(C)]
 pub struct CallReply {
     inner: *mut raw::RedisModuleCallReply,
+}
+
+impl Ptr for CallReply {
+    type PtrType = raw::RedisModuleCallReply;
+    fn get_ptr(&self) -> *mut Self::PtrType {
+        self.inner
+    }
 }
 
 impl CallReply {
     pub fn new(inner: *mut raw::RedisModuleCallReply) -> Self {
         CallReply { inner }
-    }
-    pub fn get_ptr(&self) -> *mut raw::RedisModuleCallReply {
-        self.inner
     }
     pub fn get_type(&self) -> ReplyType {
         unsafe { raw::RedisModule_CallReplyType.unwrap()(self.inner).into() }
