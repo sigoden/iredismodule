@@ -57,7 +57,7 @@ impl Context {
             Ok(RedisValue::BulkString(s)) => unsafe {
                 raw::RedisModule_ReplyWithString.unwrap()(
                     self.inner,
-                    RedisString::create(self.inner, &s).inner,
+                    RedisString::from_str(self.inner, &s).inner,
                 )
                 .into()
             },
@@ -164,7 +164,7 @@ impl Context {
         )
     }
     pub fn create_string(&self, value: &str) -> RedisString {
-        RedisString::create(self.inner, value)
+        RedisString::from_str(self.inner, value)
     }
     pub fn open_read_key(&self, keyname: &RedisStr) -> ReadKey {
         ReadKey::new(self.inner, keyname)

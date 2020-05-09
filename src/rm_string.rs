@@ -1,28 +1,28 @@
 use crate::raw;
 use crate::{handle_status, Error};
 
+use std::ops::Deref;
 use std::ffi::CString;
 use std::fmt;
 
 use std::slice;
 use std::str;
 
-#[derive(Debug)]
 pub struct RedisString {
-    pub inner: *mut raw::RedisModuleString,
+    pub redis_str: RedisStr,
     ctx: *mut raw::RedisModuleCtx,
 }
 
 impl RedisString {
-    pub fn create(ctx: *mut raw::RedisModuleCtx, value: &str) -> RedisString {
+    pub fn new(ctx: *mut raw::RedisModuleCtx, inner: *mut raw::RedisModuleString) -> RedisString {
+        let redis_str = RedisStr::new(inner);
+        RedisString { ctx, redis_str }
+    }
+    pub fn from_str(ctx: *mut raw::RedisModuleCtx, value: &str) -> RedisString {
         let str = CString::new(value).unwrap();
         let inner =
             unsafe { raw::RedisModule_CreateString.unwrap()(ctx, str.as_ptr(), value.len()) };
-
-        RedisString { ctx, inner }
-    }
-    pub fn new(ctx: *mut raw::RedisModuleCtx, inner: *mut raw::RedisModuleString) -> RedisString {
-        RedisString { ctx, inner }
+        Self::new(ctx, inner)
     }
     pub fn ptr_to_str<'a>(ptr: *const raw::RedisModuleString) -> Result<&'a str, Error> {
         let mut len = 0;
@@ -31,13 +31,12 @@ impl RedisString {
         str::from_utf8(unsafe { slice::from_raw_parts(bytes as *const u8, len) })
             .map_err(|e| e.into())
     }
-
     pub fn append(&mut self, s: &str) -> Result<(), Error> {
         handle_status(
             unsafe {
                 raw::RedisModule_StringAppendBuffer.unwrap()(
                     self.ctx,
-                    self.inner,
+                    self.redis_str.inner,
                     s.as_ptr() as *mut i8,
                     s.len(),
                 )
@@ -68,9 +67,22 @@ impl Drop for RedisString {
     }
 }
 
+impl Deref for RedisString {
+    type Target = RedisStr;
+    fn deref(&self) -> &Self::Target {
+        &self.redis_str
+    }
+}
+
 impl AsRef<str> for RedisString {
     fn as_ref(&self) -> &str {
         RedisString::ptr_to_str(self.inner).unwrap()
+    }
+}
+
+impl AsRef<RedisStr> for RedisString {
+    fn as_ref(&self) -> &RedisStr {
+        self
     }
 }
 
@@ -90,9 +102,12 @@ pub struct RedisStr {
 }
 
 impl RedisStr {
-    pub unsafe fn new(inner: *mut raw::RedisModuleString) -> Self {
-        debug_assert!(!inner.is_null());
+    pub fn new(inner: *mut raw::RedisModuleString) -> Self {
         RedisStr { inner }
+    }
+
+    pub fn get_ptr(&self) -> *mut raw::RedisModuleString {
+        self.inner
     }
 
     pub fn get_longlong(&self) -> Result<i64, Error> {
