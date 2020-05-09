@@ -100,7 +100,7 @@ impl RedisStr {
         self.inner
     }
 
-    pub fn get_longlong(&self) -> Result<i64, Error> {
+    pub fn get_long_long(&self) -> Result<i64, Error> {
         let mut ll: i64 = 0;
         handle_status(
             unsafe { raw::RedisModule_StringToLongLong.unwrap()(self.inner, &mut ll) },
@@ -109,7 +109,7 @@ impl RedisStr {
         Ok(ll)
     }
     pub fn get_positive_integer(&self) -> Result<u64, Error> {
-        let ll = self.get_longlong()?;
+        let ll = self.get_long_long()?;
         if ll < 1 {
             return Err(Error::generic("can not less than 1"));
         }

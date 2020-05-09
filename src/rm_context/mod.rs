@@ -189,6 +189,9 @@ impl Context {
     pub fn subscribe_to_keyspace_events<F>(&self, _types: KeySpaceTypes, _callback: F) {
         unimplemented!()
     }
+    pub fn signal_key_as_ready(&self, key: &RedisStr) {
+        unsafe { raw::RedisModule_SignalKeyAsReady.unwrap()(self.inner, key.get_ptr()) };
+    }
     pub fn log(&self, level: LogLevel, message: &str) {
         let level: CString = level.into();
         let fmt = CString::new(message).unwrap();

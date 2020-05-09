@@ -26,3 +26,7 @@ crate-type = ["cdylib"]
 [[example]]
 name = "hellotimer"
 crate-type = ["cdylib"]
+
+[[example]]
+name = "hellotype"
+crate-type = ["cdylib"]

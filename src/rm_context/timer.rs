@@ -6,7 +6,7 @@ use crate::raw;
 use crate::{handle_status, take_data, Context, Error, TimerID};
 
 impl Context {
-    pub fn create_timer<F, T>(&self, period: Duration, callback: F, data: T) -> TimerID
+    pub fn create_timer<F, T>(&self, period: Duration, callback: F, data: T) -> Result<TimerID, Error>
     where
         F: FnOnce(&Context, T),
     {
@@ -20,13 +20,13 @@ impl Context {
                 period
                     .as_millis()
                     .try_into()
-                    .expect("Value must fit in 64 bits"),
+                    .map_err(|e| Error::generic("invalid timer period"))?,
                 Some(timer_proc::<F, T>),
                 data as *mut c_void,
             )
         };
 
-        timer_id as TimerID
+        Ok(timer_id as TimerID)
     }
     pub fn stop_timer<T>(&self, id: TimerID) -> Result<T, Error> {
         let mut data: *mut c_void = std::ptr::null_mut();

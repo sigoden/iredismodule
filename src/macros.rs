@@ -124,23 +124,3 @@ macro_rules! assert_len {
         }
     }
 }
-
-#[macro_export]
-macro_rules! assert_type {
-    ($key:expr, $expect_type:expr) => {
-        let key_type = $key.get_type();
-        if key_type != $expect_type {
-            return Err(Error::WrongType);
-        }
-    }
-}
-
-#[macro_export]
-macro_rules! assert_type_loose {
-    ($key:expr, $expect_type:expr) => {
-        let key_type = $key.get_type();
-        if !(key_type == $expect_type || key_type != KeyType::Empty) {
-            return Err(Error::WrongType);
-        }
-    }
-}

@@ -38,19 +38,29 @@ impl ReadKey {
     }
 
     pub fn get_value<T>(&self, redis_type: &RedisType) -> Result<Option<&mut T>, Error> {
-        self.verify_redis_type(redis_type)?;
-        let value = unsafe { raw::RedisModule_ModuleTypeGetValue.unwrap()(self.inner) as *mut T };
-
-        if value.is_null() {
+        let exist = self.verify_module_type(redis_type)?;
+        if !exist {
             return Ok(None);
         }
-
+        let value = unsafe { raw::RedisModule_ModuleTypeGetValue.unwrap()(self.inner) as *mut T };
         let value = unsafe { &mut *value };
         Ok(Some(value))
     }
-
-    pub fn verify_redis_type(&self, redis_type: &RedisType) -> Result<(), Error> {
+    pub fn verify_type(&self, expect_type: KeyType, allow_null: bool) -> Result<(), Error> {
         let key_type = self.get_type();
+        if key_type != expect_type {
+            if !allow_null || key_type != KeyType::Empty {
+                return Err(Error::WrongType);
+            }
+        }
+        Ok(())
+    }
+
+    pub fn verify_module_type(&self, redis_type: &RedisType) -> Result<bool, Error> {
+        let key_type = self.get_type();
+        if key_type == KeyType::Empty {
+            return Ok(false);
+        } 
         if key_type != KeyType::Module {
             return Err(Error::WrongType);
         }
@@ -59,7 +69,7 @@ impl ReadKey {
         if raw_type != *redis_type.raw_type.borrow() {
             return Err(Error::WrongType);
         }
-        Ok(())
+        Ok(true)
     }
     pub fn string_get(&self) -> Result<RedisString, Error> {
         unsafe {
@@ -201,8 +211,11 @@ impl WriteKey {
         }
     }
 
-    pub fn set_value<T>(&self, redis_type: &RedisType, value: T) -> Result<(), Error> {
-        self.verify_redis_type(redis_type)?;
+    pub fn set_value<T>(&mut self, redis_type: &RedisType, value: T) -> Result<(), Error> {
+        let exist = self.verify_module_type(redis_type)?;
+        if !exist {
+            return Err(Error::WrongType);
+        }
         let value = Box::into_raw(Box::new(value)) as *mut c_void;
         handle_status(
             unsafe {

@@ -1,4 +1,4 @@
-use redis_module::{redis_command, redis_module, assert_len, assert_type, assert_type_loose};
+use redis_module::{redis_command, redis_module, assert_len};
 use rand::random;
 use std::time::Duration;
 
@@ -44,8 +44,8 @@ fn hello_list_splice(ctx: &Context, args: Vec<RedisStr>) -> RedisResult {
     assert_len!(args, 4);
     let mut src_key = ctx.open_write_key(&args[1]);
     let mut dest_key = ctx.open_write_key(&args[2]);
-    assert_type_loose!(src_key, KeyType::List);
-    assert_type_loose!(dest_key, KeyType::List);
+    src_key.verify_type(KeyType::List, true)?;
+    dest_key.verify_type(KeyType::List, true)?;
     let count = args[3].get_positive_integer().map_err(|_| Error::generic("ERR invalid count"))?;
     for _ in 0..count {
         let ele = src_key.list_pop(ListPosition::Tail);
@@ -81,12 +81,12 @@ fn hello_repl1(ctx: &Context, args: Vec<RedisStr>) -> RedisResult {
 fn hello_repl2(ctx: &Context, args: Vec<RedisStr>) -> RedisResult {
     assert_len!(args, 2);
     let mut key = ctx.open_write_key(&args[1]);
-    assert_type!(key, KeyType::List);
+    key.verify_type(KeyType::List, false)?;
     let list_len = key.value_length();
     let mut sum = 0;
     for _ in 0..list_len {
         let ele = key.list_pop(ListPosition::Tail)?;
-        let mut val = ele.get_longlong().unwrap_or(0);
+        let mut val = ele.get_long_long().unwrap_or(0);
         val += 1;
         sum += val;
         let new_ele = ctx.create_string(&val.to_string());
@@ -100,7 +100,7 @@ fn hello_repl2(ctx: &Context, args: Vec<RedisStr>) -> RedisResult {
 fn hello_toggle_case(ctx: &Context, args: Vec<RedisStr>) -> RedisResult {
     assert_len!(args, 2);
     let mut key = ctx.open_write_key(&args[1]);
-    assert_type_loose!(key, KeyType::String);
+    key.verify_type(KeyType::String, true)?;
     if key.get_type() == KeyType::String {
         let value = key.string_get()?;
         let value = value
@@ -122,7 +122,7 @@ fn hello_toggle_case(ctx: &Context, args: Vec<RedisStr>) -> RedisResult {
 
 fn hello_more_expire(ctx: &Context, args: Vec<RedisStr>) -> RedisResult {
     assert_len!(args, 3);
-    let addms = args[2].get_longlong().map_err(|e| Error::generic("invalid expire time"))?;
+    let addms = args[2].get_long_long().map_err(|e| Error::generic("invalid expire time"))?;
     let mut key = ctx.open_write_key(&args[1]);
     let expire = key.get_expire();
     if let Some(d) = expire {
@@ -138,11 +138,11 @@ fn hello_more_expire(ctx: &Context, args: Vec<RedisStr>) -> RedisResult {
 fn hello_zsumrange(ctx: &Context, args: Vec<RedisStr>) -> RedisResult {
     assert_len!(args, 4);
     let mut key = ctx.open_write_key(&args[1]);
-    assert_type!(key, KeyType::ZSet);
+    key.verify_type(KeyType::ZSet, false)?;
     let tail_args = args
         .iter()
         .skip(2)
-        .map(|v| v.get_longlong()).collect::<Result<Vec<i64>, Error>>()
+        .map(|v| v.get_long_long()).collect::<Result<Vec<i64>, Error>>()
         .map_err(|e| Error::generic("invalid range"))?;
     let score_start = tail_args[0] as f64;
     let score_end = tail_args[1] as f64;
@@ -157,7 +157,7 @@ fn hello_zsumrange(ctx: &Context, args: Vec<RedisStr>) -> RedisResult {
 fn hello_lexrange(ctx: &Context, args: Vec<RedisStr>) -> RedisResult {
     assert_len!(args, 4);
     let key = ctx.open_write_key(&args[1]);
-    assert_type!(key, KeyType::ZSet);
+    key.verify_type(KeyType::ZSet, false)?;
     let v = key.zset_lex_range(ZsetRangeDirection::FristIn, &args[2], &args[3])?;
     let result: Vec<RedisValue> = v.iter().map(|v| v.0.to_str().unwrap().to_owned().into()).collect();
     Ok(RedisValue::Array(result))
@@ -166,7 +166,7 @@ fn hello_lexrange(ctx: &Context, args: Vec<RedisStr>) -> RedisResult {
 fn hello_hcopy(ctx: &Context, args: Vec<RedisStr>) -> RedisResult {
     assert_len!(args, 4);
     let key = ctx.open_write_key(&args[1]);
-    assert_type_loose!(key, KeyType::ZSet);
+    key.verify_type(KeyType::ZSet, true)?;
     let old_val = key.hash_get(HashGetFlag::Normal, &args[2])?;
     if let Some(v) = &old_val {
         ctx.log_debug(&format!("old_val is {}", v.to_str()?));
