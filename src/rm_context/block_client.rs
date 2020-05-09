@@ -1,9 +1,9 @@
 use std::time::Duration;
 
 
-use crate::{take_data, BlockClient, Context, Error, RedisString};
+use crate::{take_data, BlockClient, RedisCtx, Error, RedisString};
 
-impl Context {
+impl RedisCtx {
     pub fn block_client<F, G>(
         &self,
         _reply_callbck: F,
@@ -12,7 +12,7 @@ impl Context {
         _timeout: Duration,
     ) -> BlockClient
     where
-        F: FnOnce(&Context),
+        F: FnOnce(&RedisCtx),
     {
         unimplemented!()
     }

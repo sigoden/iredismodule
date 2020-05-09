@@ -11,20 +11,20 @@ pub mod cluster;
 pub mod timer;
 
 #[repr(C)]
-pub struct Context {
+pub struct RedisCtx {
     inner: *mut raw::RedisModuleCtx,
 }
 
-impl Ptr for Context {
+impl Ptr for RedisCtx {
     type PtrType = raw::RedisModuleCtx;
     fn get_ptr(&self) -> *mut Self::PtrType {
         self.inner
     }
 }
 
-impl Context {
+impl RedisCtx {
     pub fn from_ptr(inner: *mut raw::RedisModuleCtx) -> Self {
-        Context { inner }
+        RedisCtx { inner }
     }
     pub fn is_keys_position_request(&self) -> bool {
         // We want this to be available in tests where we don't have an actual Redis to call

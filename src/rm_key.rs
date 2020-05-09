@@ -3,7 +3,7 @@ use std::os::raw::{c_int, c_void, c_char};
 use std::time::Duration;
 
 use crate::raw;
-use crate::{handle_status, Context, Error, RedisType, RedisStr, RedisString, Ptr, RedisBuffer};
+use crate::{handle_status, RedisCtx, Error, RedisType, RedisStr, RedisString, Ptr, RedisBuffer};
 
 pub struct ReadKey {
     inner: *mut raw::RedisModuleKey,
@@ -136,7 +136,7 @@ impl ReadKey {
                     ZsetRangeDirection::LastIn => (raw::RedisModule_ZsetLastInLexRange.unwrap(), raw::RedisModule_ZsetRangePrev.unwrap()),
                 }
             };
-            let ctx = Context::from_ptr(self.ctx);
+            let ctx = RedisCtx::from_ptr(self.ctx);
             ctx.log_debug(&format!("dir = {:?} min={} max={}", dir, min.to_str().unwrap(), max.to_str().unwrap()));
             let check_end  = raw::RedisModule_ZsetRangeEndReached.unwrap();
             let get_elem = raw::RedisModule_ZsetRangeCurrentElement.unwrap();

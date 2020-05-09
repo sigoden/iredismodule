@@ -1,5 +1,5 @@
 use redis_module::{redis_command, redis_module, assert_len};
-use redis_module::{raw, Context, Error, RedisResult, RedisStr, RedisType, RedisValue, RedisIO, ArgvFlags, RedisDigest};
+use redis_module::{raw, RedisCtx, Error, RedisResult, RedisStr, RedisType, RedisValue, RedisIO, ArgvFlags, RedisDigest};
 use std::os::raw::{c_void, c_int};
 
 
@@ -51,7 +51,7 @@ impl<'a> Iterator for HelloTypeNodeIter<'a> {
 }
 
 
-fn hellotype_insert(ctx: &Context, args: Vec<RedisStr>) -> RedisResult {
+fn hellotype_insert(ctx: &RedisCtx, args: Vec<RedisStr>) -> RedisResult {
     assert_len!(args, 3);
     let mut key = ctx.open_write_key(&args[1]);
     let exist = key.verify_module_type(&HELLO_TYPE)?;
@@ -67,7 +67,7 @@ fn hellotype_insert(ctx: &Context, args: Vec<RedisStr>) -> RedisResult {
     Ok(hto.len().into())
 }
 
-fn hellotype_range(ctx: &Context, args: Vec<RedisStr>) -> RedisResult {
+fn hellotype_range(ctx: &RedisCtx, args: Vec<RedisStr>) -> RedisResult {
     assert_len!(args, 3);
     let key = ctx.open_write_key(&args[1]);
     key.verify_module_type(&HELLO_TYPE)?;
@@ -81,7 +81,7 @@ fn hellotype_range(ctx: &Context, args: Vec<RedisStr>) -> RedisResult {
     Ok(RedisValue::Array(eles))
 }
 
-fn hellotype_len(ctx: &Context, args: Vec<RedisStr>) -> RedisResult {
+fn hellotype_len(ctx: &RedisCtx, args: Vec<RedisStr>) -> RedisResult {
     assert_len!(args, 2);
     let key = ctx.open_write_key(&args[1]);
     key.verify_module_type(&HELLO_TYPE)?;
@@ -93,7 +93,7 @@ fn hellotype_len(ctx: &Context, args: Vec<RedisStr>) -> RedisResult {
     Ok(len.into())
 }
 
-fn hellotype_brange(ctx: &Context, mut args: Vec<RedisStr>) -> RedisResult {
+fn hellotype_brange(ctx: &RedisCtx, mut args: Vec<RedisStr>) -> RedisResult {
     assert_len!(args, 5);
     let key = ctx.open_write_key(&args[1]);
     let exists = key.verify_module_type(&HELLO_TYPE)?;

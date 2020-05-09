@@ -3,12 +3,12 @@ use std::os::raw::c_void;
 use std::time::Duration;
 
 use crate::raw;
-use crate::{handle_status, take_data, Context, Error, TimerID};
+use crate::{handle_status, take_data, RedisCtx, Error, TimerID};
 
-impl Context {
+impl RedisCtx {
     pub fn create_timer<F, T>(&self, period: Duration, callback: F, data: T) -> Result<TimerID, Error>
     where
-        F: FnOnce(&Context, T),
+        F: FnOnce(&RedisCtx, T),
     {
         // Store the user-provided data on the heap before passing ownership of it to Redis,
         // so that it will outlive the current scope.
@@ -64,9 +64,9 @@ impl Context {
 
 extern "C" fn timer_proc<F, T>(ctx: *mut raw::RedisModuleCtx, data: *mut c_void)
 where
-    F: FnOnce(&Context, T),
+    F: FnOnce(&RedisCtx, T),
 {
-    let ctx = &Context::from_ptr(ctx);
+    let ctx = &RedisCtx::from_ptr(ctx);
     if data.is_null() {
         ctx.log_debug("Timer callback data is null");
         return;
@@ -76,7 +76,7 @@ where
 }
 
 #[repr(C)]
-pub(crate) struct TimerProcData<F: FnOnce(&Context, T), T> {
+pub(crate) struct TimerProcData<F: FnOnce(&RedisCtx, T), T> {
     data: T,
     callback: F,
 }

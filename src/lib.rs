@@ -20,7 +20,7 @@ pub use rm::{
 use rm_context::take_data;
 
 pub use rm_context::cluster::{ClusterNode, ClusterNodeList, MsgType};
-pub use rm_context::{Context};
+pub use rm_context::{RedisCtx};
 
 pub use raw::RedisModuleTimerID as TimerID;
 

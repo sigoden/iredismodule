@@ -1,13 +1,13 @@
 use redis_module::{redis_command, redis_module};
-use redis_module::{Context, RedisResult, RedisStr};
+use redis_module::{RedisCtx, RedisResult, RedisStr};
 use rand::random;
 use std::time::Duration;
 
-fn timer_handler(ctx: &Context, data: String) {
+fn timer_handler(ctx: &RedisCtx, data: String) {
     ctx.log_debug(&data);
 }
 
-fn hello_timer(ctx: &Context, args: Vec<RedisStr>) -> RedisResult {
+fn hello_timer(ctx: &RedisCtx, args: Vec<RedisStr>) -> RedisResult {
     for _ in 0..10 {
         let delay: u32 = random::<u32>() % 5000;
         ctx.create_timer(Duration::from_millis(delay as u64), timer_handler, format!("After {}", delay))?;
