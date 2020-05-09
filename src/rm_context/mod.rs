@@ -1,11 +1,10 @@
 use crate::raw;
 use crate::{
     handle_status, CallReply, Error, KeySpaceTypes, LogLevel, ReadKey, RedisResult, RedisString,
-    RedisStr, RedisValue, StatusCode, WriteKey, FMT, Ptr
+    RedisStr, RedisValue, StatusCode, WriteKey, Ptr, ArgvFlags,
 };
-use bitflags::bitflags;
 use std::ffi::CString;
-use std::os::raw::{c_int, c_long, c_void};
+use std::os::raw::{c_int, c_long, c_void, c_char};
 
 pub mod block_client;
 pub mod cluster;
@@ -44,9 +43,6 @@ impl Context {
             raw::RedisModule_KeyAtPos.unwrap()(self.inner, pos as c_int);
         }
     }
-    pub fn auto_memory(&self) {
-        unsafe { raw::RedisModule_AutoMemory.unwrap()(self.inner) }
-    }
     pub fn reply(&self, r: RedisResult) -> StatusCode {
         match r {
             Ok(RedisValue::Integer(v)) => unsafe {
@@ -73,7 +69,7 @@ impl Context {
             Ok(RedisValue::Buffer(b)) => unsafe {
                 raw::RedisModule_ReplyWithStringBuffer.unwrap()(
                     self.inner,
-                    b.as_ptr() as *const i8,
+                    b.as_ptr() as *const c_char,
                     b.len(),
                 )
                 .into()
@@ -106,51 +102,61 @@ impl Context {
                     unsafe { raw::RedisModule_WrongArity.unwrap()(self.inner).into() }
                 }
             }
-            Err(Error::Generic(s)) => unsafe {
-                let msg = CString::new(s.to_string()).unwrap();
+            Err(err) => unsafe {
+                let msg = CString::new(err.to_string()).unwrap();
                 raw::RedisModule_ReplyWithError.unwrap()(self.inner, msg.as_ptr()).into()
             },
         }
     }
 
-    pub fn call(&self, command: &str, args: &[RedisStr]) -> RedisResult {
+    pub fn call(&self, command: &str, flags: ArgvFlags, args: &[&RedisStr]) -> CallReply {
         let args: Vec<*mut raw::RedisModuleString> =
             args.iter().map(|s| s.get_ptr()).collect();
 
         let cmd = CString::new(command).unwrap();
+        let flags: CString = flags.into();
 
         let reply_: *mut raw::RedisModuleCallReply = unsafe {
             let p_call = raw::RedisModule_Call.unwrap();
             p_call(
                 self.inner,
                 cmd.as_ptr(),
-                FMT,
-                args.as_ptr() as *mut i8,
+                flags.as_ptr(),
+                args.as_ptr() as *mut c_char,
                 args.len(),
             )
         };
-        CallReply::from_ptr(reply_).into()
+        CallReply::from_ptr(reply_)
     }
-
-    pub fn replicate(&self, command: &str, args: &[RedisStr]) -> Result<(), Error> {
+    pub fn call_with_str_args(&self, command: &str, flags: ArgvFlags, args: &[&str]) -> CallReply {
+        let str_args: Vec<RedisString> = args.iter().map(|v| self.create_string(v)).collect();
+        let str_args: Vec<&RedisStr> = str_args.iter().map(|v| v.get_redis_str()).collect();
+        self.call(command, flags, &str_args)
+    }
+    pub fn replicate(&self, command: &str, flags: ArgvFlags, args: &[&RedisStr]) -> Result<(), Error> {
         let args: Vec<*mut raw::RedisModuleString> =
             args.iter().map(|s| s.get_ptr()).collect();
 
         let cmd = CString::new(command).unwrap();
+        let flags: CString = flags.into();
 
         let result = unsafe {
             let p_call = raw::RedisModule_Replicate.unwrap();
             p_call(
                 self.inner,
                 cmd.as_ptr(),
-                FMT,
-                args.as_ptr() as *mut i8,
+                flags.as_ptr(),
+                args.as_ptr() as *mut c_char,
                 args.len(),
             )
         };
-        handle_status(result, "Cloud not replicate")
+        handle_status(result, "can not replicate")
     }
-
+    pub fn replicate_with_str_args(&self, command: &str, flags: ArgvFlags, args: &[&str]) -> Result<(), Error> {
+        let str_args: Vec<RedisString> = args.iter().map(|v| self.create_string(v)).collect();
+        let str_args: Vec<&RedisStr> = str_args.iter().map(|v| v.get_redis_str()).collect();
+        self.replicate(command, flags, &str_args)
+    }
     pub fn replicate_verbatim(&self) {
         unsafe {
             raw::RedisModule_ReplicateVerbatim.unwrap()(self.inner);
@@ -168,7 +174,7 @@ impl Context {
     pub fn select_db(&self, newid: i32) -> Result<(), Error> {
         handle_status(
             unsafe { raw::RedisModule_SelectDb.unwrap()(self.inner, newid) },
-            "Cloud not select db",
+            "can not select db",
         )
     }
     pub fn create_string(&self, value: &str) -> RedisString {
@@ -188,17 +194,8 @@ impl Context {
         let fmt = CString::new(message).unwrap();
         unsafe { raw::RedisModule_Log.unwrap()(self.inner, level.as_ptr(), fmt.as_ptr()) }
     }
-
     pub fn log_debug(&self, message: &str) {
         self.log(LogLevel::Notice, message);
-    }
-}
-
-bitflags! {
-    pub struct ClusterFlags: u64 {
-        const NONE = raw:: REDISMODULE_CLUSTER_FLAG_NONE as u64;
-        const NO_FAILOVER = raw::REDISMODULE_CLUSTER_FLAG_NO_FAILOVER as u64;
-        const NO_REPLICATION = raw::REDISMODULE_CLUSTER_FLAG_NO_REDIRECTION as u64;
     }
 }
 

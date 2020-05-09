@@ -1,7 +1,5 @@
 use crate::raw;
 use crate::{Error, RedisResult, RedisValue, Ptr};
-use num_traits::FromPrimitive;
-use std::os::raw::c_int;
 use std::slice;
 
 #[repr(C)]
@@ -21,7 +19,15 @@ impl CallReply {
         CallReply { inner }
     }
     pub fn get_type(&self) -> ReplyType {
-        unsafe { raw::RedisModule_CallReplyType.unwrap()(self.inner).into() }
+        let x = unsafe { raw::RedisModule_CallReplyType.unwrap()(self.inner) as u32 };
+        match x {
+            raw::REDISMODULE_REPLY_STRING => ReplyType::String,
+            raw::REDISMODULE_REPLY_ERROR => ReplyType::Error,
+            raw::REDISMODULE_REPLY_INTEGER => ReplyType::Integer,
+            raw::REDISMODULE_REPLY_ARRAY => ReplyType::Array,
+            raw::REDISMODULE_REPLY_NULL => ReplyType::Null,
+            _ => ReplyType::Unknown,
+        }
     }
     pub fn get_string(&self) -> String {
         unsafe {
@@ -76,25 +82,11 @@ impl Into<RedisResult> for CallReply {
     }
 }
 
-const REDISMODULE_REPLY_UNKNOWN_ISIZE: isize = raw::REDISMODULE_REPLY_UNKNOWN as isize;
-const REDISMODULE_REPLY_STRING_ISIZE: isize = raw::REDISMODULE_REPLY_STRING as isize;
-const REDISMODULE_REPLY_ERROR_ISIZE: isize = raw::REDISMODULE_REPLY_ERROR as isize;
-const REDISMODULE_REPLY_INTEGER_ISIZE: isize = raw::REDISMODULE_REPLY_INTEGER as isize;
-const REDISMODULE_REPLY_ARRAY_ISIZE: isize = raw::REDISMODULE_REPLY_ARRAY as isize;
-const REDISMODULE_REPLY_NULL_ISIZE: isize = raw::REDISMODULE_REPLY_NULL as isize;
-
-#[derive(Primitive, Debug, PartialEq)]
 pub enum ReplyType {
-    Unknown = REDISMODULE_REPLY_UNKNOWN_ISIZE,
-    String = REDISMODULE_REPLY_STRING_ISIZE,
-    Error = REDISMODULE_REPLY_ERROR_ISIZE,
-    Integer = REDISMODULE_REPLY_INTEGER_ISIZE,
-    Array = REDISMODULE_REPLY_ARRAY_ISIZE,
-    Null = REDISMODULE_REPLY_NULL_ISIZE,
-}
-
-impl From<c_int> for ReplyType {
-    fn from(v: c_int) -> Self {
-        ReplyType::from_i32(v).unwrap()
-    }
+    Unknown = raw::REDISMODULE_REPLY_UNKNOWN as isize,
+    String = raw::REDISMODULE_REPLY_STRING as isize,
+    Error = raw::REDISMODULE_REPLY_ERROR as isize,
+    Integer = raw::REDISMODULE_REPLY_INTEGER as isize,
+    Array = raw::REDISMODULE_REPLY_ARRAY as isize,
+    Null = raw::REDISMODULE_REPLY_NULL as isize,
 }

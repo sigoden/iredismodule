@@ -2,10 +2,13 @@ use std;
 use std::error;
 use std::fmt;
 use std::fmt::Display;
+use std::str;
+use crate::raw;
 
 #[derive(Debug)]
 pub enum Error {
     WrongArity,
+    WrongType,
     Generic(GenericError),
 }
 
@@ -23,33 +26,34 @@ impl From<String> for Error {
 
 impl From<std::num::ParseIntError> for Error {
     fn from(_: std::num::ParseIntError) -> Error {
-        Error::generic("Expect int value")
+        Error::generic("value is not int")
     }
 }
 
 impl From<std::num::ParseFloatError> for Error {
     fn from(_: std::num::ParseFloatError) -> Error {
-        Error::generic("Expect float value")
+        Error::generic("value is not float")
     }
 }
 
 impl From<std::str::Utf8Error> for Error {
     fn from(_: std::str::Utf8Error) -> Self {
-        Error::generic("Expect utf8 string")
+        Error::generic("value is not utf8")
     }
 }
 
 impl From<std::string::FromUtf8Error> for Error {
     fn from(_: std::string::FromUtf8Error) -> Error {
-        Error::generic("Expect utf8 string")
+        Error::generic("value is not utf8")
     }
 }
 
 impl Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Error::WrongArity => write!(f, "Wrong Arity"),
-            Error::Generic(ref err) => write!(f, "{}", err),
+            Error::WrongType => write!(f, "{}", str::from_utf8(raw::REDISMODULE_ERRORMSG_WRONGTYPE).unwrap()),
+            Error::WrongArity => write!(f, "ERR wrong number of arguments"),
+            Error::Generic(ref err) => write!(f, "ERR {}", err),
         }
     }
 }
@@ -57,6 +61,7 @@ impl Display for Error {
 impl error::Error for Error {
     fn cause(&self) -> Option<&dyn error::Error> {
         match *self {
+            Error::WrongType => None,
             Error::WrongArity => None,
             Error::Generic(ref err) => Some(err),
         }

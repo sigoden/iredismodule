@@ -33,7 +33,7 @@ impl Context {
 
         handle_status(
             unsafe { raw::RedisModule_StopTimer.unwrap()(self.inner, id, &mut data) },
-            "Cloud not stop timer",
+            "can not stop timer",
         )?;
 
         let data: T = take_data(data);
@@ -48,7 +48,7 @@ impl Context {
             unsafe {
                 raw::RedisModule_GetTimerInfo.unwrap()(self.inner, id, &mut remaining, &mut data)
             },
-            "Cloud not get timer info",
+            "can not get timer info",
         )?;
 
         // Cast the *mut c_void supplied by the Redis API to a raw pointer of our custom type.

@@ -1,8 +1,3 @@
-#[macro_use]
-extern crate enum_primitive_derive;
-extern crate bitflags;
-extern crate num_traits;
-
 mod error;
 mod macros;
 pub mod raw;
@@ -17,17 +12,15 @@ mod rm_key_type;
 mod rm_string;
 mod rm_value;
 
-use rm::FMT;
-
 pub use error::Error;
 pub use rm::{
     get_cluster_size, get_my_cluster_id, handle_status, is_module_busy, milliseconds, parse_args,
-    CtxFlags, KeySpaceTypes, LogLevel, StatusCode, Ptr,
+    KeySpaceTypes, LogLevel, StatusCode, Ptr, ArgvFlags,
 };
 use rm_context::take_data;
 
 pub use rm_context::cluster::{ClusterNode, ClusterNodeList, MsgType};
-pub use rm_context::{ClusterFlags, Context};
+pub use rm_context::{Context};
 
 pub use raw::RedisModuleTimerID as TimerID;
 
@@ -36,7 +29,9 @@ pub use rm_buffer::RedisBuffer;
 pub use rm_call_reply::CallReply;
 pub use rm_io::{RedisDigest, RedisIO};
 pub use rm_key::{
-    AccessMode, KeyType, ListPosition, ReadKey, WriteKey, ZaddInputFlag, ZaddOutputFlag,
+    KeyType, ListPosition, ReadKey, WriteKey,
+    HashGetFlag, HashSetFlag, ZsetRangeDirection,
+    ZaddInputFlag, ZaddOuputFlag,
 };
 pub use rm_key_type::RedisType;
 pub use rm_string::{RedisString, RedisStr};

@@ -20,7 +20,7 @@ impl BlockClient {
     pub fn abort(&self) -> Result<(), Error> {
         handle_status(
             unsafe { raw::RedisModule_AbortBlock.unwrap()(self.inner) },
-            "Cloud not abort block client",
+            "can not abort block client",
         )
     }
     pub fn set_disconnect_callback<F, T>(&self, _callback: F)

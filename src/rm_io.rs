@@ -2,7 +2,7 @@ use std::ffi::CString;
 use std::os::raw::c_char;
 
 use crate::raw;
-use crate::{Error, LogLevel, RedisBuffer, RedisString, RedisStr, FMT, Ptr};
+use crate::{Error, LogLevel, RedisBuffer, RedisString, RedisStr, ArgvFlags, Ptr};
 
 #[repr(C)]
 pub struct RedisIO {
@@ -34,10 +34,6 @@ impl RedisIO {
     }
     pub fn save_redis_string(&self, value: &RedisString) {
         unsafe { raw::RedisModule_SaveString.unwrap()(self.inner, value.get_ptr()) }
-    }
-    pub fn load_redis_string(&self) -> RedisString {
-        let p = unsafe { raw::RedisModule_LoadString.unwrap()(self.inner) };
-        RedisStr::from_ptr(p).into()
     }
     pub fn save_string_buffer(&self, value: &[u8]) {
         unsafe {
@@ -72,13 +68,14 @@ impl RedisIO {
     pub fn load_float(&self) -> f32 {
         unsafe { raw::RedisModule_LoadFloat.unwrap()(self.inner) }
     }
-    pub fn emit_aof(&self, command: &str, args: &[String]) {
+    pub fn emit_aof(&self, command: &str, flags: ArgvFlags, args: &[&str]) {
         let terminated_args: Vec<CString> = args
             .iter()
-            .map(|s| CString::new(s.as_str()).unwrap())
+            .map(|s| CString::new(*s).unwrap())
             .collect();
 
         let inner_args: Vec<_> = terminated_args.iter().map(|s| s.as_ptr()).collect();
+        let flags: CString = flags.into();
 
         let cmd = CString::new(command).unwrap();
 
@@ -87,8 +84,8 @@ impl RedisIO {
             p_call(
                 self.inner,
                 cmd.as_ptr(),
-                FMT,
-                inner_args.as_ptr() as *mut i8,
+                flags.as_ptr(),
+                inner_args.as_ptr() as *mut c_char,
                 terminated_args.len(),
             )
         };

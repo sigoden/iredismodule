@@ -3,6 +3,7 @@ use crate::{handle_status, Error, Ptr};
 
 use std::ops::Deref;
 use std::ffi::CString;
+use std::os::raw::c_char;
 use std::fmt;
 
 use std::slice;
@@ -10,25 +11,28 @@ use std::str;
 
 pub struct RedisString {
     redis_str: RedisStr,
-    ctx: Option<*mut raw::RedisModuleCtx>,
+    ctx: *mut raw::RedisModuleCtx,
 }
 
 impl RedisString {
     pub fn new(ctx: *mut raw::RedisModuleCtx, inner: *mut raw::RedisModuleString) -> RedisString {
         let redis_str = RedisStr::from_ptr(inner);
-        RedisString { ctx: Some(ctx), redis_str }
-    }
-    pub fn have_ctx(&self) -> bool {
-        self.ctx.is_some()
-    }
-    pub fn set_ctx(&mut self, ctx: *mut raw::RedisModuleCtx) {
-        self.ctx = Some(ctx);
+        RedisString { ctx, redis_str }
     }
     pub fn from_str(ctx: *mut raw::RedisModuleCtx, value: &str) -> RedisString {
         let str = CString::new(value).unwrap();
         let inner =
             unsafe { raw::RedisModule_CreateString.unwrap()(ctx, str.as_ptr(), value.len()) };
         Self::new(ctx, inner)
+    }
+    pub unsafe fn from_raw_parts(ctx: *mut raw::RedisModuleCtx, data: *mut u8, len: usize) -> RedisString {
+        let value = std::slice::from_raw_parts(data, len);
+        let str = CString::new(value).unwrap();
+        let inner = raw::RedisModule_CreateString.unwrap()(ctx, str.as_ptr(), len);
+        Self::new(ctx, inner)
+    }
+    pub fn get_redis_str(&self) -> &RedisStr {
+        &self.redis_str
     }
     pub fn ptr_to_str<'a>(ptr: *const raw::RedisModuleString) -> Result<&'a str, Error> {
         let mut len = 0;
@@ -38,18 +42,17 @@ impl RedisString {
             .map_err(|e| e.into())
     }
     pub fn append(&mut self, s: &str) -> Result<(), Error> {
-        let ctx = self.ctx.unwrap();
         handle_status(
             unsafe {
                 raw::RedisModule_StringAppendBuffer.unwrap()(
-                    ctx,
+                    self.ctx,
                     self.redis_str.inner,
-                    s.as_ptr() as *mut i8,
+                    s.as_ptr() as *mut c_char,
                     s.len(),
                 )
                 .into()
             },
-            "Could not append buffer",
+            "can not append buffer",
         )
     }
     pub fn len(&self) -> usize {
@@ -57,49 +60,12 @@ impl RedisString {
         unsafe { raw::RedisModule_StringPtrLen.unwrap()(self.inner, &mut len) };
         len
     }
-    fn from_redis_str(redis_str: RedisStr) -> Self {
-        RedisString { redis_str, ctx: None }
-    }
-}
-
-impl Clone for RedisString {
-    fn clone(&self) -> Self {
-        let ctx = self.ctx.unwrap();
-        Self::new(ctx, self.inner)
-    }
-}
-
-impl Drop for RedisString {
-    fn drop(&mut self) {
-        let ctx = self.ctx.unwrap();
-        unsafe {
-            raw::RedisModule_FreeString.unwrap()(ctx, self.inner);
-        }
-    }
 }
 
 impl Deref for RedisString {
     type Target = RedisStr;
     fn deref(&self) -> &Self::Target {
         &self.redis_str
-    }
-}
-
-impl AsRef<str> for RedisString {
-    fn as_ref(&self) -> &str {
-        RedisString::ptr_to_str(self.inner).unwrap()
-    }
-}
-
-impl From<RedisStr> for RedisString {
-    fn from(v: RedisStr) -> Self {
-        Self::from_redis_str(v)
-    }
-}
-
-impl AsRef<RedisStr> for RedisString {
-    fn as_ref(&self) -> &RedisStr {
-        self
     }
 }
 
@@ -138,15 +104,22 @@ impl RedisStr {
         let mut ll: i64 = 0;
         handle_status(
             unsafe { raw::RedisModule_StringToLongLong.unwrap()(self.inner, &mut ll) },
-            "Cloud not get value",
+            "can not get longlong",
         )?;
         Ok(ll)
+    }
+    pub fn get_positive_integer(&self) -> Result<u64, Error> {
+        let ll = self.get_longlong()?;
+        if ll < 1 {
+            return Err(Error::generic("can not less than 1"));
+        }
+        Ok(ll as u64)
     }
     pub fn get_double(&self) -> Result<f64, Error> {
         let mut d: f64 = 0.0;
         handle_status(
             unsafe { raw::RedisModule_StringToDouble.unwrap()(self.inner, &mut d) },
-            "Cloud not get value",
+            "can not get double",
         )?;
         Ok(d)
     }
