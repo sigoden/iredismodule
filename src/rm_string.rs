@@ -10,13 +10,19 @@ use std::str;
 
 pub struct RedisString {
     redis_str: RedisStr,
-    ctx: *mut raw::RedisModuleCtx,
+    ctx: Option<*mut raw::RedisModuleCtx>,
 }
 
 impl RedisString {
     pub fn new(ctx: *mut raw::RedisModuleCtx, inner: *mut raw::RedisModuleString) -> RedisString {
         let redis_str = RedisStr::from_ptr(inner);
-        RedisString { ctx, redis_str }
+        RedisString { ctx: Some(ctx), redis_str }
+    }
+    pub fn have_ctx(&self) -> bool {
+        self.ctx.is_some()
+    }
+    pub fn set_ctx(&mut self, ctx: *mut raw::RedisModuleCtx) {
+        self.ctx = Some(ctx);
     }
     pub fn from_str(ctx: *mut raw::RedisModuleCtx, value: &str) -> RedisString {
         let str = CString::new(value).unwrap();
@@ -32,10 +38,11 @@ impl RedisString {
             .map_err(|e| e.into())
     }
     pub fn append(&mut self, s: &str) -> Result<(), Error> {
+        let ctx = self.ctx.unwrap();
         handle_status(
             unsafe {
                 raw::RedisModule_StringAppendBuffer.unwrap()(
-                    self.ctx,
+                    ctx,
                     self.redis_str.inner,
                     s.as_ptr() as *mut i8,
                     s.len(),
@@ -45,24 +52,28 @@ impl RedisString {
             "Could not append buffer",
         )
     }
-
     pub fn len(&self) -> usize {
         let mut len = 0;
         unsafe { raw::RedisModule_StringPtrLen.unwrap()(self.inner, &mut len) };
         len
     }
+    fn from_redis_str(redis_str: RedisStr) -> Self {
+        RedisString { redis_str, ctx: None }
+    }
 }
 
 impl Clone for RedisString {
     fn clone(&self) -> Self {
-        Self::new(self.ctx, self.inner)
+        let ctx = self.ctx.unwrap();
+        Self::new(ctx, self.inner)
     }
 }
 
 impl Drop for RedisString {
     fn drop(&mut self) {
+        let ctx = self.ctx.unwrap();
         unsafe {
-            raw::RedisModule_FreeString.unwrap()(self.ctx, self.inner);
+            raw::RedisModule_FreeString.unwrap()(ctx, self.inner);
         }
     }
 }
@@ -77,6 +88,12 @@ impl Deref for RedisString {
 impl AsRef<str> for RedisString {
     fn as_ref(&self) -> &str {
         RedisString::ptr_to_str(self.inner).unwrap()
+    }
+}
+
+impl From<RedisStr> for RedisString {
+    fn from(v: RedisStr) -> Self {
+        Self::from_redis_str(v)
     }
 }
 
