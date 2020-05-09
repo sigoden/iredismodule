@@ -1,5 +1,5 @@
 use crate::raw;
-use crate::{handle_status, RedisCtx, Error, Ptr};
+use crate::{handle_status, RedisCtx, RedisError, Ptr};
 
 #[repr(C)]
 pub struct BlockClient {
@@ -14,10 +14,10 @@ impl Ptr for BlockClient {
 }
 
 impl BlockClient {
-    pub fn unblock<T>(&self, _data: T) -> Result<(), Error> {
+    pub fn unblock<T>(&self, _data: T) -> Result<(), RedisError> {
         unimplemented!()
     }
-    pub fn abort(&self) -> Result<(), Error> {
+    pub fn abort(&self) -> Result<(), RedisError> {
         handle_status(
             unsafe { raw::RedisModule_AbortBlock.unwrap()(self.inner) },
             "can not abort block client",

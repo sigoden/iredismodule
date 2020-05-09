@@ -3,10 +3,10 @@ use std::os::raw::c_void;
 use std::time::Duration;
 
 use crate::raw;
-use crate::{handle_status, take_data, RedisCtx, Error, TimerID};
+use crate::{handle_status, take_data, RedisCtx, RedisError, TimerID};
 
 impl RedisCtx {
-    pub fn create_timer<F, T>(&self, period: Duration, callback: F, data: T) -> Result<TimerID, Error>
+    pub fn create_timer<F, T>(&self, period: Duration, callback: F, data: T) -> Result<TimerID, RedisError>
     where
         F: FnOnce(&RedisCtx, T),
     {
@@ -20,7 +20,7 @@ impl RedisCtx {
                 period
                     .as_millis()
                     .try_into()
-                    .map_err(|e| Error::generic("invalid timer period"))?,
+                    .map_err(|e| RedisError::generic("invalid timer period"))?,
                 Some(timer_proc::<F, T>),
                 data as *mut c_void,
             )
@@ -28,7 +28,7 @@ impl RedisCtx {
 
         Ok(timer_id as TimerID)
     }
-    pub fn stop_timer<T>(&self, id: TimerID) -> Result<T, Error> {
+    pub fn stop_timer<T>(&self, id: TimerID) -> Result<T, RedisError> {
         let mut data: *mut c_void = std::ptr::null_mut();
 
         handle_status(
@@ -40,7 +40,7 @@ impl RedisCtx {
         return Ok(data);
     }
 
-    pub fn get_timer_info<T>(&self, id: TimerID) -> Result<(Duration, &T), Error> {
+    pub fn get_timer_info<T>(&self, id: TimerID) -> Result<(Duration, &T), RedisError> {
         let mut remaining: u64 = 0;
         let mut data: *mut c_void = std::ptr::null_mut();
 

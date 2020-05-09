@@ -12,7 +12,7 @@ mod rm_key_type;
 mod rm_string;
 mod rm_value;
 
-pub use error::Error;
+pub use error::RedisError;
 pub use rm::{
     get_cluster_size, get_my_cluster_id, handle_status, is_module_busy, milliseconds, parse_args,
     KeySpaceTypes, LogLevel, StatusCode, Ptr, ArgvFlags,

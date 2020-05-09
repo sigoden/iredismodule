@@ -5,7 +5,7 @@ use std::time::Duration;
 use std::collections::HashSet;
 
 use crate::raw;
-use crate::{Error, RedisStr};
+use crate::{RedisError, RedisStr};
 
 pub trait Ptr {
     type PtrType;
@@ -27,15 +27,15 @@ pub fn parse_args<'a>(
         .collect()
 }
 
-pub fn handle_status(status: i32, message: &str) -> Result<(), Error> {
+pub fn handle_status(status: i32, message: &str) -> Result<(), RedisError> {
     if status == raw::REDISMODULE_OK as i32 {
         Ok(())
     } else {
-        Err(Error::generic(message))
+        Err(RedisError::generic(message))
     }
 }
 
-pub fn is_module_busy(name: &str) -> Result<(), Error> {
+pub fn is_module_busy(name: &str) -> Result<(), RedisError> {
     let name = CString::new(name).unwrap();
     handle_status(
         unsafe { raw::RedisModule_IsModuleNameBusy.unwrap()(name.as_ptr()) },
@@ -44,10 +44,10 @@ pub fn is_module_busy(name: &str) -> Result<(), Error> {
 }
 
 /// wrap RedisModule_GetMyClusterID
-pub fn get_my_cluster_id() -> Result<String, Error> {
+pub fn get_my_cluster_id() -> Result<String, RedisError> {
     let c_buf: *const c_char = unsafe { raw::RedisModule_GetMyClusterID.unwrap()() };
     if c_buf.is_null() {
-        Err(Error::generic("Cluster is disabled"))
+        Err(RedisError::generic("Cluster is disabled"))
     } else {
         let c_str: &CStr = unsafe { CStr::from_ptr(c_buf) };
         Ok(c_str.to_str()?.to_owned())

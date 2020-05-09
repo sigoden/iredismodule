@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 
-use crate::{take_data, BlockClient, RedisCtx, Error, RedisString};
+use crate::{take_data, BlockClient, RedisCtx, RedisError, RedisString};
 
 impl RedisCtx {
     pub fn block_client<F, G>(

@@ -3,7 +3,7 @@ use rand::random;
 use std::time::Duration;
 
 use redis_module::{
-    parse_args, raw, RedisCtx, Error, ListPosition, RedisResult, StatusCode, RedisStr, RedisValue, KeyType, ArgvFlags,
+    parse_args, raw, RedisCtx, RedisError, ListPosition, RedisResult, StatusCode, RedisStr, RedisValue, KeyType, ArgvFlags,
     HashGetFlag, HashSetFlag, ZsetRangeDirection,
 };
 use std::os::raw::c_int;
@@ -46,7 +46,7 @@ fn hello_list_splice(ctx: &RedisCtx, args: Vec<RedisStr>) -> RedisResult {
     let mut dest_key = ctx.open_write_key(&args[2]);
     src_key.verify_type(KeyType::List, true)?;
     dest_key.verify_type(KeyType::List, true)?;
-    let count = args[3].get_positive_integer().map_err(|_| Error::generic("ERR invalid count"))?;
+    let count = args[3].get_positive_integer().map_err(|_| RedisError::generic("ERR invalid count"))?;
     for _ in 0..count {
         let ele = src_key.list_pop(ListPosition::Tail);
         match ele {
@@ -66,7 +66,7 @@ fn hello_list_splice_auto(ctx: &RedisCtx, args: Vec<RedisStr>) -> RedisResult {
 
 fn hello_rand_array(ctx: &RedisCtx, args: Vec<RedisStr>) -> RedisResult {
     assert_len!(args, 2);
-    let count = args[1].get_positive_integer().map_err(|_| Error::generic("ERR invalid count"))?;
+    let count = args[1].get_positive_integer().map_err(|_| RedisError::generic("ERR invalid count"))?;
     let value: Vec<RedisValue> = (0..count).map(|_| random::<i64>().into()).collect();
     Ok(RedisValue::Array(value))
 }
@@ -122,7 +122,7 @@ fn hello_toggle_case(ctx: &RedisCtx, args: Vec<RedisStr>) -> RedisResult {
 
 fn hello_more_expire(ctx: &RedisCtx, args: Vec<RedisStr>) -> RedisResult {
     assert_len!(args, 3);
-    let addms = args[2].get_long_long().map_err(|e| Error::generic("invalid expire time"))?;
+    let addms = args[2].get_long_long().map_err(|e| RedisError::generic("invalid expire time"))?;
     let mut key = ctx.open_write_key(&args[1]);
     let expire = key.get_expire();
     if let Some(d) = expire {
@@ -142,8 +142,8 @@ fn hello_zsumrange(ctx: &RedisCtx, args: Vec<RedisStr>) -> RedisResult {
     let tail_args = args
         .iter()
         .skip(2)
-        .map(|v| v.get_long_long()).collect::<Result<Vec<i64>, Error>>()
-        .map_err(|e| Error::generic("invalid range"))?;
+        .map(|v| v.get_long_long()).collect::<Result<Vec<i64>, RedisError>>()
+        .map_err(|e| RedisError::generic("invalid range"))?;
     let score_start = tail_args[0] as f64;
     let score_end = tail_args[1] as f64;
     let v1 = key.zset_score_range(ZsetRangeDirection::FristIn, score_start, score_end, false, false)?;
@@ -182,14 +182,14 @@ fn hello_hcopy(ctx: &RedisCtx, args: Vec<RedisStr>) -> RedisResult {
 
 fn hello_leftpad(ctx: &RedisCtx, args: Vec<RedisStr>) -> RedisResult {
     assert_len!(args, 4);
-    let pad_len = args[2].get_positive_integer().map_err(|_| Error::generic("ERR invalid padding length"))? as usize;
+    let pad_len = args[2].get_positive_integer().map_err(|_| RedisError::generic("ERR invalid padding length"))? as usize;
     let the_str: &str = args[1].to_str()?;
     let the_char: &str = args[3].to_str()?;
     if the_str.len() >= pad_len  {
         return Ok(the_str.into());
     }
     if the_char.len() != 1 {
-        return Err(Error::generic("padding must be a single char"));
+        return Err(RedisError::generic("padding must be a single char"));
     }
     let the_char = the_char.chars().nth(0).unwrap();
     let mut pad_str = (0..(pad_len - the_str.len())).map(|_| the_char).collect::<String>();
@@ -231,7 +231,7 @@ pub extern "C" fn init(
     let args: Vec<String> = args
         .into_iter()
         .map(|v| v.to_str().map(|v| v.to_owned()))
-        .collect::<Result<Vec<String>, Error>>()
+        .collect::<Result<Vec<String>, RedisError>>()
         .unwrap();
     let ctx_ = RedisCtx::from_ptr(ctx);
     ctx_.log_debug(&format!(

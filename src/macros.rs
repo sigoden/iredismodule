@@ -120,7 +120,7 @@ macro_rules! redis_module {
 macro_rules! assert_len {
     ($args:expr, $n:expr) => {
         if $args.len() != $n {
-            return Err(Error::WrongArity);
+            return Err(RedisError::WrongArity);
         }
     }
 }

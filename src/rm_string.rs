@@ -1,5 +1,5 @@
 use crate::raw;
-use crate::{handle_status, Error, Ptr};
+use crate::{handle_status, RedisError, Ptr};
 
 use std::ops::Deref;
 use std::ffi::CString;
@@ -34,14 +34,14 @@ impl RedisString {
     pub fn get_redis_str(&self) -> &RedisStr {
         &self.redis_str
     }
-    pub fn ptr_to_str<'a>(ptr: *const raw::RedisModuleString) -> Result<&'a str, Error> {
+    pub fn ptr_to_str<'a>(ptr: *const raw::RedisModuleString) -> Result<&'a str, RedisError> {
         let mut len = 0;
         let bytes = unsafe { raw::RedisModule_StringPtrLen.unwrap()(ptr, &mut len) };
 
         str::from_utf8(unsafe { slice::from_raw_parts(bytes as *const u8, len) })
             .map_err(|e| e.into())
     }
-    pub fn append(&mut self, s: &str) -> Result<(), Error> {
+    pub fn append(&mut self, s: &str) -> Result<(), RedisError> {
         handle_status(
             unsafe {
                 raw::RedisModule_StringAppendBuffer.unwrap()(
@@ -69,16 +69,6 @@ impl Deref for RedisString {
     }
 }
 
-impl fmt::Display for RedisString {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut len = 0;
-        let bytes = unsafe { raw::RedisModule_StringPtrLen.unwrap()(self.inner, &mut len) };
-        let value = str::from_utf8(unsafe { slice::from_raw_parts(bytes as *const u8, len) })
-            .map_err(|_e| fmt::Error)?;
-        write!(f, "{}", value)
-    }
-}
-
 #[repr(C)]
 pub struct RedisStr {
     inner: *mut raw::RedisModuleString,
@@ -100,7 +90,7 @@ impl RedisStr {
         self.inner
     }
 
-    pub fn get_long_long(&self) -> Result<i64, Error> {
+    pub fn get_long_long(&self) -> Result<i64, RedisError> {
         let mut ll: i64 = 0;
         handle_status(
             unsafe { raw::RedisModule_StringToLongLong.unwrap()(self.inner, &mut ll) },
@@ -108,14 +98,14 @@ impl RedisStr {
         )?;
         Ok(ll)
     }
-    pub fn get_positive_integer(&self) -> Result<u64, Error> {
+    pub fn get_positive_integer(&self) -> Result<u64, RedisError> {
         let ll = self.get_long_long()?;
         if ll < 1 {
-            return Err(Error::generic("can not less than 1"));
+            return Err(RedisError::generic("can not less than 1"));
         }
         Ok(ll as u64)
     }
-    pub fn get_double(&self) -> Result<f64, Error> {
+    pub fn get_double(&self) -> Result<f64, RedisError> {
         let mut d: f64 = 0.0;
         handle_status(
             unsafe { raw::RedisModule_StringToDouble.unwrap()(self.inner, &mut d) },
@@ -128,7 +118,7 @@ impl RedisStr {
         let bytes = unsafe { raw::RedisModule_StringPtrLen.unwrap()(self.inner, &mut len) };
         unsafe { slice::from_raw_parts(bytes as *const u8, len) }
     }
-    pub fn to_str(&self) -> Result<&str, Error> {
+    pub fn to_str(&self) -> Result<&str, RedisError> {
         let buffer = self.get_buffer();
         Ok(str::from_utf8(&buffer)?)
     }

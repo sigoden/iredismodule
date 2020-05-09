@@ -1,5 +1,5 @@
 use redis_module::{redis_command, redis_module, assert_len};
-use redis_module::{raw, RedisCtx, Error, RedisResult, RedisStr, RedisType, RedisValue, RedisIO, ArgvFlags, RedisDigest};
+use redis_module::{raw, RedisCtx, RedisError, RedisResult, RedisStr, RedisType, RedisValue, RedisIO, ArgvFlags, RedisDigest};
 use std::os::raw::{c_void, c_int};
 
 
@@ -55,7 +55,7 @@ fn hellotype_insert(ctx: &RedisCtx, args: Vec<RedisStr>) -> RedisResult {
     assert_len!(args, 3);
     let mut key = ctx.open_write_key(&args[1]);
     let exist = key.verify_module_type(&HELLO_TYPE)?;
-    let value = args[2].get_long_long().map_err(|e| Error::generic("invalid value: must be a signed 64 bit integer"))?;
+    let value = args[2].get_long_long().map_err(|e| RedisError::generic("invalid value: must be a signed 64 bit integer"))?;
     if exist {
         let hto = HelloTypeNode::new();
         key.set_value(&HELLO_TYPE, hto)?;
@@ -71,8 +71,8 @@ fn hellotype_range(ctx: &RedisCtx, args: Vec<RedisStr>) -> RedisResult {
     assert_len!(args, 3);
     let key = ctx.open_write_key(&args[1]);
     key.verify_module_type(&HELLO_TYPE)?;
-    let first = args[2].get_positive_integer().map_err(|_| Error::generic("invalid first parameters"))?;
-    let count = args[3].get_positive_integer().map_err(|_| Error::generic("invalid count parameters"))? as usize;
+    let first = args[2].get_positive_integer().map_err(|_| RedisError::generic("invalid first parameters"))?;
+    let count = args[3].get_positive_integer().map_err(|_| RedisError::generic("invalid count parameters"))? as usize;
     let hto = key.get_value::<HelloTypeNode>(&HELLO_TYPE)?;
     if hto.is_none() {
         return Ok(RedisValue::Array(vec![]));
@@ -97,7 +97,7 @@ fn hellotype_brange(ctx: &RedisCtx, mut args: Vec<RedisStr>) -> RedisResult {
     assert_len!(args, 5);
     let key = ctx.open_write_key(&args[1]);
     let exists = key.verify_module_type(&HELLO_TYPE)?;
-    let timeout = args[4].get_positive_integer().map_err(|_| Error::generic("invalid timeout parameter"))?;
+    let timeout = args[4].get_positive_integer().map_err(|_| RedisError::generic("invalid timeout parameter"))?;
     if exists {
         args.remove(args.len() - 1);
         return hellotype_range(ctx, args);

@@ -1,5 +1,5 @@
 use crate::raw;
-use crate::{RedisCtx, Error};
+use crate::{RedisCtx, RedisError};
 
 impl RedisCtx {
     pub fn get_cluster_nodes_list() -> Option<ClusterNodeList> {
@@ -16,7 +16,7 @@ impl RedisCtx {
         _target_id: Option<ClusterNode>,
         _msg_type: MsgType,
         _msg: &str,
-    ) -> Result<(), Error> {
+    ) -> Result<(), RedisError> {
         unimplemented!()
     }
 }

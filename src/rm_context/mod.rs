@@ -1,6 +1,6 @@
 use crate::raw;
 use crate::{
-    handle_status, CallReply, Error, KeySpaceTypes, LogLevel, ReadKey, RedisResult, RedisString,
+    handle_status, CallReply, RedisError, KeySpaceTypes, LogLevel, ReadKey, RedisResult, RedisString,
     RedisStr, RedisValue, StatusCode, WriteKey, Ptr, ArgvFlags,
 };
 use std::ffi::CString;
@@ -95,7 +95,7 @@ impl RedisCtx {
 
             Ok(RedisValue::NoReply) => StatusCode::Ok,
 
-            Err(Error::WrongArity) => {
+            Err(RedisError::WrongArity) => {
                 if self.is_keys_position_request() {
                     StatusCode::Err
                 } else {
@@ -133,7 +133,7 @@ impl RedisCtx {
         let str_args: Vec<&RedisStr> = str_args.iter().map(|v| v.get_redis_str()).collect();
         self.call(command, flags, &str_args)
     }
-    pub fn replicate(&self, command: &str, flags: ArgvFlags, args: &[&RedisStr]) -> Result<(), Error> {
+    pub fn replicate(&self, command: &str, flags: ArgvFlags, args: &[&RedisStr]) -> Result<(), RedisError> {
         let args: Vec<*mut raw::RedisModuleString> =
             args.iter().map(|s| s.get_ptr()).collect();
 
@@ -152,7 +152,7 @@ impl RedisCtx {
         };
         handle_status(result, "can not replicate")
     }
-    pub fn replicate_with_str_args(&self, command: &str, flags: ArgvFlags, args: &[&str]) -> Result<(), Error> {
+    pub fn replicate_with_str_args(&self, command: &str, flags: ArgvFlags, args: &[&str]) -> Result<(), RedisError> {
         let str_args: Vec<RedisString> = args.iter().map(|v| self.create_string(v)).collect();
         let str_args: Vec<&RedisStr> = str_args.iter().map(|v| v.get_redis_str()).collect();
         self.replicate(command, flags, &str_args)
@@ -171,7 +171,7 @@ impl RedisCtx {
     pub fn get_context_flags(&self) -> u64 {
         unsafe { raw::RedisModule_GetContextFlags.unwrap()(self.inner) as u64 }
     }
-    pub fn select_db(&self, newid: i32) -> Result<(), Error> {
+    pub fn select_db(&self, newid: i32) -> Result<(), RedisError> {
         handle_status(
             unsafe { raw::RedisModule_SelectDb.unwrap()(self.inner, newid) },
             "can not select db",

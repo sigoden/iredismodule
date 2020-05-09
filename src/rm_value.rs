@@ -1,6 +1,5 @@
-use crate::error::Error;
-
-pub type RedisResult = Result<RedisValue, Error>;
+use crate::RedisError;
+pub type RedisResult = Result<RedisValue, RedisError>;
 
 #[derive(Debug, PartialEq)]
 pub enum RedisValue {

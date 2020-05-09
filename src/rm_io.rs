@@ -2,7 +2,7 @@ use std::ffi::CString;
 use std::os::raw::{c_char, c_uchar};
 
 use crate::raw;
-use crate::{Error, LogLevel, RedisBuffer, RedisString, RedisStr, ArgvFlags, Ptr};
+use crate::{RedisError, LogLevel, RedisBuffer, RedisString, RedisStr, ArgvFlags, Ptr};
 
 #[repr(C)]
 pub struct RedisIO {
@@ -52,7 +52,7 @@ impl RedisIO {
         let bytes = unsafe { raw::RedisModule_LoadStringBuffer.unwrap()(self.inner, &mut len) };
         RedisBuffer::new(bytes, len)
     }
-    pub fn load_string(&mut self) -> Result<String, Error> {
+    pub fn load_string(&mut self) -> Result<String, RedisError> {
         let buffer = self.load_string_buffer();
         buffer.to_string().map_err(|e| e.into())
     }
