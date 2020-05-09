@@ -1,4 +1,4 @@
-use redis_module::{redis_command, redis_module, assert_len};
+use redis_module::{redis_module, assert_len, redis_type};
 use redis_module::{raw, RedisCtx, RedisError, RedisResult, RedisStr, RedisType, RedisValue, RedisIO, ArgvFlags, RedisDigest};
 use std::os::raw::{c_void, c_int};
 

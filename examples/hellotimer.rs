@@ -1,4 +1,4 @@
-use redis_module::{redis_command, redis_module};
+use redis_module::{redis_module};
 use redis_module::{RedisCtx, RedisResult, RedisStr};
 use rand::random;
 use std::time::Duration;

@@ -8,7 +8,7 @@ mod rm_call_reply;
 mod rm_context;
 mod rm_io;
 mod rm_key;
-mod rm_key_type;
+mod rm_type;
 mod rm_string;
 mod rm_value;
 
@@ -33,6 +33,6 @@ pub use rm_key::{
     HashGetFlag, HashSetFlag, ZsetRangeDirection,
     ZaddInputFlag, ZaddOuputFlag,
 };
-pub use rm_key_type::RedisType;
+pub use rm_type::RedisType;
 pub use rm_string::{RedisString, RedisStr};
 pub use rm_value::{RedisResult, RedisValue};

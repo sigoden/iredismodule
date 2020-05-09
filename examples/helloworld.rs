@@ -1,4 +1,4 @@
-use redis_module::{redis_command, redis_module, assert_len};
+use redis_module::{redis_module, assert_len};
 use rand::random;
 use std::time::Duration;
 

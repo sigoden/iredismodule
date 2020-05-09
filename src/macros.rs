@@ -1,45 +1,4 @@
 #[macro_export]
-macro_rules! redis_command {
-    ($ctx:expr,
-     $command_name:expr,
-     $command_handler:expr,
-     $command_flags:expr,
-     $firstkey:expr,
-     $lastkey:expr,
-     $keystep:expr) => {{
-        let name = CString::new($command_name).unwrap();
-        let flags = CString::new($command_flags).unwrap();
-
-        /////////////////////
-        extern "C" fn do_command(
-            ctx: *mut raw::RedisModuleCtx,
-            argv: *mut *mut raw::RedisModuleString,
-            argc: c_int,
-        ) -> c_int {
-            let context = $crate::RedisCtx::from_ptr(ctx);
-            let response = $command_handler(&context, $crate::parse_args(argv, argc));
-            context.reply(response) as c_int
-        }
-        /////////////////////
-
-        if unsafe {
-            raw::RedisModule_CreateCommand.unwrap()(
-                $ctx,
-                name.as_ptr(),
-                Some(do_command),
-                flags.as_ptr(),
-                $firstkey,
-                $lastkey,
-                $keystep,
-            )
-        } == StatusCode::Err as c_int
-        {
-            return StatusCode::Err as c_int;
-        }
-    }};
-}
-
-#[macro_export]
 macro_rules! redis_module {
     (
         name: $module_name:expr,
@@ -107,7 +66,7 @@ macro_rules! redis_module {
             )*
 
             $(
-                redis_command!(ctx, $name, $command, $flags, $firstkey, $lastkey, $keystep);
+                $crate::redis_command!(ctx, $name, $command, $flags, $firstkey, $lastkey, $keystep);
             )*
 
             raw::REDISMODULE_OK as c_int
@@ -115,6 +74,47 @@ macro_rules! redis_module {
     }
 }
 
+#[doc(hidden)]
+#[macro_export]
+macro_rules! redis_command {
+    ($ctx:expr,
+     $command_name:expr,
+     $command_handler:expr,
+     $command_flags:expr,
+     $firstkey:expr,
+     $lastkey:expr,
+     $keystep:expr) => {{
+        let name = CString::new($command_name).unwrap();
+        let flags = CString::new($command_flags).unwrap();
+
+        /////////////////////
+        extern "C" fn do_command(
+            ctx: *mut raw::RedisModuleCtx,
+            argv: *mut *mut raw::RedisModuleString,
+            argc: c_int,
+        ) -> c_int {
+            let context = $crate::RedisCtx::from_ptr(ctx);
+            let response = $command_handler(&context, $crate::parse_args(argv, argc));
+            context.reply(response) as c_int
+        }
+        /////////////////////
+
+        if unsafe {
+            raw::RedisModule_CreateCommand.unwrap()(
+                $ctx,
+                name.as_ptr(),
+                Some(do_command),
+                flags.as_ptr(),
+                $firstkey,
+                $lastkey,
+                $keystep,
+            )
+        } == StatusCode::Err as c_int
+        {
+            return StatusCode::Err as c_int;
+        }
+    }};
+}
 
 #[macro_export]
 macro_rules! assert_len {
