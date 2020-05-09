@@ -15,7 +15,7 @@ pub struct RedisString {
 
 impl RedisString {
     pub fn new(ctx: *mut raw::RedisModuleCtx, inner: *mut raw::RedisModuleString) -> RedisString {
-        let redis_str = RedisStr::new(inner);
+        let redis_str = RedisStr::from_ptr(inner);
         RedisString { ctx, redis_str }
     }
     pub fn from_str(ctx: *mut raw::RedisModuleCtx, value: &str) -> RedisString {
@@ -109,7 +109,7 @@ impl Ptr for RedisStr {
 }
 
 impl RedisStr {
-    pub fn new(inner: *mut raw::RedisModuleString) -> Self {
+    pub fn from_ptr(inner: *mut raw::RedisModuleString) -> Self {
         RedisStr { inner }
     }
 

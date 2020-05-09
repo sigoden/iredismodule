@@ -66,7 +66,7 @@ extern "C" fn timer_proc<F, T>(ctx: *mut raw::RedisModuleCtx, data: *mut c_void)
 where
     F: FnOnce(&Context, T),
 {
-    let ctx = &Context::new(ctx);
+    let ctx = &Context::from_ptr(ctx);
     if data.is_null() {
         ctx.log_debug("Timer callback data is null");
         return;

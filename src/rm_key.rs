@@ -5,7 +5,7 @@ use std::os::raw::{c_int, c_void};
 use std::time::Duration;
 
 use crate::raw;
-use crate::{handle_status, Context, Error, RedisType, RedisStr, RedisString, Ptr};
+use crate::{handle_status, Error, RedisType, RedisStr, RedisString, Ptr};
 
 pub struct ReadKey {
     inner: *mut raw::RedisModuleKey,
@@ -26,7 +26,7 @@ impl Drop for ReadKey {
 }
 
 impl ReadKey {
-    pub fn new(ctx: *mut raw::RedisModuleCtx, keyname: &RedisStr) -> Self {
+    pub fn from_redis_str(ctx: *mut raw::RedisModuleCtx, keyname: &RedisStr) -> Self {
         let mode = raw::REDISMODULE_READ as c_int;
         let inner = unsafe {
             raw::RedisModule_OpenKey.unwrap()(ctx, keyname.get_ptr(), mode) as *mut raw::RedisModuleKey
@@ -102,7 +102,7 @@ impl Deref for WriteKey {
 }
 
 impl WriteKey {
-    pub fn new(ctx: *mut raw::RedisModuleCtx, keyname: &RedisStr) -> Self {
+    pub fn from_redis_str(ctx: *mut raw::RedisModuleCtx, keyname: &RedisStr) -> Self {
         let mode = (raw::REDISMODULE_READ | raw::REDISMODULE_WRITE) as c_int;
         let inner = unsafe {
             raw::RedisModule_OpenKey.unwrap()(ctx, keyname.get_ptr(), mode) as *mut raw::RedisModuleKey

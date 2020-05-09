@@ -24,7 +24,7 @@ impl Ptr for Context {
 }
 
 impl Context {
-    pub fn new(inner: *mut raw::RedisModuleCtx) -> Self {
+    pub fn from_ptr(inner: *mut raw::RedisModuleCtx) -> Self {
         Context { inner }
     }
     pub fn is_keys_position_request(&self) -> bool {
@@ -129,7 +129,7 @@ impl Context {
                 args.len(),
             )
         };
-        CallReply::new(reply_).into()
+        CallReply::from_ptr(reply_).into()
     }
 
     pub fn replicate(&self, command: &str, args: &[RedisStr]) -> Result<(), Error> {
@@ -175,10 +175,10 @@ impl Context {
         RedisString::from_str(self.inner, value)
     }
     pub fn open_read_key(&self, keyname: &RedisStr) -> ReadKey {
-        ReadKey::new(self.inner, keyname)
+        ReadKey::from_redis_str(self.inner, keyname)
     }
     pub fn open_write_key(&self, keyname: &RedisStr) -> WriteKey {
-        WriteKey::new(self.inner, keyname)
+        WriteKey::from_redis_str(self.inner, keyname)
     }
     pub fn subscribe_to_keyspace_events<F>(&self, _types: KeySpaceTypes, _callback: F) {
         unimplemented!()

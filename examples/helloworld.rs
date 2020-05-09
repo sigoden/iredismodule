@@ -38,7 +38,7 @@ pub extern "C" fn init(
         .map(|v| v.to_str().map(|v| v.to_owned()))
         .collect::<Result<Vec<String>, Error>>()
         .unwrap();
-    let ctx_ = Context::new(ctx);
+    let ctx_ = Context::from_ptr(ctx);
     ctx_.log_debug(&format!(
         "Module loaded with ARGV[{}] = {:?}\n",
         args.len(),

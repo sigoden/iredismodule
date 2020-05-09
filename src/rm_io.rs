@@ -17,7 +17,7 @@ impl Ptr for RedisIO {
 }
 
 impl RedisIO {
-    pub fn new(inner: *mut raw::RedisModuleIO) -> Self {
+    pub fn from_ptr(inner: *mut raw::RedisModuleIO) -> Self {
         RedisIO { inner }
     }
     pub fn save_unsigned(&self, value: u64) {

@@ -24,7 +24,7 @@ pub fn parse_args<'a>(
 ) -> Vec<RedisStr> {
     unsafe { slice::from_raw_parts(argv, argc as usize) }
         .into_iter()
-        .map(|&arg| RedisStr::new(arg))
+        .map(|&arg| RedisStr::from_ptr(arg))
         .collect()
 }
 
