@@ -4,12 +4,15 @@ use std::os::raw::c_char;
 use crate::raw;
 use crate::{Error, LogLevel, RedisBuffer, RedisString, FMT};
 pub struct RedisIO {
-    pub inner: *mut raw::RedisModuleIO,
+    inner: *mut raw::RedisModuleIO,
 }
 
 impl RedisIO {
     pub fn new(inner: *mut raw::RedisModuleIO) -> Self {
         RedisIO { inner }
+    }
+    pub fn get_ptr(&self) -> *mut raw::RedisModuleIO {
+        self.inner
     }
     pub fn save_unsigned(&self, value: u64) {
         unsafe { raw::RedisModule_SaveUnsigned.unwrap()(self.inner, value) };
@@ -24,7 +27,7 @@ impl RedisIO {
         unsafe { raw::RedisModule_LoadSigned.unwrap()(self.inner) }
     }
     pub fn save_redis_string(&self, value: &RedisString) {
-        unsafe { raw::RedisModule_SaveString.unwrap()(self.inner, value.inner) }
+        unsafe { raw::RedisModule_SaveString.unwrap()(self.inner, value.get_ptr()) }
     }
     pub fn load_redis_string(&self) -> *mut raw::RedisModuleString {
         unsafe { raw::RedisModule_LoadString.unwrap()(self.inner) }
@@ -91,12 +94,15 @@ impl RedisIO {
 }
 
 pub struct RedisDigest {
-    pub inner: raw::RedisModuleDigest,
+    inner: *mut raw::RedisModuleDigest,
 }
 
 impl RedisDigest {
     pub fn add_string_buffer(&mut self, _ele: &str) {
         unimplemented!()
+    }
+    pub fn get_ptr(&self) -> *mut raw::RedisModuleDigest {
+        self.inner
     }
     pub fn add_long_long(&mut self, _ll: i128) {
         unimplemented!()

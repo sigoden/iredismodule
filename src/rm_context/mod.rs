@@ -12,12 +12,15 @@ pub mod cluster;
 pub mod timer;
 
 pub struct Context {
-    pub inner: *mut raw::RedisModuleCtx,
+    inner: *mut raw::RedisModuleCtx,
 }
 
 impl Context {
     pub fn new(inner: *mut raw::RedisModuleCtx) -> Self {
         Context { inner }
+    }
+    pub fn get_ptr(&self) -> *mut raw::RedisModuleCtx {
+        self.inner
     }
     pub fn is_keys_position_request(&self) -> bool {
         // We want this to be available in tests where we don't have an actual Redis to call
@@ -57,7 +60,7 @@ impl Context {
             Ok(RedisValue::BulkString(s)) => unsafe {
                 raw::RedisModule_ReplyWithString.unwrap()(
                     self.inner,
-                    RedisString::from_str(self.inner, &s).inner,
+                    RedisString::from_str(self.inner, &s).get_ptr(),
                 )
                 .into()
             },
@@ -107,7 +110,7 @@ impl Context {
 
     pub fn call(&self, command: &str, args: &[RedisStr]) -> RedisResult {
         let args: Vec<*mut raw::RedisModuleString> =
-            args.iter().map(|s| s.inner).collect();
+            args.iter().map(|s| s.get_ptr()).collect();
 
         let cmd = CString::new(command).unwrap();
 
@@ -126,7 +129,7 @@ impl Context {
 
     pub fn replicate(&self, command: &str, args: &[RedisStr]) -> Result<(), Error> {
         let args: Vec<*mut raw::RedisModuleString> =
-            args.iter().map(|s| s.inner).collect();
+            args.iter().map(|s| s.get_ptr()).collect();
 
         let cmd = CString::new(command).unwrap();
 

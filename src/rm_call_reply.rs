@@ -5,12 +5,15 @@ use std::os::raw::c_int;
 use std::slice;
 
 pub struct CallReply {
-    pub inner: *mut raw::RedisModuleCallReply,
+    inner: *mut raw::RedisModuleCallReply,
 }
 
 impl CallReply {
     pub fn new(inner: *mut raw::RedisModuleCallReply) -> Self {
         CallReply { inner }
+    }
+    pub fn get_ptr(&self) -> *mut raw::RedisModuleCallReply {
+        self.inner
     }
     pub fn get_type(&self) -> ReplyType {
         unsafe { raw::RedisModule_CallReplyType.unwrap()(self.inner).into() }

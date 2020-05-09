@@ -9,7 +9,7 @@ use std::slice;
 use std::str;
 
 pub struct RedisString {
-    pub redis_str: RedisStr,
+    redis_str: RedisStr,
     ctx: *mut raw::RedisModuleCtx,
 }
 
@@ -98,7 +98,7 @@ impl fmt::Display for RedisString {
 
 #[repr(C)]
 pub struct RedisStr {
-    pub inner: *mut raw::RedisModuleString,
+    inner: *mut raw::RedisModuleString,
 }
 
 impl RedisStr {

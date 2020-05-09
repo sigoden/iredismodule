@@ -44,7 +44,7 @@ impl RedisType {
 
         let redis_type = unsafe {
             raw::RedisModule_CreateDataType.unwrap()(
-                ctx.inner,
+                ctx.get_ptr(),
                 type_name.as_ptr(),
                 self.version, // Encoding version
                 &mut self.type_methods.clone(),

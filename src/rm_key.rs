@@ -22,7 +22,7 @@ impl ReadKey {
     pub fn new(ctx: *mut raw::RedisModuleCtx, keyname: &RedisStr) -> Self {
         let mode = raw::REDISMODULE_READ as c_int;
         let inner = unsafe {
-            raw::RedisModule_OpenKey.unwrap()(ctx, keyname.inner, mode) as *mut raw::RedisModuleKey
+            raw::RedisModule_OpenKey.unwrap()(ctx, keyname.get_ptr(), mode) as *mut raw::RedisModuleKey
         };
         ReadKey { inner, ctx }
     }
@@ -98,7 +98,7 @@ impl WriteKey {
     pub fn new(ctx: *mut raw::RedisModuleCtx, keyname: &RedisStr) -> Self {
         let mode = (raw::REDISMODULE_READ | raw::REDISMODULE_WRITE) as c_int;
         let inner = unsafe {
-            raw::RedisModule_OpenKey.unwrap()(ctx, keyname.inner, mode) as *mut raw::RedisModuleKey
+            raw::RedisModule_OpenKey.unwrap()(ctx, keyname.get_ptr(), mode) as *mut raw::RedisModuleKey
         };
         WriteKey {
             readkey: ReadKey { inner, ctx },
@@ -140,7 +140,7 @@ impl WriteKey {
     }
     pub fn string_set(&mut self, value: &RedisStr) -> Result<(), Error> {
         handle_status(
-            unsafe { raw::RedisModule_StringSet.unwrap()(self.inner, value.inner) },
+            unsafe { raw::RedisModule_StringSet.unwrap()(self.inner, value.get_ptr()) },
             "Cloud not set key string",
         )
     }
@@ -156,7 +156,7 @@ impl WriteKey {
         value: &RedisStr,
     ) -> Result<(), Error> {
         handle_status(
-            unsafe { raw::RedisModule_ListPush.unwrap()(self.inner, position as i32, value.inner) },
+            unsafe { raw::RedisModule_ListPush.unwrap()(self.inner, position as i32, value.get_ptr()) },
             "Cloud not push list",
         )
     }
