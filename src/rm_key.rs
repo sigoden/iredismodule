@@ -107,13 +107,13 @@ impl ReadKey {
                 init(self.inner, min, max, minex, maxex),
                 "fail to execute zset_score_range"
             )?;
-            while check_end(self.inner) != 0 {
+            while check_end(self.inner) == 0 {
                 let mut score = 0.0;
                 let elem = get_elem(self.inner, &mut score);
                 result.push((RedisString::new(self.ctx, elem), score));
                 next(self.inner);
             }
-            raw::RedisModule_ZsetRangeStop.unwrap()(self.inner)
+            raw::RedisModule_ZsetRangeStop.unwrap()(self.inner);
         }
         Ok(result)
     }
@@ -126,18 +126,23 @@ impl ReadKey {
                     ZsetRangeDirection::LastIn => (raw::RedisModule_ZsetLastInLexRange.unwrap(), raw::RedisModule_ZsetRangePrev.unwrap()),
                 }
             };
+            let ctx = Context::from_ptr(self.ctx);
+            ctx.log_debug(&format!("dir = {:?} min={} max={}", dir, min.to_str().unwrap(), max.to_str().unwrap()));
             let check_end  = raw::RedisModule_ZsetRangeEndReached.unwrap();
             let get_elem = raw::RedisModule_ZsetRangeCurrentElement.unwrap();
             handle_status(
                 init(self.inner, min.get_ptr(), max.get_ptr()),
                 "fail to execute zset_lex_range"
             )?;
-            while check_end(self.inner) != 0 {
+            ctx.log_debug(&format!("range start"));
+            while check_end(self.inner) == 0 {
                 let mut score = 0.0;
+                ctx.log_debug(&format!("range step"));
                 let elem = get_elem(self.inner, &mut score);
                 result.push((RedisString::new(self.ctx, elem), score));
                 next(self.inner);
             }
+            ctx.log_debug(&format!("range stop"));
             raw::RedisModule_ZsetRangeStop.unwrap()(self.inner)
         }
         Ok(result)

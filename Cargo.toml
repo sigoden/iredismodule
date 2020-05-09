@@ -20,9 +20,9 @@ experimental-api = []
 
 
 [[example]]
-name = "simple"
+name = "helloworld"
 crate-type = ["cdylib"]
 
 [[example]]
-name = "helloworld"
+name = "hellotimer"
 crate-type = ["cdylib"]
