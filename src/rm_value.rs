@@ -1,5 +1,5 @@
 use crate::Error;
-pub type Result = std::result::Result<Value, Error>;
+pub type RResult = Result<Value, Error>;
 
 #[derive(Debug, PartialEq)]
 pub enum Value {

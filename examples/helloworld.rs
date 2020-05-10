@@ -1,19 +1,19 @@
-use redis_module::{redis_module, assert_len};
+use redismodule::{redis_module, assert_len};
 use rand::random;
 use std::time::Duration;
 
-use redis_module::{
-    parse_args, raw, Context, Error, ListPosition, Result, StatusCode, RStr, Value, KeyType, ArgvFlags,
+use redismodule::{
+    parse_args, raw, Context, Error, ListPosition, RResult, StatusCode, RStr, Value, KeyType, ArgvFlags,
     HashGetFlag, HashSetFlag, ZsetRangeDirection,
 };
 use std::os::raw::c_int;
 
-fn hello_simple(ctx: &Context, _args: Vec<RStr>) -> Result {
+fn hello_simple(ctx: &Context, _args: Vec<RStr>) -> RResult {
     let db = ctx.get_select_db();
     Ok(db.into())
 }
 
-fn hello_push_native(ctx: &Context, args: Vec<RStr>) -> Result {
+fn hello_push_native(ctx: &Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 3);
     let mut key = ctx.open_write_key(&args[1]);
     key.list_push(ListPosition::Tail, &args[2])?;
@@ -21,17 +21,17 @@ fn hello_push_native(ctx: &Context, args: Vec<RStr>) -> Result {
     Ok(len.into())
 }
 
-fn hello_push_call(ctx: &Context, args: Vec<RStr>) -> Result {
+fn hello_push_call(ctx: &Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 3);
     let call_args: Vec<&RStr> = args.iter().skip(1).collect();
     ctx.call("RPUSH", ArgvFlags::new(), &call_args).into()
 }
 
-fn hello_push_call2(ctx: &Context, args: Vec<RStr>) -> Result {
+fn hello_push_call2(ctx: &Context, args: Vec<RStr>) -> RResult {
     hello_push_call(ctx, args)
 }
 
-fn hello_list_sum_len(ctx: &Context, args: Vec<RStr>) -> Result {
+fn hello_list_sum_len(ctx: &Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 2);
     let call_args = [&args[1].to_str()?, "0", "-1"];
     let reply = ctx.call_with_str_args("LRANGE", ArgvFlags::new(), &call_args);
@@ -41,7 +41,7 @@ fn hello_list_sum_len(ctx: &Context, args: Vec<RStr>) -> Result {
     Ok(Value::from(str_len))
 }
 
-fn hello_list_splice(ctx: &Context, args: Vec<RStr>) -> Result {
+fn hello_list_splice(ctx: &Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 4);
     let mut src_key = ctx.open_write_key(&args[1]);
     let mut dest_key = ctx.open_write_key(&args[2]);
@@ -61,25 +61,25 @@ fn hello_list_splice(ctx: &Context, args: Vec<RStr>) -> Result {
     Ok(len.into())
 }
 
-fn hello_list_splice_auto(ctx: &Context, args: Vec<RStr>) -> Result {
+fn hello_list_splice_auto(ctx: &Context, args: Vec<RStr>) -> RResult {
     hello_list_splice(ctx, args)
 }
 
-fn hello_rand_array(ctx: &Context, args: Vec<RStr>) -> Result {
+fn hello_rand_array(ctx: &Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 2);
     let count = args[1].get_positive_integer().map_err(|_| Error::generic("ERR invalid count"))?;
     let value: Vec<Value> = (0..count).map(|_| random::<i64>().into()).collect();
     Ok(Value::Array(value))
 }
 
-fn hello_repl1(ctx: &Context, args: Vec<RStr>) -> Result {
+fn hello_repl1(ctx: &Context, args: Vec<RStr>) -> RResult {
     ctx.replicate_with_str_args("ECHO", ArgvFlags::new(), &["foo"])?;
     ctx.call_with_str_args("INCR", ArgvFlags::new(), &["foo"]);
     ctx.call_with_str_args("INCR", ArgvFlags::new(), &["bar"]);
     Ok(0i64.into())
 }
 
-fn hello_repl2(ctx: &Context, args: Vec<RStr>) -> Result {
+fn hello_repl2(ctx: &Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 2);
     let mut key = ctx.open_write_key(&args[1]);
     key.verify_type(KeyType::List, false)?;
@@ -98,7 +98,7 @@ fn hello_repl2(ctx: &Context, args: Vec<RStr>) -> Result {
 }
 
 
-fn hello_toggle_case(ctx: &Context, args: Vec<RStr>) -> Result {
+fn hello_toggle_case(ctx: &Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 2);
     let mut key = ctx.open_write_key(&args[1]);
     key.verify_type(KeyType::String, true)?;
@@ -121,7 +121,7 @@ fn hello_toggle_case(ctx: &Context, args: Vec<RStr>) -> Result {
     Ok("OK".into())
 }
 
-fn hello_more_expire(ctx: &Context, args: Vec<RStr>) -> Result {
+fn hello_more_expire(ctx: &Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 3);
     let addms = args[2].get_long_long().map_err(|e| Error::generic("invalid expire time"))?;
     let mut key = ctx.open_write_key(&args[1]);
@@ -136,14 +136,14 @@ fn hello_more_expire(ctx: &Context, args: Vec<RStr>) -> Result {
     Ok("OK".into())
 }
 
-fn hello_zsumrange(ctx: &Context, args: Vec<RStr>) -> Result {
+fn hello_zsumrange(ctx: &Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 4);
     let mut key = ctx.open_write_key(&args[1]);
     key.verify_type(KeyType::ZSet, false)?;
     let tail_args = args
         .iter()
         .skip(2)
-        .map(|v| v.get_long_long()).collect::<std::result::Result<Vec<i64>, Error>>()
+        .map(|v| v.get_long_long()).collect::<Result<Vec<i64>, Error>>()
         .map_err(|e| Error::generic("invalid range"))?;
     let score_start = tail_args[0] as f64;
     let score_end = tail_args[1] as f64;
@@ -155,7 +155,7 @@ fn hello_zsumrange(ctx: &Context, args: Vec<RStr>) -> Result {
     Ok(Value::Array(result))
 }
 
-fn hello_lexrange(ctx: &Context, args: Vec<RStr>) -> Result {
+fn hello_lexrange(ctx: &Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 4);
     let key = ctx.open_write_key(&args[1]);
     key.verify_type(KeyType::ZSet, false)?;
@@ -164,7 +164,7 @@ fn hello_lexrange(ctx: &Context, args: Vec<RStr>) -> Result {
     Ok(Value::Array(result))
 }
 
-fn hello_hcopy(ctx: &Context, args: Vec<RStr>) -> Result {
+fn hello_hcopy(ctx: &Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 4);
     let key = ctx.open_write_key(&args[1]);
     key.verify_type(KeyType::ZSet, true)?;
@@ -181,7 +181,7 @@ fn hello_hcopy(ctx: &Context, args: Vec<RStr>) -> Result {
     Ok(ret.into())
 }
 
-fn hello_leftpad(ctx: &Context, args: Vec<RStr>) -> Result {
+fn hello_leftpad(ctx: &Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 4);
     let pad_len = args[2].get_positive_integer().map_err(|_| Error::generic("ERR invalid padding length"))? as usize;
     let the_str: &str = args[1].to_str()?;
@@ -232,7 +232,7 @@ pub extern "C" fn init(
     let args: Vec<String> = args
         .into_iter()
         .map(|v| v.to_str().map(|v| v.to_owned()))
-        .collect::<std::result::Result<Vec<String>, Error>>()
+        .collect::<Result<Vec<String>, Error>>()
         .unwrap();
     let ctx_ = Context::from_ptr(ctx);
     ctx_.log_debug(&format!(

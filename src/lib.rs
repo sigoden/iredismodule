@@ -15,7 +15,7 @@ mod rm_value;
 pub use error::Error;
 pub use rm::{
     get_cluster_size, get_my_cluster_id, handle_status, is_module_busy, milliseconds, parse_args,
-    KeySpaceTypes, LogLevel, StatusCode, Ptr, ArgvFlags,
+    KeySpaceTypes, LogLevel, StatusCode, Ptr, ArgvFlags, CmdFunc, CCmdFn, CmdFn,
 };
 use rm_context::take_data;
 
@@ -35,4 +35,4 @@ pub use rm_key::{
 };
 pub use rm_type::RType;
 pub use rm_string::{RString, RStr};
-pub use rm_value::{Result, Value};
+pub use rm_value::{RResult, Value};

@@ -43,7 +43,7 @@ impl Context {
             raw::RedisModule_KeyAtPos.unwrap()(self.inner, pos as c_int);
         }
     }
-    pub fn reply(&self, r: crate::Result) -> StatusCode {
+    pub fn reply(&self, r: crate::RResult) -> StatusCode {
         match r {
             Ok(Value::Integer(v)) => unsafe {
                 raw::RedisModule_ReplyWithLongLong.unwrap()(self.inner, v).into()

@@ -4,7 +4,6 @@ use crate::{handle_status, Error, Ptr};
 use std::ops::Deref;
 use std::ffi::CString;
 use std::os::raw::c_char;
-use std::fmt;
 
 use std::slice;
 use std::str;

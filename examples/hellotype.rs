@@ -1,5 +1,5 @@
-use redis_module::{redis_module, assert_len};
-use redis_module::{raw, Context, Error, Result, RStr, RType, Value, IO, ArgvFlags, Digest};
+use redismodule::{redis_module, assert_len};
+use redismodule::{raw, Context, Error, RResult, RStr, RType, Value, IO, ArgvFlags, Digest};
 use std::os::raw::{c_void, c_int};
 
 
@@ -51,7 +51,7 @@ impl<'a> Iterator for HelloTypeNodeIter<'a> {
 }
 
 
-fn hellotype_insert(ctx: &Context, args: Vec<RStr>) -> Result {
+fn hellotype_insert(ctx: &Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 3);
     let mut key = ctx.open_write_key(&args[1]);
     let exist = key.verify_module_type(&HELLO_TYPE)?;
@@ -67,21 +67,21 @@ fn hellotype_insert(ctx: &Context, args: Vec<RStr>) -> Result {
     Ok(hto.len().into())
 }
 
-fn hellotype_range(ctx: &Context, args: Vec<RStr>) -> Result {
+fn hellotype_range(ctx: &Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 3);
     let key = ctx.open_write_key(&args[1]);
     key.verify_module_type(&HELLO_TYPE)?;
-    let first = args[2].get_positive_integer().map_err(|_| Error::generic("invalid first parameters"))?;
+    let first = args[2].get_positive_integer().map_err(|_| Error::generic("invalid first parameters"))? as usize;
     let count = args[3].get_positive_integer().map_err(|_| Error::generic("invalid count parameters"))? as usize;
     let hto = key.get_value::<HelloTypeNode>(&HELLO_TYPE)?;
     if hto.is_none() {
         return Ok(Value::Array(vec![]));
     }
-    let eles: Vec<Value> = hto.unwrap().iter().take(count).cloned().map(|v| v.into()).collect();
+    let eles: Vec<Value> = hto.unwrap().iter().skip(first).take(count).cloned().map(|v| v.into()).collect();
     Ok(Value::Array(eles))
 }
 
-fn hellotype_len(ctx: &Context, args: Vec<RStr>) -> Result {
+fn hellotype_len(ctx: &Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 2);
     let key = ctx.open_write_key(&args[1]);
     key.verify_module_type(&HELLO_TYPE)?;
@@ -93,7 +93,7 @@ fn hellotype_len(ctx: &Context, args: Vec<RStr>) -> Result {
     Ok(len.into())
 }
 
-fn hellotype_brange(ctx: &Context, mut args: Vec<RStr>) -> Result {
+fn hellotype_brange(ctx: &Context, mut args: Vec<RStr>) -> RResult {
     assert_len!(args, 5);
     let key = ctx.open_write_key(&args[1]);
     let exists = key.verify_module_type(&HELLO_TYPE)?;
@@ -106,6 +106,13 @@ fn hellotype_brange(ctx: &Context, mut args: Vec<RStr>) -> Result {
     Ok("OK".into())
 }
 
+extern "C" fn hellotype_brange_reply(
+    ctx: *mut raw::RedisModuleCtx , 
+    argv: *mut *mut raw::RedisModuleString,
+    argc: c_int
+) -> c_int {
+    unimplemented!{}
+}
 
 redis_module! {
     name: "hellotype",
@@ -128,7 +135,7 @@ static HELLO_TYPE: RType = RType::new(
         rdb_save: Some(hello_type_rdb_save),
         aof_rewrite: Some(hello_type_aof_rewrite),
         mem_usage: Some(hello_type_mem_usage),
-        free: Some(free),
+        free: Some(hello_type_free),
         digest: Some(hello_type_digest),
 
         // Aux data
@@ -182,6 +189,6 @@ unsafe extern "C" fn hello_type_digest(md: *mut raw::RedisModuleDigest, value: *
     md.end_sequeue();
 }
 
-unsafe extern "C" fn free(value: *mut c_void) {
+unsafe extern "C" fn hello_type_free(value: *mut c_void) {
     Box::from_raw(value as *mut HelloTypeNode);
 }

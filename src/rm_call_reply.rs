@@ -1,5 +1,5 @@
 use crate::raw;
-use crate::{Error, Result, Value, Ptr};
+use crate::{Error, RResult, Value, Ptr};
 use std::slice;
 
 #[repr(C)]
@@ -60,8 +60,8 @@ impl Drop for CallReply {
     }
 }
 
-impl Into<Result> for CallReply {
-    fn into(self) -> Result {
+impl Into<RResult> for CallReply {
+    fn into(self) -> RResult {
         let reply_type = self.get_type();
         match reply_type {
             ReplyType::Error => Err(Error::generic(&self.get_string())),
@@ -70,7 +70,7 @@ impl Into<Result> for CallReply {
                 let length = self.get_length();
                 let mut vec = Vec::with_capacity(length);
                 for i in 0..length {
-                    let value: Result = self.get_array_element(i).into();
+                    let value: RResult = self.get_array_element(i).into();
                     vec.push(value?)
                 }
                 Ok(Value::Array(vec))

@@ -1,5 +1,5 @@
 [package]
-name = "redis-module"
+name = "redismodule"
 version = "0.1.0"
 authors = ["sigoden <sigoden@gmail.com>"]
 edition = "2018"
@@ -30,3 +30,8 @@ crate-type = ["cdylib"]
 [[example]]
 name = "hellotype"
 crate-type = ["cdylib"]
+
+[workspace]
+members = [
+    "derive",
+]
