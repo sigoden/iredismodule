@@ -23,4 +23,3 @@ redis_module! {
         ["hellotimer.timer", hello_timer, "readonly", 0, 0, 0],
     ],
 }
-

@@ -32,6 +32,10 @@ crate-type = ["cdylib"]
 name = "hellotype"
 crate-type = ["cdylib"]
 
+[[example]]
+name = "hellotype2"
+crate-type = ["cdylib"]
+
 [workspace]
 members = [
     "macros",

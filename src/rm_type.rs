@@ -5,19 +5,52 @@ use std::ptr;
 use crate::raw;
 use crate::{Context, Error, LogLevel, Ptr, IO, RStr, Digest};
 
+pub enum TypeFeature {
+    Rdb,
+    Aof,
+    MemUsage,
+    Digest,
+    Aux,
+}
+
 pub trait TypeDef {
     fn name(&self) -> String;
-    fn version(&self) -> u64; 
-    fn create(&self, t: *mut raw::RedisModuleType) -> Result<(), Error>;
-    fn rdb_load(rdb: IO, encveer: u32) -> Self;
-    fn rdb_save(rdb: IO, value: &Self);
-    fn aof_rewrite(&self, rdb: IO, key: &RStr);
-    fn mem_usage(&self) -> usize;
-    fn digest(&self, digest: &mut Digest);
-    fn free(value: Box<Self>);
-    fn aux_load(rdb: IO, encver: u32, when: i32);
-    fn aux_save(rdb: IO, when: i32);
-    fn aux_save_triggers(&self) -> i32;
+    fn version(&self) -> i32; 
+    fn type_method_version(&self) -> u64 {
+        raw::REDISMODULE_TYPE_METHOD_VERSION as u64
+    }
+    #[allow(unused_variables)]
+    fn rdb_load(io: &mut IO, encver: u32) -> Option<Box<Self>> {
+        unimplemented!()
+    }
+    #[allow(unused_variables)]
+    fn rdb_save(&self, io: &mut IO) {
+        unimplemented!()
+    }
+    #[allow(unused_variables)]
+    fn aof_rewrite(&self, io: &mut IO, key: &RStr) {
+        unimplemented!()
+    }
+    fn mem_usage(&self) -> usize {
+        unimplemented!()
+    }
+    #[allow(unused_variables)]
+    fn digest(&self, digest: &mut Digest) {
+        unimplemented!()
+    }
+    #[allow(unused_variables)]
+    fn free(value: Box<Self>) { }
+    #[allow(unused_variables)]
+    fn aux_load(rdb: &mut IO, encver: u32, when: i32) {
+        unimplemented!()
+    }
+    #[allow(unused_variables)]
+    fn aux_save(rdb: &mut IO, when: i32) {
+        unimplemented!()
+    }
+    fn aux_save_triggers(&self) -> i32 {
+        unimplemented!()
+    }
 }
 
 pub struct RType {

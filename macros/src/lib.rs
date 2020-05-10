@@ -56,6 +56,6 @@ pub fn cmd(attr: TokenStream, input: TokenStream) -> TokenStream {
 
 
 #[proc_macro_attribute]
-pub fn init(attr: TokenStream, input: TokenStream) -> TokenStream {
+pub fn typedef(attr: TokenStream, input: TokenStream) -> TokenStream {
     input
 }
