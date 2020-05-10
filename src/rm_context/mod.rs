@@ -200,6 +200,33 @@ impl Context {
     pub fn log_debug(&self, message: &str) {
         self.log(LogLevel::Notice, message);
     }
+    pub fn create_command(
+        &self,
+        name: &str,
+        func: extern "C" fn(*mut raw::RedisModuleCtx, *mut *mut raw::RedisModuleString, c_int) -> c_int,
+        flags: &str,
+        first_key: usize,
+        last_key: usize,
+        key_step: usize,
+    ) -> Result<(), Error>
+    {
+        let name = CString::new(name).unwrap();
+        let flags = CString::new(flags).unwrap();
+        handle_status(
+            unsafe {
+                raw::RedisModule_CreateCommand.unwrap()(
+                    self.inner,
+                    name.as_ptr(),
+                    Some(func),
+                    flags.as_ptr(),
+                    first_key as c_int,
+                    last_key as c_int,
+                    key_step as c_int,
+                )
+            },
+            "can not create command"
+        )
+    }
 }
 
 pub(crate) fn take_data<T>(data: *mut c_void) -> T {

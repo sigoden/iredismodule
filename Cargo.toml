@@ -4,20 +4,21 @@ version = "0.1.0"
 authors = ["sigoden <sigoden@gmail.com>"]
 edition = "2018"
 
-[dependencies]
-
 [build-dependencies]
 bindgen = "0.53"
 cc = "1.0"
 
 [dev-dependencies]
 rand = "0.7.3"
-
+redismodule-macros = { path = "./macros" }
 
 [features]
 default = []
 experimental-api = []
 
+[[example]]
+name = "simple"
+crate-type = ["cdylib"]
 
 [[example]]
 name = "helloworld"
@@ -33,5 +34,5 @@ crate-type = ["cdylib"]
 
 [workspace]
 members = [
-    "derive",
+    "macros",
 ]

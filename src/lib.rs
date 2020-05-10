@@ -15,7 +15,7 @@ mod rm_value;
 pub use error::Error;
 pub use rm::{
     get_cluster_size, get_my_cluster_id, handle_status, is_module_busy, milliseconds, parse_args,
-    KeySpaceTypes, LogLevel, StatusCode, Ptr, ArgvFlags, CmdFunc, CCmdFn, CmdFn,
+    KeySpaceTypes, LogLevel, StatusCode, Ptr, ArgvFlags,
 };
 use rm_context::take_data;
 

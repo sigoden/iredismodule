@@ -124,3 +124,72 @@ macro_rules! assert_len {
         }
     }
 }
+
+
+#[macro_export]
+macro_rules! redis_module2 {
+    (
+        name: $module_name:expr,
+        version: $module_version:expr,
+        data_types: [
+            $($data_type:ident),* $(,)*
+        ],
+        init_funcs: [
+            $($init_func:ident),* $(,)*
+        ],
+        commands: [
+            $($command:ident),* $(,)*
+        ]
+    ) => {
+        #[no_mangle]
+        #[allow(non_snake_case)]
+        pub extern "C" fn RedisModule_OnLoad(
+            ctx: *mut $crate::raw::RedisModuleCtx,
+            argv: *mut *mut $crate::raw::RedisModuleString,
+            argc: std::os::raw::c_int,
+        ) -> std::os::raw::c_int {
+            let mut name_buffer = [0; 64];
+            unsafe {
+                std::ptr::copy(
+                    $module_name.as_ptr(),
+                    name_buffer.as_mut_ptr(),
+                    $module_name.len(),
+                );
+            }
+            let c_err = $crate::raw::REDISMODULE_APIVER_1 as std::os::raw::c_int;
+            let module_version = $module_version as std::os::raw::c_int;
+            if unsafe {
+                $crate::raw::Export_RedisModule_Init(
+                    ctx,
+                    name_buffer.as_ptr() as *const std::os::raw::c_char,
+                    module_version,
+                    $crate::raw::REDISMODULE_APIVER_1 as std::os::raw::c_int,
+                ) 
+            } == $crate::StatusCode::Err as std::os::raw::c_int {
+                return c_err;
+            }
+            let mut context = $crate::Context::from_ptr(ctx);
+
+            $(
+                if $init_func(ctx, argv, argc) == $crate::StatusCode::Err as std::os::raw::c_int {
+                    return c_err;
+                }
+            )*
+
+            $(
+                if (&$data_type).create(ctx).is_err() {
+                    return c_err;
+                }
+            )*
+
+            $(
+                if $command(&mut context).is_err() {
+                    return c_err;
+                }
+            )*
+
+            $crate::StatusCode::Ok as std::os::raw::c_int
+        }
+
+    }
+}

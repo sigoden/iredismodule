@@ -118,16 +118,3 @@ impl Into<CString> for ArgvFlags {
         CString::new(v).unwrap()
     }
 }
-
-pub struct CmdFunc {
-    pub name: String,
-    pub flags: String,
-    pub first_key: usize,
-    pub last_key: usize,
-    pub kep_step: usize,
-    pub cmd_func: CmdFn,
-    pub c_func: CCmdFn,
-}
-
-pub type CCmdFn = Fn(*mut raw::RedisModuleCtx, *mut *mut raw::RedisModuleString, c_int) -> c_int;
-pub type CmdFn = Fn(&Context, Vec<RStr>) -> RResult;

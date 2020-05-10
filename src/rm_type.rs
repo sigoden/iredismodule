@@ -3,7 +3,22 @@ use std::ffi::CString;
 use std::ptr;
 
 use crate::raw;
-use crate::{Context, Error, LogLevel, Ptr};
+use crate::{Context, Error, LogLevel, Ptr, IO, RStr, Digest};
+
+pub trait TypeDef {
+    fn name(&self) -> String;
+    fn version(&self) -> u64; 
+    fn create(&self, t: *mut raw::RedisModuleType) -> Result<(), Error>;
+    fn rdb_load(rdb: IO, encveer: u32) -> Self;
+    fn rdb_save(rdb: IO, value: &Self);
+    fn aof_rewrite(&self, rdb: IO, key: &RStr);
+    fn mem_usage(&self) -> usize;
+    fn digest(&self, digest: &mut Digest);
+    fn free(value: Box<Self>);
+    fn aux_load(rdb: IO, encver: u32, when: i32);
+    fn aux_save(rdb: IO, when: i32);
+    fn aux_save_triggers(&self) -> i32;
+}
 
 pub struct RType {
     name: &'static str,
