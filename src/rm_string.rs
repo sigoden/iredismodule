@@ -1,5 +1,5 @@
 use crate::raw;
-use crate::{handle_status, RedisError, Ptr};
+use crate::{handle_status, Error, Ptr};
 
 use std::ops::Deref;
 use std::ffi::CString;
@@ -9,39 +9,39 @@ use std::fmt;
 use std::slice;
 use std::str;
 
-pub struct RedisString {
-    redis_str: RedisStr,
+pub struct RString {
+    redis_str: RStr,
     ctx: *mut raw::RedisModuleCtx,
 }
 
-impl RedisString {
-    pub fn new(ctx: *mut raw::RedisModuleCtx, inner: *mut raw::RedisModuleString) -> RedisString {
-        let redis_str = RedisStr::from_ptr(inner);
-        RedisString { ctx, redis_str }
+impl RString {
+    pub fn new(ctx: *mut raw::RedisModuleCtx, inner: *mut raw::RedisModuleString) -> RString {
+        let redis_str = RStr::from_ptr(inner);
+        RString { ctx, redis_str }
     }
-    pub fn from_str(ctx: *mut raw::RedisModuleCtx, value: &str) -> RedisString {
+    pub fn from_str(ctx: *mut raw::RedisModuleCtx, value: &str) -> RString {
         let str = CString::new(value).unwrap();
         let inner =
             unsafe { raw::RedisModule_CreateString.unwrap()(ctx, str.as_ptr(), value.len()) };
         Self::new(ctx, inner)
     }
-    pub unsafe fn from_raw_parts(ctx: *mut raw::RedisModuleCtx, data: *mut u8, len: usize) -> RedisString {
+    pub unsafe fn from_raw_parts(ctx: *mut raw::RedisModuleCtx, data: *mut u8, len: usize) -> RString {
         let value = std::slice::from_raw_parts(data, len);
         let str = CString::new(value).unwrap();
         let inner = raw::RedisModule_CreateString.unwrap()(ctx, str.as_ptr(), len);
         Self::new(ctx, inner)
     }
-    pub fn get_redis_str(&self) -> &RedisStr {
+    pub fn get_redis_str(&self) -> &RStr {
         &self.redis_str
     }
-    pub fn ptr_to_str<'a>(ptr: *const raw::RedisModuleString) -> Result<&'a str, RedisError> {
+    pub fn ptr_to_str<'a>(ptr: *const raw::RedisModuleString) -> Result<&'a str, Error> {
         let mut len = 0;
         let bytes = unsafe { raw::RedisModule_StringPtrLen.unwrap()(ptr, &mut len) };
 
         str::from_utf8(unsafe { slice::from_raw_parts(bytes as *const u8, len) })
             .map_err(|e| e.into())
     }
-    pub fn append(&mut self, s: &str) -> Result<(), RedisError> {
+    pub fn append(&mut self, s: &str) -> Result<(), Error> {
         handle_status(
             unsafe {
                 raw::RedisModule_StringAppendBuffer.unwrap()(
@@ -62,35 +62,35 @@ impl RedisString {
     }
 }
 
-impl Deref for RedisString {
-    type Target = RedisStr;
+impl Deref for RString {
+    type Target = RStr;
     fn deref(&self) -> &Self::Target {
         &self.redis_str
     }
 }
 
 #[repr(C)]
-pub struct RedisStr {
+pub struct RStr {
     inner: *mut raw::RedisModuleString,
 }
 
-impl Ptr for RedisStr {
+impl Ptr for RStr {
     type PtrType = raw::RedisModuleString;
     fn get_ptr(&self) -> *mut Self::PtrType {
         self.inner
     }
 }
 
-impl RedisStr {
+impl RStr {
     pub fn from_ptr(inner: *mut raw::RedisModuleString) -> Self {
-        RedisStr { inner }
+        RStr { inner }
     }
 
     pub fn get_ptr(&self) -> *mut raw::RedisModuleString {
         self.inner
     }
 
-    pub fn get_long_long(&self) -> Result<i64, RedisError> {
+    pub fn get_long_long(&self) -> Result<i64, Error> {
         let mut ll: i64 = 0;
         handle_status(
             unsafe { raw::RedisModule_StringToLongLong.unwrap()(self.inner, &mut ll) },
@@ -98,14 +98,14 @@ impl RedisStr {
         )?;
         Ok(ll)
     }
-    pub fn get_positive_integer(&self) -> Result<u64, RedisError> {
+    pub fn get_positive_integer(&self) -> Result<u64, Error> {
         let ll = self.get_long_long()?;
         if ll < 1 {
-            return Err(RedisError::generic("can not less than 1"));
+            return Err(Error::generic("can not less than 1"));
         }
         Ok(ll as u64)
     }
-    pub fn get_double(&self) -> Result<f64, RedisError> {
+    pub fn get_double(&self) -> Result<f64, Error> {
         let mut d: f64 = 0.0;
         handle_status(
             unsafe { raw::RedisModule_StringToDouble.unwrap()(self.inner, &mut d) },
@@ -118,7 +118,7 @@ impl RedisStr {
         let bytes = unsafe { raw::RedisModule_StringPtrLen.unwrap()(self.inner, &mut len) };
         unsafe { slice::from_raw_parts(bytes as *const u8, len) }
     }
-    pub fn to_str(&self) -> Result<&str, RedisError> {
+    pub fn to_str(&self) -> Result<&str, Error> {
         let buffer = self.get_buffer();
         Ok(str::from_utf8(&buffer)?)
     }

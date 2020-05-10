@@ -1,5 +1,5 @@
 use crate::raw;
-use crate::{RedisError, RedisResult, RedisValue, Ptr};
+use crate::{Error, Result, Value, Ptr};
 use std::slice;
 
 #[repr(C)]
@@ -22,7 +22,7 @@ impl CallReply {
         let x = unsafe { raw::RedisModule_CallReplyType.unwrap()(self.inner) as u32 };
         match x {
             raw::REDISMODULE_REPLY_STRING => ReplyType::String,
-            raw::REDISMODULE_REPLY_ERROR => ReplyType::RedisError,
+            raw::REDISMODULE_REPLY_ERROR => ReplyType::Error,
             raw::REDISMODULE_REPLY_INTEGER => ReplyType::Integer,
             raw::REDISMODULE_REPLY_ARRAY => ReplyType::Array,
             raw::REDISMODULE_REPLY_NULL => ReplyType::Null,
@@ -60,24 +60,24 @@ impl Drop for CallReply {
     }
 }
 
-impl Into<RedisResult> for CallReply {
-    fn into(self) -> RedisResult {
+impl Into<Result> for CallReply {
+    fn into(self) -> Result {
         let reply_type = self.get_type();
         match reply_type {
-            ReplyType::RedisError => Err(RedisError::generic(&self.get_string())),
-            ReplyType::Unknown => Err(RedisError::generic("RedisError on method call")),
+            ReplyType::Error => Err(Error::generic(&self.get_string())),
+            ReplyType::Unknown => Err(Error::generic("Error on method call")),
             ReplyType::Array => {
                 let length = self.get_length();
                 let mut vec = Vec::with_capacity(length);
                 for i in 0..length {
-                    let value: RedisResult = self.get_array_element(i).into();
+                    let value: Result = self.get_array_element(i).into();
                     vec.push(value?)
                 }
-                Ok(RedisValue::Array(vec))
+                Ok(Value::Array(vec))
             }
-            ReplyType::Integer => Ok(RedisValue::Integer(self.get_integer() as i64)),
-            ReplyType::String => Ok(RedisValue::SimpleString(self.get_string())),
-            ReplyType::Null => Ok(RedisValue::Null),
+            ReplyType::Integer => Ok(Value::Integer(self.get_integer() as i64)),
+            ReplyType::String => Ok(Value::SimpleString(self.get_string())),
+            ReplyType::Null => Ok(Value::Null),
         }
     }
 }
@@ -85,7 +85,7 @@ impl Into<RedisResult> for CallReply {
 pub enum ReplyType {
     Unknown = raw::REDISMODULE_REPLY_UNKNOWN as isize,
     String = raw::REDISMODULE_REPLY_STRING as isize,
-    RedisError = raw::REDISMODULE_REPLY_ERROR as isize,
+    Error = raw::REDISMODULE_REPLY_ERROR as isize,
     Integer = raw::REDISMODULE_REPLY_INTEGER as isize,
     Array = raw::REDISMODULE_REPLY_ARRAY as isize,
     Null = raw::REDISMODULE_REPLY_NULL as isize,

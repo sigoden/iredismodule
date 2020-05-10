@@ -1,7 +1,7 @@
 use crate::raw;
 use crate::{
-    handle_status, CallReply, RedisError, KeySpaceTypes, LogLevel, ReadKey, RedisResult, RedisString,
-    RedisStr, RedisValue, StatusCode, WriteKey, Ptr, ArgvFlags,
+    handle_status, CallReply, Error, KeySpaceTypes, LogLevel, ReadKey, RString,
+    RStr, Value, StatusCode, WriteKey, Ptr, ArgvFlags,
 };
 use std::ffi::CString;
 use std::os::raw::{c_int, c_long, c_void, c_char};
@@ -11,20 +11,20 @@ pub mod cluster;
 pub mod timer;
 
 #[repr(C)]
-pub struct RedisCtx {
+pub struct Context {
     inner: *mut raw::RedisModuleCtx,
 }
 
-impl Ptr for RedisCtx {
+impl Ptr for Context {
     type PtrType = raw::RedisModuleCtx;
     fn get_ptr(&self) -> *mut Self::PtrType {
         self.inner
     }
 }
 
-impl RedisCtx {
+impl Context {
     pub fn from_ptr(inner: *mut raw::RedisModuleCtx) -> Self {
-        RedisCtx { inner }
+        Context { inner }
     }
     pub fn is_keys_position_request(&self) -> bool {
         // We want this to be available in tests where we don't have an actual Redis to call
@@ -43,30 +43,30 @@ impl RedisCtx {
             raw::RedisModule_KeyAtPos.unwrap()(self.inner, pos as c_int);
         }
     }
-    pub fn reply(&self, r: RedisResult) -> StatusCode {
+    pub fn reply(&self, r: crate::Result) -> StatusCode {
         match r {
-            Ok(RedisValue::Integer(v)) => unsafe {
+            Ok(Value::Integer(v)) => unsafe {
                 raw::RedisModule_ReplyWithLongLong.unwrap()(self.inner, v).into()
             },
 
-            Ok(RedisValue::Float(v)) => unsafe {
+            Ok(Value::Float(v)) => unsafe {
                 raw::RedisModule_ReplyWithDouble.unwrap()(self.inner, v).into()
             },
 
-            Ok(RedisValue::SimpleString(s)) => unsafe {
+            Ok(Value::SimpleString(s)) => unsafe {
                 let msg = CString::new(s).unwrap();
                 raw::RedisModule_ReplyWithSimpleString.unwrap()(self.inner, msg.as_ptr()).into()
             },
 
-            Ok(RedisValue::BulkString(s)) => unsafe {
+            Ok(Value::BulkString(s)) => unsafe {
                 raw::RedisModule_ReplyWithString.unwrap()(
                     self.inner,
-                    RedisString::from_str(self.inner, &s).get_ptr(),
+                    RString::from_str(self.inner, &s).get_ptr(),
                 )
                 .into()
             },
 
-            Ok(RedisValue::Buffer(b)) => unsafe {
+            Ok(Value::Buffer(b)) => unsafe {
                 raw::RedisModule_ReplyWithStringBuffer.unwrap()(
                     self.inner,
                     b.as_ptr() as *const c_char,
@@ -75,7 +75,7 @@ impl RedisCtx {
                 .into()
             },
 
-            Ok(RedisValue::Array(array)) => {
+            Ok(Value::Array(array)) => {
                 unsafe {
                     // According to the Redis source code this always succeeds,
                     // so there is no point in checking its return value.
@@ -89,13 +89,13 @@ impl RedisCtx {
                 StatusCode::Ok
             }
 
-            Ok(RedisValue::Null) => unsafe {
+            Ok(Value::Null) => unsafe {
                 raw::RedisModule_ReplyWithNull.unwrap()(self.inner).into()
             },
 
-            Ok(RedisValue::NoReply) => StatusCode::Ok,
+            Ok(Value::NoReply) => StatusCode::Ok,
 
-            Err(RedisError::WrongArity) => {
+            Err(Error::WrongArity) => {
                 if self.is_keys_position_request() {
                     StatusCode::Err
                 } else {
@@ -109,7 +109,7 @@ impl RedisCtx {
         }
     }
 
-    pub fn call(&self, command: &str, flags: ArgvFlags, args: &[&RedisStr]) -> CallReply {
+    pub fn call(&self, command: &str, flags: ArgvFlags, args: &[&RStr]) -> CallReply {
         let args: Vec<*mut raw::RedisModuleString> =
             args.iter().map(|s| s.get_ptr()).collect();
 
@@ -129,11 +129,11 @@ impl RedisCtx {
         CallReply::from_ptr(reply_)
     }
     pub fn call_with_str_args(&self, command: &str, flags: ArgvFlags, args: &[&str]) -> CallReply {
-        let str_args: Vec<RedisString> = args.iter().map(|v| self.create_string(v)).collect();
-        let str_args: Vec<&RedisStr> = str_args.iter().map(|v| v.get_redis_str()).collect();
+        let str_args: Vec<RString> = args.iter().map(|v| self.create_string(v)).collect();
+        let str_args: Vec<&RStr> = str_args.iter().map(|v| v.get_redis_str()).collect();
         self.call(command, flags, &str_args)
     }
-    pub fn replicate(&self, command: &str, flags: ArgvFlags, args: &[&RedisStr]) -> Result<(), RedisError> {
+    pub fn replicate(&self, command: &str, flags: ArgvFlags, args: &[&RStr]) -> Result<(), Error> {
         let args: Vec<*mut raw::RedisModuleString> =
             args.iter().map(|s| s.get_ptr()).collect();
 
@@ -152,9 +152,9 @@ impl RedisCtx {
         };
         handle_status(result, "can not replicate")
     }
-    pub fn replicate_with_str_args(&self, command: &str, flags: ArgvFlags, args: &[&str]) -> Result<(), RedisError> {
-        let str_args: Vec<RedisString> = args.iter().map(|v| self.create_string(v)).collect();
-        let str_args: Vec<&RedisStr> = str_args.iter().map(|v| v.get_redis_str()).collect();
+    pub fn replicate_with_str_args(&self, command: &str, flags: ArgvFlags, args: &[&str]) -> Result<(), Error> {
+        let str_args: Vec<RString> = args.iter().map(|v| self.create_string(v)).collect();
+        let str_args: Vec<&RStr> = str_args.iter().map(|v| v.get_redis_str()).collect();
         self.replicate(command, flags, &str_args)
     }
     pub fn replicate_verbatim(&self) {
@@ -171,25 +171,25 @@ impl RedisCtx {
     pub fn get_context_flags(&self) -> u64 {
         unsafe { raw::RedisModule_GetContextFlags.unwrap()(self.inner) as u64 }
     }
-    pub fn select_db(&self, newid: i32) -> Result<(), RedisError> {
+    pub fn select_db(&self, newid: i32) -> Result<(), Error> {
         handle_status(
             unsafe { raw::RedisModule_SelectDb.unwrap()(self.inner, newid) },
             "can not select db",
         )
     }
-    pub fn create_string(&self, value: &str) -> RedisString {
-        RedisString::from_str(self.inner, value)
+    pub fn create_string(&self, value: &str) -> RString {
+        RString::from_str(self.inner, value)
     }
-    pub fn open_read_key(&self, keyname: &RedisStr) -> ReadKey {
+    pub fn open_read_key(&self, keyname: &RStr) -> ReadKey {
         ReadKey::from_redis_str(self.inner, keyname)
     }
-    pub fn open_write_key(&self, keyname: &RedisStr) -> WriteKey {
+    pub fn open_write_key(&self, keyname: &RStr) -> WriteKey {
         WriteKey::from_redis_str(self.inner, keyname)
     }
     pub fn subscribe_to_keyspace_events<F>(&self, _types: KeySpaceTypes, _callback: F) {
         unimplemented!()
     }
-    pub fn signal_key_as_ready(&self, key: &RedisStr) {
+    pub fn signal_key_as_ready(&self, key: &RStr) {
         unsafe { raw::RedisModule_SignalKeyAsReady.unwrap()(self.inner, key.get_ptr()) };
     }
     pub fn log(&self, level: LogLevel, message: &str) {

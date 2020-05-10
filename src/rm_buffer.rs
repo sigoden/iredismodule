@@ -5,14 +5,14 @@ use std::string::FromUtf8Error;
 use crate::raw;
 
 #[derive(Debug)]
-pub struct RedisBuffer {
+pub struct Buffer {
     buffer: *mut c_char,
     len: usize,
 }
 
-impl RedisBuffer {
-    pub fn new(buffer: *mut c_char, len: usize) -> RedisBuffer {
-        RedisBuffer { buffer, len }
+impl Buffer {
+    pub fn new(buffer: *mut c_char, len: usize) -> Buffer {
+        Buffer { buffer, len }
     }
 
     pub fn to_string(&self) -> Result<String, FromUtf8Error> {
@@ -20,13 +20,13 @@ impl RedisBuffer {
     }
 }
 
-impl AsRef<[u8]> for RedisBuffer {
+impl AsRef<[u8]> for Buffer {
     fn as_ref(&self) -> &[u8] {
         unsafe { slice::from_raw_parts(self.buffer as *const u8, self.len) }
     }
 }
 
-impl Drop for RedisBuffer {
+impl Drop for Buffer {
     fn drop(&mut self) {
         unsafe {
             raw::RedisModule_Free.unwrap()(self.buffer as *mut c_void);

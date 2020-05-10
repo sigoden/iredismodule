@@ -12,7 +12,7 @@ mod rm_type;
 mod rm_string;
 mod rm_value;
 
-pub use error::RedisError;
+pub use error::Error;
 pub use rm::{
     get_cluster_size, get_my_cluster_id, handle_status, is_module_busy, milliseconds, parse_args,
     KeySpaceTypes, LogLevel, StatusCode, Ptr, ArgvFlags,
@@ -20,19 +20,19 @@ pub use rm::{
 use rm_context::take_data;
 
 pub use rm_context::cluster::{ClusterNode, ClusterNodeList, MsgType};
-pub use rm_context::{RedisCtx};
+pub use rm_context::{Context};
 
 pub use raw::RedisModuleTimerID as TimerID;
 
 pub use rm_block_client::BlockClient;
-pub use rm_buffer::RedisBuffer;
+pub use rm_buffer::Buffer;
 pub use rm_call_reply::CallReply;
-pub use rm_io::{RedisDigest, RedisIO};
+pub use rm_io::{Digest, IO};
 pub use rm_key::{
     KeyType, ListPosition, ReadKey, WriteKey,
     HashGetFlag, HashSetFlag, ZsetRangeDirection,
     ZaddInputFlag, ZaddOuputFlag,
 };
-pub use rm_type::RedisType;
-pub use rm_string::{RedisString, RedisStr};
-pub use rm_value::{RedisResult, RedisValue};
+pub use rm_type::ModuleType;
+pub use rm_string::{RString, RStr};
+pub use rm_value::{Result, Value};

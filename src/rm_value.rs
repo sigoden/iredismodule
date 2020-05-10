@@ -1,78 +1,78 @@
-use crate::RedisError;
-pub type RedisResult = Result<RedisValue, RedisError>;
+use crate::Error;
+pub type Result = std::result::Result<Value, Error>;
 
 #[derive(Debug, PartialEq)]
-pub enum RedisValue {
+pub enum Value {
     SimpleString(String),
     BulkString(String),
     Buffer(Vec<u8>),
     Integer(i64),
     Float(f64),
-    Array(Vec<RedisValue>),
+    Array(Vec<Value>),
     Null,
     NoReply, // No reply at all (as opposed to a Null reply)
 }
 
-impl From<()> for RedisValue {
+impl From<()> for Value {
     fn from(_: ()) -> Self {
-        RedisValue::Null
+        Value::Null
     }
 }
 
-impl From<i64> for RedisValue {
+impl From<i64> for Value {
     fn from(i: i64) -> Self {
-        RedisValue::Integer(i)
+        Value::Integer(i)
     }
 }
 
-impl From<usize> for RedisValue {
+impl From<usize> for Value {
     fn from(i: usize) -> Self {
         (i as i64).into()
     }
 }
 
-impl From<f64> for RedisValue {
+impl From<f64> for Value {
     fn from(f: f64) -> Self {
-        RedisValue::Float(f)
+        Value::Float(f)
     }
 }
 
-impl From<String> for RedisValue {
+impl From<String> for Value {
     fn from(s: String) -> Self {
-        RedisValue::BulkString(s)
+        Value::BulkString(s)
     }
 }
 
-impl From<&str> for RedisValue {
+impl From<&str> for Value {
     fn from(s: &str) -> Self {
         s.to_owned().into()
     }
 }
 
-impl From<&String> for RedisValue {
+impl From<&String> for Value {
     fn from(s: &String) -> Self {
         s.to_owned().into()
     }
 }
 
-impl From<Vec<u8>> for RedisValue {
+impl From<Vec<u8>> for Value {
     fn from(b: Vec<u8>) -> Self {
-        RedisValue::Buffer(b)
+        Value::Buffer(b)
     }
 }
 
-impl<T: Into<RedisValue>> From<Option<T>> for RedisValue {
+impl<T: Into<Value>> From<Option<T>> for Value {
     fn from(s: Option<T>) -> Self {
         match s {
             Some(v) => v.into(),
-            None => RedisValue::Null,
+            None => Value::Null,
         }
     }
 }
 
-impl<T: Into<RedisValue>> From<Vec<T>> for RedisValue {
+impl<T: Into<Value>> From<Vec<T>> for Value {
     fn from(items: Vec<T>) -> Self {
-        RedisValue::Array(items.into_iter().map(|item| item.into()).collect())
+        Value::Array(items.into_iter().map(|item| item.into()).collect())
     }
 }
 
@@ -80,42 +80,42 @@ impl<T: Into<RedisValue>> From<Vec<T>> for RedisValue {
 
 #[cfg(test)]
 mod tests {
-    use super::RedisValue;
+    use super::Value;
 
     #[test]
     fn from_vec_string() {
         assert_eq!(
-            RedisValue::from(vec!["foo".to_string()]),
-            RedisValue::Array(vec![RedisValue::BulkString("foo".to_owned())])
+            Value::from(vec!["foo".to_string()]),
+            Value::Array(vec![Value::BulkString("foo".to_owned())])
         );
     }
 
     #[test]
     fn from_vec_str() {
         assert_eq!(
-            RedisValue::from(vec!["foo"]),
-            RedisValue::Array(vec![RedisValue::BulkString("foo".to_owned())])
+            Value::from(vec!["foo"]),
+            Value::Array(vec![Value::BulkString("foo".to_owned())])
         );
     }
 
     #[test]
     fn from_vec_string_ref() {
         assert_eq!(
-            RedisValue::from(vec![&"foo".to_string()]),
-            RedisValue::Array(vec![RedisValue::BulkString("foo".to_owned())])
+            Value::from(vec![&"foo".to_string()]),
+            Value::Array(vec![Value::BulkString("foo".to_owned())])
         );
     }
 
     #[test]
     fn from_option_str() {
         assert_eq!(
-            RedisValue::from(Some("foo")),
-            RedisValue::BulkString("foo".to_owned())
+            Value::from(Some("foo")),
+            Value::BulkString("foo".to_owned())
         );
     }
 
     #[test]
     fn from_option_none() {
-        assert_eq!(RedisValue::from(None::<()>), RedisValue::Null,);
+        assert_eq!(Value::from(None::<()>), Value::Null,);
     }
 }

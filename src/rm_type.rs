@@ -3,9 +3,9 @@ use std::ffi::CString;
 use std::ptr;
 
 use crate::raw;
-use crate::{RedisCtx, RedisError, LogLevel, Ptr};
+use crate::{Context, Error, LogLevel, Ptr};
 
-pub struct RedisType {
+pub struct ModuleType {
     name: &'static str,
     version: i32,
     type_methods: raw::RedisModuleTypeMethods,
@@ -14,15 +14,15 @@ pub struct RedisType {
 
 // We want to be able to create static instances of this type,
 // which means we need to implement Sync.
-unsafe impl Sync for RedisType {}
+unsafe impl Sync for ModuleType {}
 
-impl RedisType {
+impl ModuleType {
     pub const fn new(
         name: &'static str,
         version: i32,
         type_methods: raw::RedisModuleTypeMethods,
     ) -> Self {
-        RedisType {
+        ModuleType {
             name,
             version,
             type_methods,
@@ -30,14 +30,14 @@ impl RedisType {
         }
     }
 
-    pub fn create_data_type(&self, ctx: &RedisCtx) -> Result<(), RedisError> {
+    pub fn create_data_type(&self, ctx: &Context) -> Result<(), Error> {
         if self.name.len() != 9 {
             let msg = "Redis requires the length of native type names to be exactly 9 characters";
             ctx.log(
                 LogLevel::Warning,
                 &format!("{}, name is: '{}'", msg, self.name),
             );
-            return Err(RedisError::generic(msg));
+            return Err(Error::generic(msg));
         }
 
         let type_name = CString::new(self.name).unwrap();
@@ -54,7 +54,7 @@ impl RedisType {
         if redis_type.is_null() {
             let msg = "Created data type is null";
             ctx.log(LogLevel::Warning, msg);
-            return Err(RedisError::generic(msg));
+            return Err(Error::generic(msg));
         }
 
         *self.raw_type.borrow_mut() = redis_type;

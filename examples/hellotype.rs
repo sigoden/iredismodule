@@ -1,5 +1,5 @@
-use redis_module::{redis_module, assert_len, redis_type};
-use redis_module::{raw, RedisCtx, RedisError, RedisResult, RedisStr, RedisType, RedisValue, RedisIO, ArgvFlags, RedisDigest};
+use redis_module::{redis_module, assert_len};
+use redis_module::{raw, Context, Error, Result, RStr, ModuleType, Value, IO, ArgvFlags, Digest};
 use std::os::raw::{c_void, c_int};
 
 
@@ -51,11 +51,11 @@ impl<'a> Iterator for HelloTypeNodeIter<'a> {
 }
 
 
-fn hellotype_insert(ctx: &RedisCtx, args: Vec<RedisStr>) -> RedisResult {
+fn hellotype_insert(ctx: &Context, args: Vec<RStr>) -> Result {
     assert_len!(args, 3);
     let mut key = ctx.open_write_key(&args[1]);
     let exist = key.verify_module_type(&HELLO_TYPE)?;
-    let value = args[2].get_long_long().map_err(|e| RedisError::generic("invalid value: must be a signed 64 bit integer"))?;
+    let value = args[2].get_long_long().map_err(|e| Error::generic("invalid value: must be a signed 64 bit integer"))?;
     if exist {
         let hto = HelloTypeNode::new();
         key.set_value(&HELLO_TYPE, hto)?;
@@ -67,21 +67,21 @@ fn hellotype_insert(ctx: &RedisCtx, args: Vec<RedisStr>) -> RedisResult {
     Ok(hto.len().into())
 }
 
-fn hellotype_range(ctx: &RedisCtx, args: Vec<RedisStr>) -> RedisResult {
+fn hellotype_range(ctx: &Context, args: Vec<RStr>) -> Result {
     assert_len!(args, 3);
     let key = ctx.open_write_key(&args[1]);
     key.verify_module_type(&HELLO_TYPE)?;
-    let first = args[2].get_positive_integer().map_err(|_| RedisError::generic("invalid first parameters"))?;
-    let count = args[3].get_positive_integer().map_err(|_| RedisError::generic("invalid count parameters"))? as usize;
+    let first = args[2].get_positive_integer().map_err(|_| Error::generic("invalid first parameters"))?;
+    let count = args[3].get_positive_integer().map_err(|_| Error::generic("invalid count parameters"))? as usize;
     let hto = key.get_value::<HelloTypeNode>(&HELLO_TYPE)?;
     if hto.is_none() {
-        return Ok(RedisValue::Array(vec![]));
+        return Ok(Value::Array(vec![]));
     }
-    let eles: Vec<RedisValue> = hto.unwrap().iter().take(count).cloned().map(|v| v.into()).collect();
-    Ok(RedisValue::Array(eles))
+    let eles: Vec<Value> = hto.unwrap().iter().take(count).cloned().map(|v| v.into()).collect();
+    Ok(Value::Array(eles))
 }
 
-fn hellotype_len(ctx: &RedisCtx, args: Vec<RedisStr>) -> RedisResult {
+fn hellotype_len(ctx: &Context, args: Vec<RStr>) -> Result {
     assert_len!(args, 2);
     let key = ctx.open_write_key(&args[1]);
     key.verify_module_type(&HELLO_TYPE)?;
@@ -93,11 +93,11 @@ fn hellotype_len(ctx: &RedisCtx, args: Vec<RedisStr>) -> RedisResult {
     Ok(len.into())
 }
 
-fn hellotype_brange(ctx: &RedisCtx, mut args: Vec<RedisStr>) -> RedisResult {
+fn hellotype_brange(ctx: &Context, mut args: Vec<RStr>) -> Result {
     assert_len!(args, 5);
     let key = ctx.open_write_key(&args[1]);
     let exists = key.verify_module_type(&HELLO_TYPE)?;
-    let timeout = args[4].get_positive_integer().map_err(|_| RedisError::generic("invalid timeout parameter"))?;
+    let timeout = args[4].get_positive_integer().map_err(|_| Error::generic("invalid timeout parameter"))?;
     if exists {
         args.remove(args.len() - 1);
         return hellotype_range(ctx, args);
@@ -119,7 +119,7 @@ redis_module! {
     ],
 }
 
-static HELLO_TYPE: RedisType = RedisType::new(
+static HELLO_TYPE: ModuleType = ModuleType::new(
     "hellotype",
     0,
     raw::RedisModuleTypeMethods {
@@ -139,7 +139,7 @@ static HELLO_TYPE: RedisType = RedisType::new(
 );
 
 extern "C" fn hello_type_rdb_load(rdb: *mut raw::RedisModuleIO, encver: c_int) -> *mut c_void {
-    let mut io = RedisIO::from_ptr(rdb);
+    let mut io = IO::from_ptr(rdb);
     if encver != 0 {
         return  0 as *mut c_void;
     }
@@ -153,7 +153,7 @@ extern "C" fn hello_type_rdb_load(rdb: *mut raw::RedisModuleIO, encver: c_int) -
 }
 
 unsafe extern "C" fn hello_type_rdb_save(rdb: *mut raw::RedisModuleIO, value: *mut c_void) {
-    let mut io = RedisIO::from_ptr(rdb);
+    let mut io = IO::from_ptr(rdb);
     let hto = &*(value as *mut HelloTypeNode);
     let eles: Vec<&i64> = hto.iter().collect();
     io.save_unsigned(eles.len() as u64);
@@ -161,10 +161,10 @@ unsafe extern "C" fn hello_type_rdb_save(rdb: *mut raw::RedisModuleIO, value: *m
 }
 
 unsafe extern "C" fn hello_type_aof_rewrite(aof: *mut raw::RedisModuleIO, key: *mut raw::RedisModuleString, value: *mut c_void) {
-    let mut io = RedisIO::from_ptr(aof);
+    let mut io = IO::from_ptr(aof);
     let hto = &*(value as *mut HelloTypeNode);
     let eles: Vec<&i64> = hto.iter().collect();
-    let key = RedisStr::from_ptr(key);
+    let key = RStr::from_ptr(key);
     let keyname = key.to_str().unwrap();
     eles.iter().for_each(|v| io.emit_aof("HELLOTYPE.INSERT", ArgvFlags::new(),  &[keyname, &v.to_string()]))
 }
@@ -175,7 +175,7 @@ unsafe extern "C" fn hello_type_mem_usage(value: *const c_void) -> usize {
 }
 
 unsafe extern "C" fn hello_type_digest(md: *mut raw::RedisModuleDigest, value: *mut c_void) {
-    let mut md = RedisDigest::from_ptr(md);
+    let mut md = Digest::from_ptr(md);
     let hto = &*(value as *const HelloTypeNode);
     let eles: Vec<&i64> = hto.iter().collect();
     eles.iter().for_each(|v| md.add_long_long(**v));

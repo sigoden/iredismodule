@@ -3,7 +3,7 @@ use std::os::raw::{c_int, c_void, c_char};
 use std::time::Duration;
 
 use crate::raw;
-use crate::{handle_status, RedisCtx, RedisError, RedisType, RedisStr, RedisString, Ptr, RedisBuffer};
+use crate::{handle_status, Context, Error, ModuleType, RStr, RString, Ptr, Buffer};
 
 pub struct ReadKey {
     inner: *mut raw::RedisModuleKey,
@@ -24,7 +24,7 @@ impl Drop for ReadKey {
 }
 
 impl ReadKey {
-    pub fn from_redis_str(ctx: *mut raw::RedisModuleCtx, keyname: &RedisStr) -> Self {
+    pub fn from_redis_str(ctx: *mut raw::RedisModuleCtx, keyname: &RStr) -> Self {
         let mode = raw::REDISMODULE_READ as c_int;
         let inner = unsafe {
             raw::RedisModule_OpenKey.unwrap()(ctx, keyname.get_ptr(), mode) as *mut raw::RedisModuleKey
@@ -37,7 +37,7 @@ impl ReadKey {
         key_type == KeyType::Empty
     }
 
-    pub fn get_value<T>(&self, redis_type: &RedisType) -> Result<Option<&mut T>, RedisError> {
+    pub fn get_value<T>(&self, redis_type: &ModuleType) -> Result<Option<&mut T>, Error> {
         let exist = self.verify_module_type(redis_type)?;
         if !exist {
             return Ok(None);
@@ -46,42 +46,42 @@ impl ReadKey {
         let value = unsafe { &mut *value };
         Ok(Some(value))
     }
-    pub fn verify_type(&self, expect_type: KeyType, allow_null: bool) -> Result<(), RedisError> {
+    pub fn verify_type(&self, expect_type: KeyType, allow_null: bool) -> Result<(), Error> {
         let key_type = self.get_type();
         if key_type != expect_type {
             if !allow_null || key_type != KeyType::Empty {
-                return Err(RedisError::WrongType);
+                return Err(Error::WrongType);
             }
         }
         Ok(())
     }
 
-    pub fn verify_module_type(&self, redis_type: &RedisType) -> Result<bool, RedisError> {
+    pub fn verify_module_type(&self, redis_type: &ModuleType) -> Result<bool, Error> {
         let key_type = self.get_type();
         if key_type == KeyType::Empty {
             return Ok(false);
         } 
         if key_type != KeyType::Module {
-            return Err(RedisError::WrongType);
+            return Err(Error::WrongType);
         }
         let raw_type = unsafe { raw::RedisModule_ModuleTypeGetType.unwrap()(self.inner) };
 
         if raw_type != *redis_type.raw_type.borrow() {
-            return Err(RedisError::WrongType);
+            return Err(Error::WrongType);
         }
         Ok(true)
     }
-    pub fn string_get(&self) -> Result<RedisString, RedisError> {
+    pub fn string_get(&self) -> Result<RString, Error> {
         unsafe {
             let mut len = 0;
             let data = raw::RedisModule_StringDMA.unwrap()(self.inner, &mut len, raw::REDISMODULE_READ as c_int) as *mut u8;
             if data.is_null() {
-                return Err(RedisError::generic("fail to execute string_dma"));
+                return Err(Error::generic("fail to execute string_dma"));
             }
-            Ok(RedisString::from_raw_parts(self.ctx, data, len as usize))
+            Ok(RString::from_raw_parts(self.ctx, data, len as usize))
         }
     }
-    pub fn hash_get(&self, flag: HashGetFlag, field: &RedisStr) -> Result<Option<RedisString>, RedisError> {
+    pub fn hash_get(&self, flag: HashGetFlag, field: &RStr) -> Result<Option<RString>, Error> {
         let value: *mut raw::RedisModuleString  = std::ptr::null_mut();
         unsafe {
             handle_status(
@@ -98,9 +98,9 @@ impl ReadKey {
         if value.is_null() {
             return Ok(None);
         } 
-        Ok(Some(RedisString::new(self.ctx, value)))
+        Ok(Some(RString::new(self.ctx, value)))
     }
-    pub fn zset_score_range(&self, dir: ZsetRangeDirection, min: f64, max: f64, min_exclude: bool, max_exclude: bool) -> Result<Vec<(RedisString, f64)>, RedisError> {
+    pub fn zset_score_range(&self, dir: ZsetRangeDirection, min: f64, max: f64, min_exclude: bool, max_exclude: bool) -> Result<Vec<(RString, f64)>, Error> {
         let minex = min_exclude as i32;
         let maxex = max_exclude as i32;
         let mut result = vec![];
@@ -120,14 +120,14 @@ impl ReadKey {
             while check_end(self.inner) == 0 {
                 let mut score = 0.0;
                 let elem = get_elem(self.inner, &mut score);
-                result.push((RedisString::new(self.ctx, elem), score));
+                result.push((RString::new(self.ctx, elem), score));
                 next(self.inner);
             }
             raw::RedisModule_ZsetRangeStop.unwrap()(self.inner);
         }
         Ok(result)
     }
-    pub fn zset_lex_range(&self, dir: ZsetRangeDirection, min: &RedisStr, max: &RedisStr) -> Result<Vec<(RedisString, f64)>, RedisError> {
+    pub fn zset_lex_range(&self, dir: ZsetRangeDirection, min: &RStr, max: &RStr) -> Result<Vec<(RString, f64)>, Error> {
         let mut result = vec![];
         unsafe {
             let (init, next) = {
@@ -136,7 +136,7 @@ impl ReadKey {
                     ZsetRangeDirection::LastIn => (raw::RedisModule_ZsetLastInLexRange.unwrap(), raw::RedisModule_ZsetRangePrev.unwrap()),
                 }
             };
-            let ctx = RedisCtx::from_ptr(self.ctx);
+            let ctx = Context::from_ptr(self.ctx);
             ctx.log_debug(&format!("dir = {:?} min={} max={}", dir, min.to_str().unwrap(), max.to_str().unwrap()));
             let check_end  = raw::RedisModule_ZsetRangeEndReached.unwrap();
             let get_elem = raw::RedisModule_ZsetRangeCurrentElement.unwrap();
@@ -149,7 +149,7 @@ impl ReadKey {
                 let mut score = 0.0;
                 ctx.log_debug(&format!("range step"));
                 let elem = get_elem(self.inner, &mut score);
-                result.push((RedisString::new(self.ctx, elem), score));
+                result.push((RString::new(self.ctx, elem), score));
                 next(self.inner);
             }
             ctx.log_debug(&format!("range stop"));
@@ -201,7 +201,7 @@ impl Deref for WriteKey {
 }
 
 impl WriteKey {
-    pub fn from_redis_str(ctx: *mut raw::RedisModuleCtx, keyname: &RedisStr) -> Self {
+    pub fn from_redis_str(ctx: *mut raw::RedisModuleCtx, keyname: &RStr) -> Self {
         let mode = (raw::REDISMODULE_READ | raw::REDISMODULE_WRITE) as c_int;
         let inner = unsafe {
             raw::RedisModule_OpenKey.unwrap()(ctx, keyname.get_ptr(), mode) as *mut raw::RedisModuleKey
@@ -211,10 +211,10 @@ impl WriteKey {
         }
     }
 
-    pub fn set_value<T>(&mut self, redis_type: &RedisType, value: T) -> Result<(), RedisError> {
+    pub fn set_value<T>(&mut self, redis_type: &ModuleType, value: T) -> Result<(), Error> {
         let exist = self.verify_module_type(redis_type)?;
         if !exist {
-            return Err(RedisError::WrongType);
+            return Err(Error::WrongType);
         }
         let value = Box::into_raw(Box::new(value)) as *mut c_void;
         handle_status(
@@ -229,25 +229,25 @@ impl WriteKey {
         )
     }
 
-    pub fn delete(&mut self) -> Result<(), RedisError> {
+    pub fn delete(&mut self) -> Result<(), Error> {
         handle_status(
             unsafe { raw::RedisModule_DeleteKey.unwrap()(self.inner) },
             "fail to execute delete",
         )
     }
-    pub fn unlink(&mut self) -> Result<(), RedisError> {
+    pub fn unlink(&mut self) -> Result<(), Error> {
         handle_status(
             unsafe { raw::RedisModule_UnlinkKey.unwrap()(self.inner) },
             "fail to execute unlink",
         )
     }
-    pub fn set_expire(&mut self, expire: Duration) -> Result<(), RedisError> {
+    pub fn set_expire(&mut self, expire: Duration) -> Result<(), Error> {
         handle_status(
             unsafe { raw::RedisModule_SetExpire.unwrap()(self.inner, expire.as_millis() as i64) },
             "fail to execute set_expire",
         )
     }
-    pub fn string_set(&mut self, value: &RedisStr) -> Result<(), RedisError> {
+    pub fn string_set(&mut self, value: &RStr) -> Result<(), Error> {
         handle_status(
             unsafe { raw::RedisModule_StringSet.unwrap()(self.inner, value.get_ptr()) },
             "fail to execute string_set",
@@ -256,21 +256,21 @@ impl WriteKey {
     pub fn list_push(
         &mut self,
         position: ListPosition,
-        value: &RedisStr,
-    ) -> Result<(), RedisError> {
+        value: &RStr,
+    ) -> Result<(), Error> {
         handle_status(
             unsafe { raw::RedisModule_ListPush.unwrap()(self.inner, position as i32, value.get_ptr()) },
             "fail to execute list_push",
         )
     }
-    pub fn list_pop(&mut self, pos: ListPosition) -> Result<RedisString, RedisError> {
+    pub fn list_pop(&mut self, pos: ListPosition) -> Result<RString, Error> {
         let p = unsafe { raw::RedisModule_ListPop.unwrap()(self.inner, pos as i32) };
         if p.is_null() {
-            return Err(RedisError::generic("can not pop list"));
+            return Err(Error::generic("can not pop list"));
         }
-        Ok(RedisString::new(self.ctx, p))
+        Ok(RString::new(self.ctx, p))
     }
-    pub fn hash_set(&self, flag: HashSetFlag, field: &RedisStr, value: &RedisStr) -> Result<(), RedisError> {
+    pub fn hash_set(&self, flag: HashSetFlag, field: &RStr, value: &RStr) -> Result<(), Error> {
         unsafe {
             handle_status(
                 raw::RedisModule_HashSet.unwrap()(
@@ -285,7 +285,7 @@ impl WriteKey {
         }
         Ok(())
     }
-    pub fn zset_add(&self, score: f64, ele: &RedisStr, flag: ZaddInputFlag) -> Result<ZaddOuputFlag, RedisError> {
+    pub fn zset_add(&self, score: f64, ele: &RStr, flag: ZaddInputFlag) -> Result<ZaddOuputFlag, Error> {
         let out_flag;
         unsafe {
             let mut flag = flag as c_int;
@@ -297,7 +297,7 @@ impl WriteKey {
         }
         Ok(out_flag)
     }
-    pub fn zset_incrby(&self, ele: &RedisStr, score: f64, flag: ZaddInputFlag) -> Result<(ZaddOuputFlag, f64), RedisError> {
+    pub fn zset_incrby(&self, ele: &RStr, score: f64, flag: ZaddInputFlag) -> Result<(ZaddOuputFlag, f64), Error> {
         let out_flag;
         let mut new_score  = 0.0;
         unsafe {
@@ -311,7 +311,7 @@ impl WriteKey {
         Ok((out_flag, new_score))
 
     }
-    pub fn zset_rem(&self, ele: &RedisStr) -> Result<bool, RedisError> {
+    pub fn zset_rem(&self, ele: &RStr) -> Result<bool, Error> {
         let mut flag = 0;
         unsafe {
             handle_status(
@@ -326,7 +326,7 @@ impl WriteKey {
         };
         Ok(result)
     }
-    pub fn zset_score(&self, ele: &RedisStr) -> Result<f64, RedisError> {
+    pub fn zset_score(&self, ele: &RStr) -> Result<f64, Error> {
         unsafe {
             let mut score = 0.0;
             handle_status(

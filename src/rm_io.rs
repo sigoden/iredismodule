@@ -2,23 +2,23 @@ use std::ffi::CString;
 use std::os::raw::{c_char, c_uchar};
 
 use crate::raw;
-use crate::{RedisError, LogLevel, RedisBuffer, RedisString, RedisStr, ArgvFlags, Ptr};
+use crate::{Error, LogLevel, Buffer, RString, RStr, ArgvFlags, Ptr};
 
 #[repr(C)]
-pub struct RedisIO {
+pub struct IO {
     inner: *mut raw::RedisModuleIO,
 }
 
-impl Ptr for RedisIO {
+impl Ptr for IO {
     type PtrType = raw::RedisModuleIO;
     fn get_ptr(&self) -> *mut Self::PtrType {
         self.inner
     }
 }
 
-impl RedisIO {
+impl IO {
     pub fn from_ptr(inner: *mut raw::RedisModuleIO) -> Self {
-        RedisIO { inner }
+        IO { inner }
     }
     pub fn save_unsigned(&mut self, value: u64) {
         unsafe { raw::RedisModule_SaveUnsigned.unwrap()(self.inner, value) };
@@ -32,7 +32,7 @@ impl RedisIO {
     pub fn load_signed(&mut self) -> i64 {
         unsafe { raw::RedisModule_LoadSigned.unwrap()(self.inner) }
     }
-    pub fn save_redis_string(&mut self, value: &RedisString) {
+    pub fn save_redis_string(&mut self, value: &RString) {
         unsafe { raw::RedisModule_SaveString.unwrap()(self.inner, value.get_ptr()) }
     }
     pub fn save_string_buffer(&mut self, value: &[u8]) {
@@ -47,12 +47,12 @@ impl RedisIO {
     pub fn save_string(&mut self, value: &str) {
         self.save_string_buffer(value.as_bytes())
     }
-    pub fn load_string_buffer(&mut self) -> RedisBuffer {
+    pub fn load_string_buffer(&mut self) -> Buffer {
         let mut len = 0;
         let bytes = unsafe { raw::RedisModule_LoadStringBuffer.unwrap()(self.inner, &mut len) };
-        RedisBuffer::new(bytes, len)
+        Buffer::new(bytes, len)
     }
-    pub fn load_string(&mut self) -> Result<String, RedisError> {
+    pub fn load_string(&mut self) -> Result<String, Error> {
         let buffer = self.load_string_buffer();
         buffer.to_string().map_err(|e| e.into())
     }
@@ -97,20 +97,20 @@ impl RedisIO {
     }
 }
 
-pub struct RedisDigest {
+pub struct Digest {
     inner: *mut raw::RedisModuleDigest,
 }
 
-impl Ptr for RedisDigest {
+impl Ptr for Digest {
     type PtrType = raw::RedisModuleDigest;
     fn get_ptr(&self) -> *mut Self::PtrType {
         self.inner
     }
 }
 
-impl RedisDigest {
+impl Digest {
     pub fn from_ptr(inner: *mut raw::RedisModuleDigest) -> Self {
-        RedisDigest { inner }
+        Digest { inner }
     }
     pub fn add_string_buffer(&mut self, ele: &str) {
         let s = CString::new(ele).unwrap();

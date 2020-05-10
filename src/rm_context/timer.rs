@@ -3,12 +3,12 @@ use std::os::raw::c_void;
 use std::time::Duration;
 
 use crate::raw;
-use crate::{handle_status, take_data, RedisCtx, RedisError, TimerID};
+use crate::{handle_status, take_data, Context, Error, TimerID};
 
-impl RedisCtx {
-    pub fn create_timer<F, T>(&self, period: Duration, callback: F, data: T) -> Result<TimerID, RedisError>
+impl Context {
+    pub fn create_timer<F, T>(&self, period: Duration, callback: F, data: T) -> Result<TimerID, Error>
     where
-        F: FnOnce(&RedisCtx, T),
+        F: FnOnce(&Context, T),
     {
         // Store the user-provided data on the heap before passing ownership of it to Redis,
         // so that it will outlive the current scope.
@@ -20,7 +20,7 @@ impl RedisCtx {
                 period
                     .as_millis()
                     .try_into()
-                    .map_err(|e| RedisError::generic("invalid timer period"))?,
+                    .map_err(|e| Error::generic("invalid timer period"))?,
                 Some(timer_proc::<F, T>),
                 data as *mut c_void,
             )
@@ -28,7 +28,7 @@ impl RedisCtx {
 
         Ok(timer_id as TimerID)
     }
-    pub fn stop_timer<T>(&self, id: TimerID) -> Result<T, RedisError> {
+    pub fn stop_timer<T>(&self, id: TimerID) -> Result<T, Error> {
         let mut data: *mut c_void = std::ptr::null_mut();
 
         handle_status(
@@ -40,7 +40,7 @@ impl RedisCtx {
         return Ok(data);
     }
 
-    pub fn get_timer_info<T>(&self, id: TimerID) -> Result<(Duration, &T), RedisError> {
+    pub fn get_timer_info<T>(&self, id: TimerID) -> Result<(Duration, &T), Error> {
         let mut remaining: u64 = 0;
         let mut data: *mut c_void = std::ptr::null_mut();
 
@@ -64,9 +64,9 @@ impl RedisCtx {
 
 extern "C" fn timer_proc<F, T>(ctx: *mut raw::RedisModuleCtx, data: *mut c_void)
 where
-    F: FnOnce(&RedisCtx, T),
+    F: FnOnce(&Context, T),
 {
-    let ctx = &RedisCtx::from_ptr(ctx);
+    let ctx = &Context::from_ptr(ctx);
     if data.is_null() {
         ctx.log_debug("Timer callback data is null");
         return;
@@ -76,7 +76,7 @@ where
 }
 
 #[repr(C)]
-pub(crate) struct TimerProcData<F: FnOnce(&RedisCtx, T), T> {
+pub(crate) struct TimerProcData<F: FnOnce(&Context, T), T> {
     data: T,
     callback: F,
 }

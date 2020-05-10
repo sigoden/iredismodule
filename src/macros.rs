@@ -93,7 +93,7 @@ macro_rules! redis_command {
             argv: *mut *mut raw::RedisModuleString,
             argc: c_int,
         ) -> c_int {
-            let context = $crate::RedisCtx::from_ptr(ctx);
+            let context = $crate::Context::from_ptr(ctx);
             let response = $command_handler(&context, $crate::parse_args(argv, argc));
             context.reply(response) as c_int
         }
@@ -120,7 +120,7 @@ macro_rules! redis_command {
 macro_rules! assert_len {
     ($args:expr, $n:expr) => {
         if $args.len() != $n {
-            return Err(RedisError::WrongArity);
+            return Err(Error::WrongArity);
         }
     }
 }
