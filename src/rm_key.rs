@@ -3,7 +3,7 @@ use std::os::raw::{c_int, c_void, c_char};
 use std::time::Duration;
 
 use crate::raw;
-use crate::{handle_status, Context, Error, ModuleType, RStr, RString, Ptr, Buffer};
+use crate::{handle_status, Context, Error, RType, RStr, RString, Ptr, Buffer};
 
 pub struct ReadKey {
     inner: *mut raw::RedisModuleKey,
@@ -37,7 +37,7 @@ impl ReadKey {
         key_type == KeyType::Empty
     }
 
-    pub fn get_value<T>(&self, redis_type: &ModuleType) -> Result<Option<&mut T>, Error> {
+    pub fn get_value<T>(&self, redis_type: &RType) -> Result<Option<&mut T>, Error> {
         let exist = self.verify_module_type(redis_type)?;
         if !exist {
             return Ok(None);
@@ -56,7 +56,7 @@ impl ReadKey {
         Ok(())
     }
 
-    pub fn verify_module_type(&self, redis_type: &ModuleType) -> Result<bool, Error> {
+    pub fn verify_module_type(&self, redis_type: &RType) -> Result<bool, Error> {
         let key_type = self.get_type();
         if key_type == KeyType::Empty {
             return Ok(false);
@@ -211,7 +211,7 @@ impl WriteKey {
         }
     }
 
-    pub fn set_value<T>(&mut self, redis_type: &ModuleType, value: T) -> Result<(), Error> {
+    pub fn set_value<T>(&mut self, redis_type: &RType, value: T) -> Result<(), Error> {
         let exist = self.verify_module_type(redis_type)?;
         if !exist {
             return Err(Error::WrongType);

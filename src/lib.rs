@@ -33,6 +33,6 @@ pub use rm_key::{
     HashGetFlag, HashSetFlag, ZsetRangeDirection,
     ZaddInputFlag, ZaddOuputFlag,
 };
-pub use rm_type::ModuleType;
+pub use rm_type::RType;
 pub use rm_string::{RString, RStr};
 pub use rm_value::{Result, Value};

@@ -1,5 +1,5 @@
 use redis_module::{redis_module, assert_len};
-use redis_module::{raw, Context, Error, Result, RStr, ModuleType, Value, IO, ArgvFlags, Digest};
+use redis_module::{raw, Context, Error, Result, RStr, RType, Value, IO, ArgvFlags, Digest};
 use std::os::raw::{c_void, c_int};
 
 
@@ -119,7 +119,7 @@ redis_module! {
     ],
 }
 
-static HELLO_TYPE: ModuleType = ModuleType::new(
+static HELLO_TYPE: RType = RType::new(
     "hellotype",
     0,
     raw::RedisModuleTypeMethods {

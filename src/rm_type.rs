@@ -5,7 +5,7 @@ use std::ptr;
 use crate::raw;
 use crate::{Context, Error, LogLevel, Ptr};
 
-pub struct ModuleType {
+pub struct RType {
     name: &'static str,
     version: i32,
     type_methods: raw::RedisModuleTypeMethods,
@@ -14,15 +14,15 @@ pub struct ModuleType {
 
 // We want to be able to create static instances of this type,
 // which means we need to implement Sync.
-unsafe impl Sync for ModuleType {}
+unsafe impl Sync for RType {}
 
-impl ModuleType {
+impl RType {
     pub const fn new(
         name: &'static str,
         version: i32,
         type_methods: raw::RedisModuleTypeMethods,
     ) -> Self {
-        ModuleType {
+        RType {
             name,
             version,
             type_methods,
