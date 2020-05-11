@@ -1,5 +1,6 @@
-use redismodule::{redis_module};
+use redismodule::{define_module};
 use redismodule::{Context, RResult, RStr};
+use redismodule_macros::{rcommand};
 use rand::random;
 use std::time::Duration;
 
@@ -7,6 +8,7 @@ fn timer_handler(ctx: &Context, data: String) {
     ctx.log_debug(&data);
 }
 
+#[rcommand(name="hellotimer.timer",flags="readonly",first_key=0,last_key=0,key_step=0)]
 fn hello_timer(ctx: &Context, args: Vec<RStr>) -> RResult {
     for _ in 0..10 {
         let delay: u32 = random::<u32>() % 5000;
@@ -15,11 +17,12 @@ fn hello_timer(ctx: &Context, args: Vec<RStr>) -> RResult {
     Ok("OK".into())
 }
 
-redis_module! {
+define_module! {
     name: "hellotimer",
     version: 1,
     data_types: [],
+    init_funcs: [],
     commands: [
-        ["hellotimer.timer", hello_timer, "readonly", 0, 0, 0],
+        create_hello_timer,
     ],
 }

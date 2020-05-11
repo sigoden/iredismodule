@@ -46,6 +46,7 @@ impl ReadKey {
         let value = unsafe { &mut *value };
         Ok(Some(value))
     }
+
     pub fn verify_type(&self, expect_type: KeyType, allow_null: bool) -> Result<(), Error> {
         let key_type = self.get_type();
         if key_type != expect_type {
@@ -71,6 +72,7 @@ impl ReadKey {
         }
         Ok(true)
     }
+
     pub fn string_get(&self) -> Result<RString, Error> {
         unsafe {
             let mut len = 0;
@@ -81,6 +83,7 @@ impl ReadKey {
             Ok(RString::from_raw_parts(self.ctx, data, len as usize))
         }
     }
+    
     pub fn hash_get(&self, flag: HashGetFlag, field: &RStr) -> Result<Option<RString>, Error> {
         let value: *mut raw::RedisModuleString  = std::ptr::null_mut();
         unsafe {

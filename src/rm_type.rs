@@ -5,20 +5,7 @@ use std::ptr;
 use crate::raw;
 use crate::{Context, Error, LogLevel, Ptr, IO, RStr, Digest};
 
-pub enum TypeFeature {
-    Rdb,
-    Aof,
-    MemUsage,
-    Digest,
-    Aux,
-}
-
-pub trait TypeDef {
-    fn name(&self) -> String;
-    fn version(&self) -> i32; 
-    fn type_method_version(&self) -> u64 {
-        raw::REDISMODULE_TYPE_METHOD_VERSION as u64
-    }
+pub trait TypeMethod {
     #[allow(unused_variables)]
     fn rdb_load(io: &mut IO, encver: u32) -> Option<Box<Self>> {
         unimplemented!()
@@ -78,7 +65,7 @@ impl RType {
         }
     }
 
-    pub fn create_data_type(&self, ctx: &Context) -> Result<(), Error> {
+    pub fn create(&self, ctx: &mut Context) -> Result<(), Error> {
         if self.name.len() != 9 {
             let msg = "Redis requires the length of native type names to be exactly 9 characters";
             ctx.log(

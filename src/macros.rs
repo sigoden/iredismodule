@@ -1,122 +1,4 @@
 #[macro_export]
-macro_rules! redis_module {
-    (
-        name: $module_name:expr,
-        version: $module_version:expr,
-        data_types: [
-            $($data_type:ident),* $(,)*
-        ],
-        $(init: $init_func:ident,)* $(,)*
-        commands: [
-            $([
-                $name:expr,
-                $command:expr,
-                $flags:expr,
-                $firstkey:expr,
-                $lastkey:expr,
-                $keystep:expr
-              ]),* $(,)*
-        ] $(,)*
-    ) => {
-        #[no_mangle]
-        #[allow(non_snake_case)]
-        pub extern "C" fn RedisModule_OnLoad(
-            ctx: *mut $crate::raw::RedisModuleCtx,
-            argv: *mut *mut $crate::raw::RedisModuleString,
-            argc: std::os::raw::c_int,
-        ) -> std::os::raw::c_int {
-            use std::os::raw::{c_int, c_char};
-            use std::ffi::CString;
-            use std::slice;
-
-            use $crate::raw;
-            use $crate::StatusCode;
-
-            // We use a statically sized buffer to avoid allocating.
-            // This is needed since we use a custom allocator that relies on the Redis allocator,
-            // which isn't yet ready at this point.
-            let mut name_buffer = [0; 64];
-            unsafe {
-                std::ptr::copy(
-                    $module_name.as_ptr(),
-                    name_buffer.as_mut_ptr(),
-                    $module_name.len(),
-                );
-            }
-
-            let module_version = $module_version as c_int;
-
-            if unsafe { raw::Export_RedisModule_Init(
-                ctx,
-                name_buffer.as_ptr() as *const c_char,
-                module_version,
-                raw::REDISMODULE_APIVER_1 as c_int,
-            ) } == StatusCode::Err as c_int { return StatusCode::Err as c_int; }
-
-            $(
-                if $init_func(ctx, argv, argc) == StatusCode::Err as c_int {
-                    return StatusCode::Err as c_int;
-                }
-            )*
-
-            $(
-                if (&$data_type).create_data_type(ctx).is_err() {
-                    return StatusCode::Err as c_int;
-                }
-            )*
-
-            $(
-                $crate::redis_command!(ctx, $name, $command, $flags, $firstkey, $lastkey, $keystep);
-            )*
-
-            raw::REDISMODULE_OK as c_int
-        }
-    }
-}
-
-#[doc(hidden)]
-#[macro_export]
-macro_rules! redis_command {
-    ($ctx:expr,
-     $command_name:expr,
-     $command_handler:expr,
-     $command_flags:expr,
-     $firstkey:expr,
-     $lastkey:expr,
-     $keystep:expr) => {{
-        let name = CString::new($command_name).unwrap();
-        let flags = CString::new($command_flags).unwrap();
-
-        /////////////////////
-        extern "C" fn do_command(
-            ctx: *mut raw::RedisModuleCtx,
-            argv: *mut *mut raw::RedisModuleString,
-            argc: c_int,
-        ) -> c_int {
-            let context = $crate::Context::from_ptr(ctx);
-            let response = $command_handler(&context, $crate::parse_args(argv, argc));
-            context.reply(response) as c_int
-        }
-        /////////////////////
-
-        if unsafe {
-            raw::RedisModule_CreateCommand.unwrap()(
-                $ctx,
-                name.as_ptr(),
-                Some(do_command),
-                flags.as_ptr(),
-                $firstkey,
-                $lastkey,
-                $keystep,
-            )
-        } == StatusCode::Err as c_int
-        {
-            return StatusCode::Err as c_int;
-        }
-    }};
-}
-
-#[macro_export]
 macro_rules! assert_len {
     ($args:expr, $n:expr) => {
         if $args.len() != $n {
@@ -127,7 +9,7 @@ macro_rules! assert_len {
 
 
 #[macro_export]
-macro_rules! redis_module2 {
+macro_rules! define_module {
     (
         name: $module_name:expr,
         version: $module_version:expr,
@@ -140,6 +22,7 @@ macro_rules! redis_module2 {
         commands: [
             $($command:ident),* $(,)*
         ]
+        $(,)*
     ) => {
         #[no_mangle]
         #[allow(non_snake_case)]
@@ -156,7 +39,7 @@ macro_rules! redis_module2 {
                     $module_name.len(),
                 );
             }
-            let c_err = $crate::raw::REDISMODULE_APIVER_1 as std::os::raw::c_int;
+            let c_err = $crate::raw::REDISMODULE_ERR as std::os::raw::c_int;
             let module_version = $module_version as std::os::raw::c_int;
             if unsafe {
                 $crate::raw::Export_RedisModule_Init(
@@ -165,19 +48,19 @@ macro_rules! redis_module2 {
                     module_version,
                     $crate::raw::REDISMODULE_APIVER_1 as std::os::raw::c_int,
                 ) 
-            } == $crate::StatusCode::Err as std::os::raw::c_int {
+            } == c_err {
                 return c_err;
             }
             let mut context = $crate::Context::from_ptr(ctx);
 
             $(
-                if $init_func(ctx, argv, argc) == $crate::StatusCode::Err as std::os::raw::c_int {
+                if $init_func(ctx, argv, argc) == c_err {
                     return c_err;
                 }
             )*
 
             $(
-                if (&$data_type).create(ctx).is_err() {
+                if (&$data_type).create(&mut context).is_err() {
                     return c_err;
                 }
             )*
@@ -187,8 +70,7 @@ macro_rules! redis_module2 {
                     return c_err;
                 }
             )*
-
-            $crate::StatusCode::Ok as std::os::raw::c_int
+            $crate::raw::REDISMODULE_OK as std::os::raw::c_int
         }
 
     }

@@ -117,6 +117,7 @@ impl RStr {
         let bytes = unsafe { raw::RedisModule_StringPtrLen.unwrap()(self.inner, &mut len) };
         unsafe { slice::from_raw_parts(bytes as *const u8, len) }
     }
+
     pub fn to_str(&self) -> Result<&str, Error> {
         let buffer = self.get_buffer();
         Ok(str::from_utf8(&buffer)?)

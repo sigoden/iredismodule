@@ -1,18 +1,15 @@
-use redismodule::{redis_module2};
-use redismodule_macros::{cmd};
+use redismodule::{define_module};
+use redismodule_macros::{rcommand};
 
-use redismodule::{
-    parse_args, raw, Context, Error, ListPosition, RResult, StatusCode, RStr, Value, KeyType, ArgvFlags,
-    HashGetFlag, HashSetFlag, ZsetRangeDirection,
-};
+use redismodule::{ Context, RStr, RResult };
 
-#[cmd(name="hello.simple",flags="readonly",first_key=0,last_key=0,key_step=0)]
+#[rcommand(name="hello.simple",flags="readonly",first_key=0,last_key=0,key_step=0)]
 pub fn hello_simple(ctx: &Context, _args: Vec<RStr>) -> RResult {
     let db = ctx.get_select_db();
     Ok(db.into())
 }
 
-redis_module2! {
+define_module! {
     name: "simple",
     version: 1,
     data_types: [],
