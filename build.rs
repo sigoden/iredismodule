@@ -39,6 +39,7 @@ fn main() {
     let bindings = build
         .header("src/include/redismodule.h")
         .whitelist_var("(REDIS|Redis).*")
+        .whitelist_type ("(RedisModule).*")
         .blacklist_type("__darwin_.*")
         .size_t_is_usize(true)
         .generate()

@@ -1,10 +1,55 @@
 use redismodule::define_module;
 use redismodule_macros::rcall;
 
-use redismodule::{raw, Context, Error, RResult, RStr};
+use redismodule::{raw, Context, Error, RStr, ArgvFlags};
+use redismodule::context::subscribe::ServerEvent;
+
+
+extern "C" fn client_change_callback_c(
+    ctx: *mut raw::RedisModuleCtx,
+    _eid: raw::RedisModuleEvent,
+    subevent: u64,
+    data: *mut ::std::os::raw::c_void,
+) {
+    let context = Context::from_ptr(ctx);
+    let ci: &mut raw::RedisModuleClientInfo =  unsafe { &mut *(data as *mut raw::RedisModuleClientInfo) };
+    let addr: String = ci.addr.iter().map(|v| (*v as u8) as char).collect();
+    context.log_debug(format!(
+        "Client {} event for client #{} {}:{}\n",
+        if subevent == raw::REDISMODULE_SUBEVENT_CLIENT_CHANGE_CONNECTED as u64 {  "connection" } else { "disconnection" },
+        ci.id, addr, ci.port,
+    ));
+}
+
+extern "C" fn flushdb_callback_c (
+    ctx: *mut raw::RedisModuleCtx,
+    _eid: raw::RedisModuleEvent,
+    subevent: u64,
+    data: *mut ::std::os::raw::c_void,
+) {
+    let context = Context::from_ptr(ctx);
+    let ci: &mut raw::RedisModuleFlushInfo =  unsafe { &mut *(data as *mut raw::RedisModuleFlushInfo) };
+    if subevent == raw::REDISMODULE_SUBEVENT_FLUSHDB_START as u64  {
+        if ci.dbnum != -1 {
+            let reply = context.call_str::<String>("DBSIZE", ArgvFlags::new(), &vec![]);
+            let num_keys = reply.get_integer();
+            context.log_debug(format!("FLUSHDB event of database {} started ({} keys in DB)\n", ci.dbnum, num_keys));
+        } else {
+            context.log_debug("FLUSHALL event started\n");
+        }
+    } else {
+        if ci.dbnum != -1 {
+            context.log_debug(format!("FLUSHDB event of database {} ended\n", ci.dbnum));
+        } else {
+            context.log_debug("FLUSHALL event ened\n");
+        }
+    }
+}
 
 #[rcall]
-fn init(_ctx: &mut Context, _args: Vec<RStr>) -> Result<(), Error> {
+fn init(ctx: &mut Context, _args: Vec<RStr>) -> Result<(), Error> {
+    ctx.subscribe_to_server_event(ServerEvent::ClientChange, client_change_callback_c)?;
+    ctx.subscribe_to_server_event(ServerEvent::FlushDB, flushdb_callback_c)?;
     Ok(())
 }
 

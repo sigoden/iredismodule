@@ -93,18 +93,18 @@ impl RStr {
         self.inner
     }
 
-    pub fn get_long_long(&self) -> Result<i64, Error> {
+    pub fn get_integer(&self) -> Result<i64, Error> {
         let mut ll: i64 = 0;
         handle_status(
             unsafe { raw::RedisModule_StringToLongLong.unwrap()(self.inner, &mut ll) },
-            "can not get longlong",
+            "can not get integer",
         )?;
         Ok(ll)
     }
-    pub fn get_positive_integer(&self) -> Result<u64, Error> {
-        let ll = self.get_long_long()?;
-        if ll < 1 {
-            return Err(Error::generic("can not less than 1"));
+    pub fn get_integer_which(&self, which: fn(i64) -> bool) -> Result<u64, Error> {
+        let ll = self.get_integer()?;
+        if !which(ll) {
+            return Err(Error::generic("can not get integer"));
         }
         Ok(ll as u64)
     }

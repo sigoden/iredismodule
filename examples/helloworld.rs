@@ -92,7 +92,7 @@ fn hello_list_splice(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     src_key.verify_type(KeyType::List, true)?;
     dest_key.verify_type(KeyType::List, true)?;
     let count = args[3]
-        .get_positive_integer()
+        .get_integer_which(|v| v > 0)
         .map_err(|_| Error::generic("ERR invalid count"))?;
     for _ in 0..count {
         let ele = src_key.list_pop(ListPosition::Tail);
@@ -128,7 +128,7 @@ fn hello_list_splice_auto(ctx: &mut Context, args: Vec<RStr>) -> RResult {
 fn hello_rand_array(_ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 2);
     let count = args[1]
-        .get_positive_integer()
+        .get_integer_which(|v| v > 0)
         .map_err(|_| Error::generic("ERR invalid count"))?;
     let value: Vec<Value> = (0..count).map(|_| random::<i64>().into()).collect();
     Ok(Value::Array(value))
@@ -163,7 +163,7 @@ fn hello_repl2(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     let mut sum = 0;
     for _ in 0..list_len {
         let ele = key.list_pop(ListPosition::Tail)?;
-        let mut val = ele.get_long_long().unwrap_or(0);
+        let mut val = ele.get_integer().unwrap_or(0);
         val += 1;
         sum += val;
         let new_ele = ctx.create_string(&val.to_string());
@@ -213,7 +213,7 @@ fn hello_toggle_case(ctx: &mut Context, args: Vec<RStr>) -> RResult {
 fn hello_more_expire(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 3);
     let addms = args[2]
-        .get_long_long()
+        .get_integer()
         .map_err(|_e| Error::generic("invalid expire time"))?;
     let mut key = ctx.open_write_key(&args[1]);
     let expire = key.get_expire();
@@ -241,7 +241,7 @@ fn hello_zsumrange(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     let tail_args = args
         .iter()
         .skip(2)
-        .map(|v| v.get_long_long())
+        .map(|v| v.get_integer())
         .collect::<Result<Vec<i64>, Error>>()
         .map_err(|_e| Error::generic("invalid range"))?;
     let score_start = tail_args[0] as f64;
@@ -319,7 +319,7 @@ fn hello_hcopy(ctx: &mut Context, args: Vec<RStr>) -> RResult {
 fn hello_leftpad(_ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 4);
     let pad_len = args[2]
-        .get_positive_integer()
+        .get_integer_which(|v| v > 0)
         .map_err(|_| Error::generic("ERR invalid padding length"))? as usize;
     let the_str: &str = args[1].to_str()?;
     let the_char: &str = args[3].to_str()?;

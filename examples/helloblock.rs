@@ -49,10 +49,10 @@ fn helloblock_thread_main(bc: BlockClient, delay: u64) {
 fn helloblock_rediscommand(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 3);
     let delay = args[1]
-        .get_long_long()
+        .get_integer()
         .map_err(|_| Error::generic("invalid delay"))? as u64;
     let timeout = args[2]
-        .get_long_long()
+        .get_integer()
         .map_err(|_| Error::generic("invalid timeout"))? as u64;
     let bc = ctx.block_client(
         Some(helloblock_reply_c),
