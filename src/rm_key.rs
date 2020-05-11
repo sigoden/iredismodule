@@ -1,9 +1,9 @@
 use std::ops::Deref;
-use std::os::raw::{c_int, c_void, c_char};
+use std::os::raw::{c_int, c_void};
 use std::time::Duration;
 
 use crate::raw;
-use crate::{handle_status, Context, Error, RType, RStr, RString, Ptr, Buffer};
+use crate::{handle_status, Context, Error, RType, RStr, RString, Ptr};
 
 pub struct ReadKey {
     inner: *mut raw::RedisModuleKey,

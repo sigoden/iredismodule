@@ -60,7 +60,17 @@ pub fn rcall(_: TokenStream, input: TokenStream) -> TokenStream {
     let cmd_fn = parse_macro_input!(input as syn::ItemFn);
     let fn_name = cmd_fn.sig.ident.clone();
     let raw_fn_name = Ident::new(&format!("{}_c", &fn_name), Span::call_site());
+    let is_rresult = rcall_is_ret_rresult(cmd_fn.sig.output.clone());
     let vis = cmd_fn.vis.clone();
+    let bottom_expr = if is_rresult  {
+        quote! {
+            return context.reply(result) as std::os::raw::c_int;
+        }
+    } else {
+        quote! {
+            return redismodule::raw::REDISMODULE_OK as std::os::raw::c_int;
+        }
+    };
     let output = quote! {
         #vis extern "C" fn #raw_fn_name(
             ctx: *mut redismodule::raw::RedisModuleCtx,
@@ -71,14 +81,26 @@ pub fn rcall(_: TokenStream, input: TokenStream) -> TokenStream {
             let mut context = redismodule::Context::from_ptr(ctx);
             let result = #fn_name(&mut context, args);
             if result.is_err() {
-                redismodule::raw::REDISMODULE_ERR as std::os::raw::c_int
-            } else {
-                redismodule::raw::REDISMODULE_OK as std::os::raw::c_int
+                return redismodule::raw::REDISMODULE_ERR as std::os::raw::c_int;
             }
+            #bottom_expr
         }
         #cmd_fn
     };
     TokenStream::from(output)
+}
+
+fn rcall_is_ret_rresult(ty: syn::ReturnType) -> bool {
+    if let syn::ReturnType::Type(_, ty2) = ty {
+        if let syn::Type::Path(
+            syn::TypePath { path: syn::Path { segments, .. }, ..}
+        ) = ty2.as_ref() {
+            if let Some(syn::PathSegment { ident, ..}) = segments.last() {
+                return ident.to_string() == "RResult";
+            }
+        }
+    }
+    return false;
 }
 
 #[proc_macro_attribute]
@@ -87,7 +109,7 @@ pub fn rfree(_: TokenStream, input: TokenStream) -> TokenStream {
     let fn_name = cmd_fn.sig.ident.clone();
     let raw_fn_name = Ident::new(&format!("{}_c", &fn_name), Span::call_site());
     let fn_arg_2 = cmd_fn.sig.inputs.last().cloned().expect("fn need 2 parameters");
-    let fn_arg_2_type = rfree_get_type(fn_arg_2).expect("fn 2nd parameter must be Box<T>");
+    let fn_arg_2_type = rfree_get_param2_type(fn_arg_2).expect("fn 2nd parameter must be Box<T>");
     let vis = cmd_fn.vis.clone();
     let c_fn = quote! {
         #vis extern "C" fn #raw_fn_name(
@@ -107,16 +129,15 @@ pub fn rfree(_: TokenStream, input: TokenStream) -> TokenStream {
     TokenStream::from(output)
 }
 
-fn rfree_get_type(fn_arg: syn::FnArg) -> Option<syn::Type> {
+fn rfree_get_param2_type(fn_arg: syn::FnArg) -> Option<syn::Type> {
     if let syn::FnArg::Typed(syn::PatType { ty, ..}) = fn_arg {
         if let syn::Type::Path(syn::TypePath { path: syn::Path { segments, .. }, ..  })
-            = ty.as_ref() {
+        = ty.as_ref() {
             if let syn::PathSegment {
                     arguments: syn::PathArguments::AngleBracketed(
                         syn::AngleBracketedGenericArguments { args, .. }
                     ), .. 
-                }
-                = segments.first().expect("fn 2nd params must be Box<T>") {
+            } = segments.first().expect("fn 2nd params must be Box<T>") {
                 if let syn::GenericArgument::Type(v) = args.first().unwrap().clone() {
                     return Some(v.clone());
                 }

@@ -131,8 +131,8 @@ impl Context {
         };
         CallReply::from_ptr(reply_)
     }
-    pub fn call_with_str_args(&self, command: &str, flags: ArgvFlags, args: &[&str]) -> CallReply {
-        let str_args: Vec<RString> = args.iter().map(|v| self.create_string(v)).collect();
+    pub fn call_str<T: AsRef<str>>(&self, command: &str, flags: ArgvFlags, args: &[T]) -> CallReply {
+        let str_args: Vec<RString> = args.iter().map(|v| self.create_string(v.as_ref())).collect();
         let str_args: Vec<&RStr> = str_args.iter().map(|v| v.get_redis_str()).collect();
         self.call(command, flags, &str_args)
     }
@@ -155,8 +155,8 @@ impl Context {
         };
         handle_status(result, "can not replicate")
     }
-    pub fn replicate_with_str_args(&self, command: &str, flags: ArgvFlags, args: &[&str]) -> Result<(), Error> {
-        let str_args: Vec<RString> = args.iter().map(|v| self.create_string(v)).collect();
+    pub fn replicate_str<T: AsRef<str>>(&self, command: &str, flags: ArgvFlags, args: &[T]) -> Result<(), Error> {
+        let str_args: Vec<RString> = args.iter().map(|v| self.create_string(v.as_ref())).collect();
         let str_args: Vec<&RStr> = str_args.iter().map(|v| v.get_redis_str()).collect();
         self.replicate(command, flags, &str_args)
     }
@@ -246,8 +246,4 @@ pub(crate) fn take_data<T>(data: *mut c_void) -> T {
     let data = unsafe { Box::from_raw(data) };
 
     *data
-}
-
-pub enum NotifyEvent {
-
 }

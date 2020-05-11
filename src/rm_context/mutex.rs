@@ -1,5 +1,6 @@
 use crate::raw;
 use crate::{Context, Ptr};
+use std::ops::Deref;
 
 pub struct MutexContext {
     inner: Context,
@@ -18,6 +19,13 @@ impl MutexContext {
         unsafe {
             raw::RedisModule_ThreadSafeContextUnlock.unwrap()(self.inner.get_ptr());
         }
+    }
+}
+
+impl Deref for MutexContext {
+    type Target = Context;
+    fn deref(&self) -> &Self::Target {
+        &self.inner
     }
 }
 

@@ -68,10 +68,10 @@ impl IO {
     pub fn load_float(&mut self) -> f32 {
         unsafe { raw::RedisModule_LoadFloat.unwrap()(self.inner) }
     }
-    pub fn emit_aof(&mut self, command: &str, flags: ArgvFlags, args: &[&str]) {
+    pub fn emit_aof<T: AsRef<str>>(&mut self, command: &str, flags: ArgvFlags, args: &[T]) {
         let terminated_args: Vec<CString> = args
             .iter()
-            .map(|s| CString::new(*s).unwrap())
+            .map(|s| CString::new(s.as_ref()).unwrap())
             .collect();
 
         let inner_args: Vec<_> = terminated_args.iter().map(|s| s.as_ptr()).collect();
@@ -97,6 +97,7 @@ impl IO {
     }
 }
 
+#[repr(C)]
 pub struct Digest {
     inner: *mut raw::RedisModuleDigest,
 }

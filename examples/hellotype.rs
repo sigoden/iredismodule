@@ -150,11 +150,11 @@ fn hellotype_brange(ctx: &mut Context, mut args: Vec<RStr>) -> RResult {
         Some(helloblock_reply_c),
         Some(helloblock_timeout_c),
             Some(helloblock_free_c),
-            Duration::from_millis(timeout),
+            Duration::from_secs(timeout),
             &args_bc,
             privdata
         );
-    Ok("OK".into())
+    Ok(Value::NoReply)
 }
 
 #[rcall]

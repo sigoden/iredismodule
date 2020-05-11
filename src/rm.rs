@@ -5,7 +5,7 @@ use std::time::Duration;
 use std::collections::HashSet;
 
 use crate::raw;
-use crate::{Error, RStr, RResult, Context};
+use crate::{Error, RStr};
 
 pub trait Ptr {
     type PtrType;
@@ -71,10 +71,6 @@ impl From<c_int> for StatusCode {
             StatusCode::Err
         }
     }
-}
-
-pub enum NotifyEvent {
-    
 }
 
 #[derive(Clone, Copy, Debug)]

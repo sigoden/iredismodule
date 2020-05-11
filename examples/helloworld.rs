@@ -39,7 +39,7 @@ fn hello_push_call2(ctx: &mut Context,args: Vec<RStr>) -> RResult {
 fn hello_list_sum_len(ctx: &mut Context,args: Vec<RStr>) -> RResult {
     assert_len!(args, 2);
     let call_args = [&args[1].to_str()?, "0", "-1"];
-    let reply = ctx.call_with_str_args("LRANGE", ArgvFlags::new(), &call_args);
+    let reply = ctx.call_str("LRANGE", ArgvFlags::new(), &call_args);
 
     let elem_len = reply.get_length();
     let str_len: usize =  (0..elem_len).map(|v| reply.get_array_element(v).get_length()).sum();
@@ -82,9 +82,9 @@ fn hello_rand_array(ctx: &mut Context,args: Vec<RStr>) -> RResult {
 
 #[rcmd(name="hello.repl1",flags="readonly",first_key=0,last_key=0,key_step=0)]
 fn hello_repl1(ctx: &mut Context,args: Vec<RStr>) -> RResult {
-    ctx.replicate_with_str_args("ECHO", ArgvFlags::new(), &["foo"])?;
-    ctx.call_with_str_args("INCR", ArgvFlags::new(), &["foo"]);
-    ctx.call_with_str_args("INCR", ArgvFlags::new(), &["bar"]);
+    ctx.replicate_str("ECHO", ArgvFlags::new(), &["foo"])?;
+    ctx.call_str("INCR", ArgvFlags::new(), &["foo"]);
+    ctx.call_str("INCR", ArgvFlags::new(), &["bar"]);
     Ok(0i64.into())
 }
 

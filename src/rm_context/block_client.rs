@@ -1,8 +1,8 @@
 use std::time::Duration;
 
-use std::os::raw::{c_void, c_int};
+use std::os::raw::{c_void};
 use crate::raw;
-use crate::{take_data, BlockClient, Context, Error, RString, RResult, RStr};
+use crate::{BlockClient, Context, Error, RStr};
 
 impl Context {
     pub fn get_blocked_client_ready_key(&self) -> Result<RStr, Error> {
@@ -43,15 +43,13 @@ impl Context {
         };
         BlockClient::from_ptr(bc)
     }
-    pub fn block_client<F, G>(
+    pub fn block_client(
         &mut self,
         reply_callbck: raw::RedisModuleCmdFunc,
         timeout_callback: raw::RedisModuleCmdFunc,
         free_privdata: raw::FreePrivateDataFunc,
         timeout: Duration,
     ) -> BlockClient
-    where
-        F: FnOnce(&Context),
     {
         let bc: *mut raw::RedisModuleBlockedClient =  unsafe {
             raw::RedisModule_BlockClient.unwrap()(
