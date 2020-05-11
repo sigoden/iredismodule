@@ -14,11 +14,11 @@ extern "C" fn client_change_callback_c(
     let context = Context::from_ptr(ctx);
     let ci: &mut raw::RedisModuleClientInfo =  unsafe { &mut *(data as *mut raw::RedisModuleClientInfo) };
     let addr: String = ci.addr.iter().map(|v| (*v as u8) as char).collect();
-    context.log_debug(format!(
+    println!(
         "Client {} event for client #{} {}:{}\n",
         if subevent == raw::REDISMODULE_SUBEVENT_CLIENT_CHANGE_CONNECTED as u64 {  "connection" } else { "disconnection" },
         ci.id, addr, ci.port,
-    ));
+    );
 }
 
 extern "C" fn flushdb_callback_c (
@@ -33,15 +33,15 @@ extern "C" fn flushdb_callback_c (
         if ci.dbnum != -1 {
             let reply = context.call_str::<String>("DBSIZE", ArgvFlags::new(), &vec![]);
             let num_keys = reply.get_integer();
-            context.log_debug(format!("FLUSHDB event of database {} started ({} keys in DB)\n", ci.dbnum, num_keys));
+            println!("FLUSHDB event of database {} started ({} keys in DB)\n", ci.dbnum, num_keys);
         } else {
-            context.log_debug("FLUSHALL event started\n");
+            println!("FLUSHALL event started\n");
         }
     } else {
         if ci.dbnum != -1 {
-            context.log_debug(format!("FLUSHDB event of database {} ended\n", ci.dbnum));
+            println!("FLUSHDB event of database {} ended\n", ci.dbnum);
         } else {
-            context.log_debug("FLUSHALL event ened\n");
+            println!("FLUSHALL event ened\n");
         }
     }
 }
