@@ -8,12 +8,14 @@ pub struct MutexContext {
 
 impl MutexContext {
     pub fn from_ptr(ctx: *mut raw::RedisModuleCtx) -> Self {
-        MutexContext { inner: Context::from_ptr(ctx) }
+        MutexContext {
+            inner: Context::from_ptr(ctx),
+        }
     }
     pub fn lock(&mut self) {
         unsafe {
             raw::RedisModule_ThreadSafeContextLock.unwrap()(self.inner.get_ptr());
-         }
+        }
     }
     pub fn unlock(&mut self) {
         unsafe {

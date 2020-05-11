@@ -1,8 +1,8 @@
+use std::collections::HashSet;
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_int};
 use std::slice;
 use std::time::Duration;
-use std::collections::HashSet;
 
 use crate::raw;
 use crate::{Error, RStr};
@@ -17,10 +17,7 @@ pub fn milliseconds() -> Duration {
     Duration::from_millis(unsafe { raw::RedisModule_Milliseconds.unwrap()() } as u64)
 }
 
-pub fn parse_args<'a>(
-    argv: *mut *mut raw::RedisModuleString,
-    argc: c_int,
-) -> Vec<RStr> {
+pub fn parse_args<'a>(argv: *mut *mut raw::RedisModuleString, argc: c_int) -> Vec<RStr> {
     unsafe { slice::from_raw_parts(argv, argc as usize) }
         .into_iter()
         .map(|&arg| RStr::from_ptr(arg))
@@ -94,7 +91,7 @@ impl ArgvFlags {
     pub fn new() -> ArgvFlags {
         let mut s = HashSet::new();
         s.insert('v');
-        ArgvFlags (s)
+        ArgvFlags(s)
     }
     pub fn replicate(&mut self) -> &mut ArgvFlags {
         self.0.insert('!');

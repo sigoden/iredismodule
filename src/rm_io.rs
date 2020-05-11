@@ -2,7 +2,7 @@ use std::ffi::CString;
 use std::os::raw::{c_char, c_uchar};
 
 use crate::raw;
-use crate::{Error, LogLevel, Buffer, RString, RStr, ArgvFlags, Ptr};
+use crate::{ArgvFlags, Buffer, Error, LogLevel, Ptr, RString};
 
 #[repr(C)]
 pub struct IO {
@@ -115,7 +115,13 @@ impl Digest {
     }
     pub fn add_string_buffer(&mut self, ele: &str) {
         let s = CString::new(ele).unwrap();
-        unsafe { raw::RedisModule_DigestAddStringBuffer.unwrap()(self.inner, s.as_ptr() as *mut c_uchar, ele.len()) }
+        unsafe {
+            raw::RedisModule_DigestAddStringBuffer.unwrap()(
+                self.inner,
+                s.as_ptr() as *mut c_uchar,
+                ele.len(),
+            )
+        }
     }
     pub fn add_long_long(&mut self, ll: i64) {
         unsafe { raw::RedisModule_DigestAddLongLong.unwrap()(self.inner, ll) }

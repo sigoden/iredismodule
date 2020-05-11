@@ -1,5 +1,5 @@
 use crate::raw;
-use crate::{handle_status, MutexContext, Error, Ptr};
+use crate::{handle_status, Error, MutexContext, Ptr};
 use std::os::raw::c_void;
 
 #[repr(C)]
@@ -42,18 +42,19 @@ impl BlockClient {
             "can not abort the blockclient",
         )
     }
-    
+
     pub fn set_disconnect_callback(
-        &self, 
-        callback: unsafe extern "C" fn(*mut raw::RedisModuleCtx, *mut raw::RedisModuleBlockedClient)
-    ) 
-    {
+        &self,
+        callback: unsafe extern "C" fn(
+            *mut raw::RedisModuleCtx,
+            *mut raw::RedisModuleBlockedClient,
+        ),
+    ) {
         unsafe { raw::RedisModule_SetDisconnectCallback.unwrap()(self.inner, Some(callback)) }
     }
     pub fn get_threadsafe_context(&self) -> MutexContext {
-        let ctx: *mut raw::RedisModuleCtx = unsafe {
-            raw::RedisModule_GetThreadSafeContext.unwrap()(self.inner)
-        };
+        let ctx: *mut raw::RedisModuleCtx =
+            unsafe { raw::RedisModule_GetThreadSafeContext.unwrap()(self.inner) };
         MutexContext::from_ptr(ctx)
     }
 }

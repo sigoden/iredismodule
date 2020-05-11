@@ -1,8 +1,7 @@
 use redismodule::{assert_len, define_module};
-use redismodule::{Context, Error, RResult, RStr, Value, IO, ArgvFlags, Digest, TypeMethod};
-use redismodule_macros::{rcmd, rtypedef, rcall, rfree};
+use redismodule::{ArgvFlags, Context, Digest, Error, RResult, RStr, TypeMethod, Value, IO};
+use redismodule_macros::{rcall, rcmd, rfree, rtypedef};
 use std::time::Duration;
-
 
 pub struct HelloTypeNode {
     head: Link,
@@ -15,7 +14,6 @@ struct Node {
     elem: i64,
     next: Link,
 }
-
 
 impl HelloTypeNode {
     pub fn new() -> Self {
@@ -30,11 +28,13 @@ impl HelloTypeNode {
         self.head = Some(new_node);
         self.len += 1;
     }
-    pub fn len(&self)  -> usize {
+    pub fn len(&self) -> usize {
         self.len
     }
     pub fn iter(&self) -> HelloTypeNodeIter<'_> {
-        HelloTypeNodeIter { next: self.head.as_ref().map(|node| &**node) }
+        HelloTypeNodeIter {
+            next: self.head.as_ref().map(|node| &**node),
+        }
     }
 }
 pub struct HelloTypeNodeIter<'a> {
@@ -51,11 +51,11 @@ impl<'a> Iterator for HelloTypeNodeIter<'a> {
     }
 }
 
-#[rtypedef(name="hellotype",version=0)]
+#[rtypedef(name = "hellotype", version = 0)]
 impl TypeMethod for HelloTypeNode {
     fn rdb_load(io: &mut IO, encver: u32) -> Option<Box<Self>> {
         if encver != 0 {
-           return None;
+            return None;
         }
         let elements = io.load_unsigned();
         let mut hto = Self::new();
@@ -74,10 +74,16 @@ impl TypeMethod for HelloTypeNode {
     fn aof_rewrite(&self, io: &mut IO, key: &RStr) {
         let eles: Vec<&i64> = self.iter().collect();
         let keyname = key.to_str().unwrap();
-        eles.iter().for_each(|v| io.emit_aof("HELLOTYPE.INSERT", ArgvFlags::new(),  &[keyname, &v.to_string()]))
+        eles.iter().for_each(|v| {
+            io.emit_aof(
+                "HELLOTYPE.INSERT",
+                ArgvFlags::new(),
+                &[keyname, &v.to_string()],
+            )
+        })
     }
     fn mem_usage(&self) -> usize {
-        std::mem::size_of::<Self>() *self.len()
+        std::mem::size_of::<Self>() * self.len()
     }
     fn digest(&self, digest: &mut Digest) {
         let eles: Vec<&i64> = self.iter().collect();
@@ -86,13 +92,20 @@ impl TypeMethod for HelloTypeNode {
     }
 }
 
-
-#[rcmd(name="hellotype.insert",flags="write deny-oom",first_key=1,last_key=1,key_step=1)]
-fn hellotype_insert(ctx: &mut Context,args: Vec<RStr>) -> RResult {
+#[rcmd(
+    name = "hellotype.insert",
+    flags = "write deny-oom",
+    first_key = 1,
+    last_key = 1,
+    key_step = 1
+)]
+fn hellotype_insert(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 3);
     let mut key = ctx.open_write_key(&args[1]);
     let exist = key.verify_module_type(&HELLOTYPE)?;
-    let value = args[2].get_long_long().map_err(|e| Error::generic("invalid value: must be a signed 64 bit integer"))?;
+    let value = args[2]
+        .get_long_long()
+        .map_err(|_e| Error::generic("invalid value: must be a signed 64 bit integer"))?;
 
     let hto: &mut HelloTypeNode = if exist {
         key.get_value(&HELLOTYPE)?.unwrap()
@@ -106,23 +119,46 @@ fn hellotype_insert(ctx: &mut Context,args: Vec<RStr>) -> RResult {
     Ok(hto.len().into())
 }
 
-#[rcmd(name="hellotype.range",flags="readonly",first_key=1,last_key=1,key_step=1)]
-fn hellotype_range(ctx: &mut Context,args: Vec<RStr>) -> RResult {
+#[rcmd(
+    name = "hellotype.range",
+    flags = "readonly",
+    first_key = 1,
+    last_key = 1,
+    key_step = 1
+)]
+fn hellotype_range(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 4);
     let key = ctx.open_write_key(&args[1]);
     key.verify_module_type(&HELLOTYPE)?;
-    let first = args[2].get_positive_integer().map_err(|_| Error::generic("invalid first parameters"))? as usize;
-    let count = args[3].get_positive_integer().map_err(|_| Error::generic("invalid count parameters"))? as usize;
+    let first = args[2]
+        .get_positive_integer()
+        .map_err(|_| Error::generic("invalid first parameters"))? as usize;
+    let count = args[3]
+        .get_positive_integer()
+        .map_err(|_| Error::generic("invalid count parameters"))? as usize;
     let hto = key.get_value::<HelloTypeNode>(&HELLOTYPE)?;
     if hto.is_none() {
         return Ok(Value::Array(vec![]));
     }
-    let eles: Vec<Value> = hto.unwrap().iter().skip(first).take(count).cloned().map(|v| v.into()).collect();
+    let eles: Vec<Value> = hto
+        .unwrap()
+        .iter()
+        .skip(first)
+        .take(count)
+        .cloned()
+        .map(|v| v.into())
+        .collect();
     Ok(Value::Array(eles))
 }
 
-#[rcmd(name="hellotype.len",flags="readonly",first_key=1,last_key=1,key_step=1)]
-fn hellotype_len(ctx: &mut Context,args: Vec<RStr>) -> RResult {
+#[rcmd(
+    name = "hellotype.len",
+    flags = "readonly",
+    first_key = 1,
+    last_key = 1,
+    key_step = 1
+)]
+fn hellotype_len(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 2);
     let key = ctx.open_write_key(&args[1]);
     key.verify_module_type(&HELLOTYPE)?;
@@ -134,12 +170,20 @@ fn hellotype_len(ctx: &mut Context,args: Vec<RStr>) -> RResult {
     Ok(len.into())
 }
 
-#[rcmd(name="hellotype.brange",flags="readonly",first_key=1,last_key=1,key_step=1)]
+#[rcmd(
+    name = "hellotype.brange",
+    flags = "readonly",
+    first_key = 1,
+    last_key = 1,
+    key_step = 1
+)]
 fn hellotype_brange(ctx: &mut Context, mut args: Vec<RStr>) -> RResult {
     assert_len!(args, 5);
     let key = ctx.open_write_key(&args[1]);
     let exists = key.verify_module_type(&HELLOTYPE)?;
-    let timeout = args[4].get_positive_integer().map_err(|_| Error::generic("invalid timeout parameter"))?;
+    let timeout = args[4]
+        .get_positive_integer()
+        .map_err(|_| Error::generic("invalid timeout parameter"))?;
     if exists {
         args.remove(args.len() - 1);
         return hellotype_range(ctx, args);
@@ -149,16 +193,16 @@ fn hellotype_brange(ctx: &mut Context, mut args: Vec<RStr>) -> RResult {
     ctx.block_client_on_keys(
         Some(helloblock_reply_c),
         Some(helloblock_timeout_c),
-            Some(helloblock_free_c),
-            Duration::from_secs(timeout),
-            &args_bc,
-            privdata
-        );
+        Some(helloblock_free_c),
+        Duration::from_secs(timeout),
+        &args_bc,
+        privdata,
+    );
     Ok(Value::NoReply)
 }
 
 #[rcall]
-fn helloblock_reply(ctx: &mut Context,mut args: Vec<RStr>) -> RResult {
+fn helloblock_reply(ctx: &mut Context, mut args: Vec<RStr>) -> RResult {
     let keyname = ctx.get_blocked_client_ready_key()?;
     let key = ctx.open_read_key(&keyname);
     key.verify_module_type(&HELLOTYPE)?;
@@ -167,13 +211,13 @@ fn helloblock_reply(ctx: &mut Context,mut args: Vec<RStr>) -> RResult {
 }
 
 #[rcall]
-fn helloblock_timeout(ctx: &mut Context,_: Vec<RStr>) -> RResult {
+fn helloblock_timeout(ctx: &mut Context, _: Vec<RStr>) -> RResult {
     ctx.reply(Ok(Value::SimpleString("Request timeout".into())));
     Ok(().into())
 }
 
 #[rfree]
-fn helloblock_free(ctx: &mut Context,data: Box<String>) {
+fn helloblock_free(ctx: &mut Context, data: Box<String>) {
     ctx.log_debug(&format!("free: {}", data.as_str()));
 }
 

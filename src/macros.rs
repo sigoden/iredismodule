@@ -4,9 +4,8 @@ macro_rules! assert_len {
         if $args.len() != $n {
             return Err(Error::WrongArity);
         }
-    }
+    };
 }
-
 
 #[macro_export]
 macro_rules! define_module {
@@ -47,7 +46,7 @@ macro_rules! define_module {
                     name_buffer.as_ptr() as *const std::os::raw::c_char,
                     module_version,
                     $crate::raw::REDISMODULE_APIVER_1 as std::os::raw::c_int,
-                ) 
+                )
             } == c_err {
                 return c_err;
             }

@@ -1,5 +1,5 @@
 use crate::raw;
-use crate::{Error, RResult, Value, Ptr};
+use crate::{Error, Ptr, RResult, Value};
 use std::slice;
 
 #[repr(C)]
@@ -47,7 +47,9 @@ impl CallReply {
         unsafe { raw::RedisModule_CallReplyInteger.unwrap()(self.inner) }
     }
     pub fn get_array_element(&self, idx: usize) -> CallReply {
-        CallReply::from_ptr(unsafe { raw::RedisModule_CallReplyArrayElement.unwrap()(self.inner, idx) })
+        CallReply::from_ptr(unsafe {
+            raw::RedisModule_CallReplyArrayElement.unwrap()(self.inner, idx)
+        })
     }
     pub fn get_length(&self) -> usize {
         unsafe { raw::RedisModule_CallReplyLength.unwrap()(self.inner) }

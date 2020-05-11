@@ -1,8 +1,8 @@
 use crate::raw;
 use crate::{handle_status, Error, Ptr};
 
-use std::ops::Deref;
 use std::ffi::CString;
+use std::ops::Deref;
 use std::os::raw::c_char;
 
 use std::slice;
@@ -24,7 +24,11 @@ impl RString {
             unsafe { raw::RedisModule_CreateString.unwrap()(ctx, str.as_ptr(), value.len()) };
         Self::new(ctx, inner)
     }
-    pub unsafe fn from_raw_parts(ctx: *mut raw::RedisModuleCtx, data: *mut u8, len: usize) -> RString {
+    pub unsafe fn from_raw_parts(
+        ctx: *mut raw::RedisModuleCtx,
+        data: *mut u8,
+        len: usize,
+    ) -> RString {
         let value = std::slice::from_raw_parts(data, len);
         let str = CString::new(value).unwrap();
         let inner = raw::RedisModule_CreateString.unwrap()(ctx, str.as_ptr(), len);

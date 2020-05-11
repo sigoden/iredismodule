@@ -3,7 +3,7 @@ use std::os::raw::{c_int, c_void};
 use std::time::Duration;
 
 use crate::raw;
-use crate::{handle_status, Context, Error, RType, RStr, RString, Ptr};
+use crate::{handle_status, Context, Error, Ptr, RStr, RString, RType};
 
 pub struct ReadKey {
     inner: *mut raw::RedisModuleKey,
@@ -27,7 +27,8 @@ impl ReadKey {
     pub fn from_redis_str(ctx: *mut raw::RedisModuleCtx, keyname: &RStr) -> Self {
         let mode = raw::REDISMODULE_READ as c_int;
         let inner = unsafe {
-            raw::RedisModule_OpenKey.unwrap()(ctx, keyname.get_ptr(), mode) as *mut raw::RedisModuleKey
+            raw::RedisModule_OpenKey.unwrap()(ctx, keyname.get_ptr(), mode)
+                as *mut raw::RedisModuleKey
         };
         ReadKey { inner, ctx }
     }
@@ -61,7 +62,7 @@ impl ReadKey {
         let key_type = self.get_type();
         if key_type == KeyType::Empty {
             return Ok(false);
-        } 
+        }
         if key_type != KeyType::Module {
             return Err(Error::WrongType);
         }
@@ -76,16 +77,20 @@ impl ReadKey {
     pub fn string_get(&self) -> Result<RString, Error> {
         unsafe {
             let mut len = 0;
-            let data = raw::RedisModule_StringDMA.unwrap()(self.inner, &mut len, raw::REDISMODULE_READ as c_int) as *mut u8;
+            let data = raw::RedisModule_StringDMA.unwrap()(
+                self.inner,
+                &mut len,
+                raw::REDISMODULE_READ as c_int,
+            ) as *mut u8;
             if data.is_null() {
                 return Err(Error::generic("fail to execute string_dma"));
             }
             Ok(RString::from_raw_parts(self.ctx, data, len as usize))
         }
     }
-    
+
     pub fn hash_get(&self, flag: HashGetFlag, field: &RStr) -> Result<Option<RString>, Error> {
-        let value: *mut raw::RedisModuleString  = std::ptr::null_mut();
+        let value: *mut raw::RedisModuleString = std::ptr::null_mut();
         unsafe {
             handle_status(
                 raw::RedisModule_HashGet.unwrap()(
@@ -93,32 +98,45 @@ impl ReadKey {
                     flag.into(),
                     field.get_ptr(),
                     &value,
-                    0
+                    0,
                 ),
-                "fail to execute hash_get"
+                "fail to execute hash_get",
             )?;
         }
         if value.is_null() {
             return Ok(None);
-        } 
+        }
         Ok(Some(RString::new(self.ctx, value)))
     }
-    pub fn zset_score_range(&self, dir: ZsetRangeDirection, min: f64, max: f64, min_exclude: bool, max_exclude: bool) -> Result<Vec<(RString, f64)>, Error> {
+    pub fn zset_score_range(
+        &self,
+        dir: ZsetRangeDirection,
+        min: f64,
+        max: f64,
+        min_exclude: bool,
+        max_exclude: bool,
+    ) -> Result<Vec<(RString, f64)>, Error> {
         let minex = min_exclude as i32;
         let maxex = max_exclude as i32;
         let mut result = vec![];
         unsafe {
             let (init, next) = {
                 match dir {
-                    ZsetRangeDirection::FristIn => (raw::RedisModule_ZsetFirstInScoreRange.unwrap(), raw::RedisModule_ZsetRangeNext.unwrap()),
-                    ZsetRangeDirection::LastIn => (raw::RedisModule_ZsetLastInScoreRange.unwrap(), raw::RedisModule_ZsetRangePrev.unwrap()),
+                    ZsetRangeDirection::FristIn => (
+                        raw::RedisModule_ZsetFirstInScoreRange.unwrap(),
+                        raw::RedisModule_ZsetRangeNext.unwrap(),
+                    ),
+                    ZsetRangeDirection::LastIn => (
+                        raw::RedisModule_ZsetLastInScoreRange.unwrap(),
+                        raw::RedisModule_ZsetRangePrev.unwrap(),
+                    ),
                 }
             };
-            let check_end  = raw::RedisModule_ZsetRangeEndReached.unwrap();
+            let check_end = raw::RedisModule_ZsetRangeEndReached.unwrap();
             let get_elem = raw::RedisModule_ZsetRangeCurrentElement.unwrap();
             handle_status(
                 init(self.inner, min, max, minex, maxex),
-                "fail to execute zset_score_range"
+                "fail to execute zset_score_range",
             )?;
             while check_end(self.inner) == 0 {
                 let mut score = 0.0;
@@ -130,22 +148,38 @@ impl ReadKey {
         }
         Ok(result)
     }
-    pub fn zset_lex_range(&self, dir: ZsetRangeDirection, min: &RStr, max: &RStr) -> Result<Vec<(RString, f64)>, Error> {
+    pub fn zset_lex_range(
+        &self,
+        dir: ZsetRangeDirection,
+        min: &RStr,
+        max: &RStr,
+    ) -> Result<Vec<(RString, f64)>, Error> {
         let mut result = vec![];
         unsafe {
             let (init, next) = {
                 match dir {
-                    ZsetRangeDirection::FristIn => (raw::RedisModule_ZsetFirstInLexRange.unwrap(), raw::RedisModule_ZsetRangeNext.unwrap()),
-                    ZsetRangeDirection::LastIn => (raw::RedisModule_ZsetLastInLexRange.unwrap(), raw::RedisModule_ZsetRangePrev.unwrap()),
+                    ZsetRangeDirection::FristIn => (
+                        raw::RedisModule_ZsetFirstInLexRange.unwrap(),
+                        raw::RedisModule_ZsetRangeNext.unwrap(),
+                    ),
+                    ZsetRangeDirection::LastIn => (
+                        raw::RedisModule_ZsetLastInLexRange.unwrap(),
+                        raw::RedisModule_ZsetRangePrev.unwrap(),
+                    ),
                 }
             };
             let ctx = self.get_context();
-            ctx.log_debug(&format!("dir = {:?} min={} max={}", dir, min.to_str().unwrap(), max.to_str().unwrap()));
-            let check_end  = raw::RedisModule_ZsetRangeEndReached.unwrap();
+            ctx.log_debug(&format!(
+                "dir = {:?} min={} max={}",
+                dir,
+                min.to_str().unwrap(),
+                max.to_str().unwrap()
+            ));
+            let check_end = raw::RedisModule_ZsetRangeEndReached.unwrap();
             let get_elem = raw::RedisModule_ZsetRangeCurrentElement.unwrap();
             handle_status(
                 init(self.inner, min.get_ptr(), max.get_ptr()),
-                "fail to execute zset_lex_range"
+                "fail to execute zset_lex_range",
             )?;
             ctx.log_debug(&format!("range start"));
             while check_end(self.inner) == 0 {
@@ -181,7 +215,7 @@ impl ReadKey {
             raw::REDISMODULE_KEYTYPE_SET => KeyType::Set,
             raw::REDISMODULE_KEYTYPE_ZSET => KeyType::ZSet,
             raw::REDISMODULE_KEYTYPE_MODULE => KeyType::Module,
-            _ => panic!("unknown key type")
+            _ => panic!("unknown key type"),
         }
     }
     fn get_context(&self) -> Context {
@@ -210,7 +244,8 @@ impl WriteKey {
     pub fn from_redis_str(ctx: *mut raw::RedisModuleCtx, keyname: &RStr) -> Self {
         let mode = (raw::REDISMODULE_READ | raw::REDISMODULE_WRITE) as c_int;
         let inner = unsafe {
-            raw::RedisModule_OpenKey.unwrap()(ctx, keyname.get_ptr(), mode) as *mut raw::RedisModuleKey
+            raw::RedisModule_OpenKey.unwrap()(ctx, keyname.get_ptr(), mode)
+                as *mut raw::RedisModuleKey
         };
         WriteKey {
             read_key: ReadKey { inner, ctx },
@@ -256,13 +291,11 @@ impl WriteKey {
             "fail to execute string_set",
         )
     }
-    pub fn list_push(
-        &mut self,
-        position: ListPosition,
-        value: &RStr,
-    ) -> Result<(), Error> {
+    pub fn list_push(&mut self, position: ListPosition, value: &RStr) -> Result<(), Error> {
         handle_status(
-            unsafe { raw::RedisModule_ListPush.unwrap()(self.inner, position as i32, value.get_ptr()) },
+            unsafe {
+                raw::RedisModule_ListPush.unwrap()(self.inner, position as i32, value.get_ptr())
+            },
             "fail to execute list_push",
         )
     }
@@ -281,52 +314,63 @@ impl WriteKey {
                     flag.into(),
                     field.get_ptr(),
                     value.get_ptr(),
-                    0
+                    0,
                 ),
-                "fail to execute hash_set"
+                "fail to execute hash_set",
             )?;
         }
         Ok(())
     }
-    pub fn zset_add(&self, score: f64, ele: &RStr, flag: ZaddInputFlag) -> Result<ZaddOuputFlag, Error> {
+    pub fn zset_add(
+        &self,
+        score: f64,
+        ele: &RStr,
+        flag: ZaddInputFlag,
+    ) -> Result<ZaddOuputFlag, Error> {
         let out_flag;
         unsafe {
             let mut flag = flag as c_int;
             handle_status(
                 raw::RedisModule_ZsetAdd.unwrap()(self.inner, score, ele.get_ptr(), &mut flag),
-                "fail to execute zset_add"
+                "fail to execute zset_add",
             )?;
             out_flag = flag.into();
         }
         Ok(out_flag)
     }
-    pub fn zset_incrby(&self, ele: &RStr, score: f64, flag: ZaddInputFlag) -> Result<(ZaddOuputFlag, f64), Error> {
+    pub fn zset_incrby(
+        &self,
+        ele: &RStr,
+        score: f64,
+        flag: ZaddInputFlag,
+    ) -> Result<(ZaddOuputFlag, f64), Error> {
         let out_flag;
-        let mut new_score  = 0.0;
+        let mut new_score = 0.0;
         unsafe {
             let mut flag = flag as c_int;
             handle_status(
-                raw::RedisModule_ZsetIncrby.unwrap()(self.inner, score, ele.get_ptr(), &mut flag, &mut new_score),
-                "fail to execute zset_incrby"
+                raw::RedisModule_ZsetIncrby.unwrap()(
+                    self.inner,
+                    score,
+                    ele.get_ptr(),
+                    &mut flag,
+                    &mut new_score,
+                ),
+                "fail to execute zset_incrby",
             )?;
             out_flag = flag.into();
         }
         Ok((out_flag, new_score))
-
     }
     pub fn zset_rem(&self, ele: &RStr) -> Result<bool, Error> {
         let mut flag = 0;
         unsafe {
             handle_status(
                 raw::RedisModule_ZsetRem.unwrap()(self.inner, ele.get_ptr(), &mut flag),
-                "fail to execute zset_rem"
+                "fail to execute zset_rem",
             )?;
         }
-        let result = if flag == 0 {
-            false
-        } else {
-            true
-        };
+        let result = if flag == 0 { false } else { true };
         Ok(result)
     }
     pub fn zset_score(&self, ele: &RStr) -> Result<f64, Error> {
@@ -334,7 +378,7 @@ impl WriteKey {
             let mut score = 0.0;
             handle_status(
                 raw::RedisModule_ZsetScore.unwrap()(self.inner, ele.get_ptr(), &mut score),
-                "fail to execute zset_score"
+                "fail to execute zset_score",
             )?;
             Ok(score)
         }
@@ -346,7 +390,7 @@ pub enum ListPosition {
     Tail = raw::REDISMODULE_LIST_TAIL as isize,
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum KeyType {
     Empty = raw::REDISMODULE_KEYTYPE_EMPTY as isize,
     String = raw::REDISMODULE_KEYTYPE_STRING as isize,
@@ -356,7 +400,6 @@ pub enum KeyType {
     ZSet = raw::REDISMODULE_KEYTYPE_ZSET as isize,
     Module = raw::REDISMODULE_KEYTYPE_MODULE as isize,
 }
-
 
 #[derive(Debug, PartialEq)]
 pub enum HashSetFlag {
@@ -401,7 +444,6 @@ pub enum ZaddInputFlag {
     XX = raw::REDISMODULE_ZADD_XX as isize,
     NX = raw::REDISMODULE_ZADD_NX as isize,
 }
-
 
 #[derive(Debug, PartialEq)]
 pub enum ZaddOuputFlag {

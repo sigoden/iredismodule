@@ -1,16 +1,16 @@
 use crate::raw;
 use crate::{
-    handle_status, CallReply, Error, LogLevel, ReadKey, RString,
-    RStr, Value, StatusCode, WriteKey, Ptr, ArgvFlags,
+    handle_status, ArgvFlags, CallReply, Error, LogLevel, Ptr, RStr, RString, ReadKey, StatusCode,
+    Value, WriteKey,
 };
 use std::ffi::CString;
-use std::os::raw::{c_int, c_long, c_void, c_char};
+use std::os::raw::{c_char, c_int, c_long, c_void};
 
 mod block_client;
 mod cluster;
-mod timer;
 mod mutex;
-pub use cluster::{ClusterNode, MsgType, ClusterNodeList};
+mod timer;
+pub use cluster::{ClusterNode, ClusterNodeList, MsgType};
 pub use mutex::MutexContext;
 
 #[repr(C)]
@@ -113,8 +113,7 @@ impl Context {
     }
 
     pub fn call(&self, command: &str, flags: ArgvFlags, args: &[&RStr]) -> CallReply {
-        let args: Vec<*mut raw::RedisModuleString> =
-            args.iter().map(|s| s.get_ptr()).collect();
+        let args: Vec<*mut raw::RedisModuleString> = args.iter().map(|s| s.get_ptr()).collect();
 
         let cmd = CString::new(command).unwrap();
         let flags: CString = flags.into();
@@ -131,14 +130,21 @@ impl Context {
         };
         CallReply::from_ptr(reply_)
     }
-    pub fn call_str<T: AsRef<str>>(&self, command: &str, flags: ArgvFlags, args: &[T]) -> CallReply {
-        let str_args: Vec<RString> = args.iter().map(|v| self.create_string(v.as_ref())).collect();
+    pub fn call_str<T: AsRef<str>>(
+        &self,
+        command: &str,
+        flags: ArgvFlags,
+        args: &[T],
+    ) -> CallReply {
+        let str_args: Vec<RString> = args
+            .iter()
+            .map(|v| self.create_string(v.as_ref()))
+            .collect();
         let str_args: Vec<&RStr> = str_args.iter().map(|v| v.get_redis_str()).collect();
         self.call(command, flags, &str_args)
     }
     pub fn replicate(&self, command: &str, flags: ArgvFlags, args: &[&RStr]) -> Result<(), Error> {
-        let args: Vec<*mut raw::RedisModuleString> =
-            args.iter().map(|s| s.get_ptr()).collect();
+        let args: Vec<*mut raw::RedisModuleString> = args.iter().map(|s| s.get_ptr()).collect();
 
         let cmd = CString::new(command).unwrap();
         let flags: CString = flags.into();
@@ -155,8 +161,16 @@ impl Context {
         };
         handle_status(result, "can not replicate")
     }
-    pub fn replicate_str<T: AsRef<str>>(&self, command: &str, flags: ArgvFlags, args: &[T]) -> Result<(), Error> {
-        let str_args: Vec<RString> = args.iter().map(|v| self.create_string(v.as_ref())).collect();
+    pub fn replicate_str<T: AsRef<str>>(
+        &self,
+        command: &str,
+        flags: ArgvFlags,
+        args: &[T],
+    ) -> Result<(), Error> {
+        let str_args: Vec<RString> = args
+            .iter()
+            .map(|v| self.create_string(v.as_ref()))
+            .collect();
         let str_args: Vec<&RStr> = str_args.iter().map(|v| v.get_redis_str()).collect();
         self.replicate(command, flags, &str_args)
     }
@@ -189,12 +203,16 @@ impl Context {
     pub fn open_write_key(&self, keyname: &RStr) -> WriteKey {
         WriteKey::from_redis_str(self.inner, keyname)
     }
-    pub fn subscribe_to_keyspace_events<F>(&self, types: i32, callback: raw::RedisModuleNotificationFunc) -> Result<(), Error> {
+    pub fn subscribe_to_keyspace_events<F>(
+        &self,
+        types: i32,
+        callback: raw::RedisModuleNotificationFunc,
+    ) -> Result<(), Error> {
         handle_status(
             unsafe {
                 raw::RedisModule_SubscribeToKeyspaceEvents.unwrap()(self.inner, types, callback)
             },
-            "can not subscribe to keyspace events"
+            "can not subscribe to keyspace events",
         )
     }
     pub fn signal_key_as_ready(&self, key: &RStr) {
@@ -205,19 +223,22 @@ impl Context {
         let fmt = CString::new(message).unwrap();
         unsafe { raw::RedisModule_Log.unwrap()(self.inner, level.as_ptr(), fmt.as_ptr()) }
     }
-    pub fn log_debug(&self, message: &str) {
-        self.log(LogLevel::Notice, message);
+    pub fn log_debug<T: AsRef<str>>(&self, message: T) {
+        self.log(LogLevel::Notice, message.as_ref());
     }
     pub fn create_cmd(
         &self,
         name: &str,
-        func: extern "C" fn(*mut raw::RedisModuleCtx, *mut *mut raw::RedisModuleString, c_int) -> c_int,
+        func: extern "C" fn(
+            *mut raw::RedisModuleCtx,
+            *mut *mut raw::RedisModuleString,
+            c_int,
+        ) -> c_int,
         flags: &str,
         first_key: usize,
         last_key: usize,
         key_step: usize,
-    ) -> Result<(), Error>
-    {
+    ) -> Result<(), Error> {
         let name = CString::new(name).unwrap();
         let flags = CString::new(flags).unwrap();
         handle_status(
@@ -232,7 +253,7 @@ impl Context {
                     key_step as c_int,
                 )
             },
-            "can not create command"
+            "can not create command",
         )
     }
 }

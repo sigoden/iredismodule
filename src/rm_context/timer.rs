@@ -6,7 +6,12 @@ use crate::raw;
 use crate::{handle_status, take_data, Context, Error, TimerID};
 
 impl Context {
-    pub fn create_timer<F, T>(&self, period: Duration, callback: F, data: T) -> Result<TimerID, Error>
+    pub fn create_timer<F, T>(
+        &self,
+        period: Duration,
+        callback: F,
+        data: T,
+    ) -> Result<TimerID, Error>
     where
         F: FnOnce(&Context, T),
     {
@@ -20,7 +25,7 @@ impl Context {
                 period
                     .as_millis()
                     .try_into()
-                    .map_err(|e| Error::generic("invalid timer period"))?,
+                    .map_err(|_e| Error::generic("invalid timer period"))?,
                 Some(timer_proc::<F, T>),
                 data as *mut c_void,
             )

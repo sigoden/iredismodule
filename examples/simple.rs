@@ -1,16 +1,22 @@
-use redismodule::{define_module};
-use redismodule_macros::{rcmd, rcall};
+use redismodule::define_module;
+use redismodule_macros::{rcall, rcmd};
 
-use redismodule::{ Context, RStr, RResult };
+use redismodule::{Context, RResult, RStr};
 
-#[rcmd(name="hello.simple",flags="readonly",first_key=0,last_key=0,key_step=0)]
-pub fn hello_simple(ctx: &mut Context,_args: Vec<RStr>) -> RResult {
+#[rcmd(
+    name = "hello.simple",
+    flags = "readonly",
+    first_key = 0,
+    last_key = 0,
+    key_step = 0
+)]
+pub fn hello_simple(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
     let db = ctx.get_select_db();
     Ok(db.into())
 }
 
 #[rcall]
-pub fn foo(ctx: &mut Context,_args: Vec<RStr>) ->  redismodule::RResult {
+pub fn foo(_ctx: &mut Context, _args: Vec<RStr>) -> redismodule::RResult {
     Ok(().into())
 }
 

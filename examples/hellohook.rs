@@ -1,10 +1,10 @@
-use redismodule::{define_module};
-use redismodule_macros::{rcall};
+use redismodule::define_module;
+use redismodule_macros::rcall;
 
-use redismodule::{ Context, RStr, RResult, Error, raw };
+use redismodule::{raw, Context, Error, RResult, RStr};
 
 #[rcall]
-fn init(ctx: &mut Context, mut args: Vec<RStr>) -> Result<(), Error> {
+fn init(_ctx: &mut Context, _args: Vec<RStr>) -> Result<(), Error> {
     Ok(())
 }
 

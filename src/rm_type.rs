@@ -1,10 +1,10 @@
 use std::cell::RefCell;
 use std::ffi::CString;
-use std::ptr;
 use std::marker::PhantomData;
+use std::ptr;
 
 use crate::raw;
-use crate::{Context, Error, LogLevel, Ptr, IO, RStr, Digest};
+use crate::{Context, Digest, Error, LogLevel, Ptr, RStr, IO};
 
 pub trait TypeMethod {
     #[allow(unused_variables)]
@@ -27,7 +27,7 @@ pub trait TypeMethod {
         unimplemented!()
     }
     #[allow(unused_variables)]
-    fn free(value: Box<Self>) { 
+    fn free(value: Box<Self>) {
         unimplemented!()
     }
     #[allow(unused_variables)]

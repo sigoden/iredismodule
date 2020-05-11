@@ -1,11 +1,11 @@
 extern crate proc_macro;
 
-use proc_macro::TokenStream;
-use syn::{parse_macro_input, AttributeArgs, Ident};
-use std::collections::HashSet;
-use proc_macro2::Span;
 use darling::FromMeta;
-use quote::{quote};
+use proc_macro::TokenStream;
+use proc_macro2::Span;
+use quote::quote;
+use std::collections::HashSet;
+use syn::{parse_macro_input, AttributeArgs, Ident};
 
 #[derive(Debug, FromMeta)]
 struct CmdAttributeOpts {
@@ -19,7 +19,7 @@ struct CmdAttributeOpts {
 #[proc_macro_attribute]
 pub fn rcmd(attr: TokenStream, input: TokenStream) -> TokenStream {
     let cmd_fn = parse_macro_input!(input as syn::ItemFn);
-    let attr_args =  parse_macro_input!(attr as AttributeArgs);
+    let attr_args = parse_macro_input!(attr as AttributeArgs);
     let opts: CmdAttributeOpts = CmdAttributeOpts::from_list(&attr_args).unwrap();
     let fn_name = cmd_fn.sig.ident.clone();
     let vis = cmd_fn.vis.clone();
@@ -62,7 +62,7 @@ pub fn rcall(_: TokenStream, input: TokenStream) -> TokenStream {
     let raw_fn_name = Ident::new(&format!("{}_c", &fn_name), Span::call_site());
     let is_rresult = rcall_is_ret_rresult(cmd_fn.sig.output.clone());
     let vis = cmd_fn.vis.clone();
-    let bottom_expr = if is_rresult  {
+    let bottom_expr = if is_rresult {
         quote! {
             return context.reply(result) as std::os::raw::c_int;
         }
@@ -92,10 +92,12 @@ pub fn rcall(_: TokenStream, input: TokenStream) -> TokenStream {
 
 fn rcall_is_ret_rresult(ty: syn::ReturnType) -> bool {
     if let syn::ReturnType::Type(_, ty2) = ty {
-        if let syn::Type::Path(
-            syn::TypePath { path: syn::Path { segments, .. }, ..}
-        ) = ty2.as_ref() {
-            if let Some(syn::PathSegment { ident, ..}) = segments.last() {
+        if let syn::Type::Path(syn::TypePath {
+            path: syn::Path { segments, .. },
+            ..
+        }) = ty2.as_ref()
+        {
+            if let Some(syn::PathSegment { ident, .. }) = segments.last() {
                 return ident.to_string() == "RResult";
             }
         }
@@ -108,7 +110,12 @@ pub fn rfree(_: TokenStream, input: TokenStream) -> TokenStream {
     let cmd_fn = parse_macro_input!(input as syn::ItemFn);
     let fn_name = cmd_fn.sig.ident.clone();
     let raw_fn_name = Ident::new(&format!("{}_c", &fn_name), Span::call_site());
-    let fn_arg_2 = cmd_fn.sig.inputs.last().cloned().expect("fn need 2 parameters");
+    let fn_arg_2 = cmd_fn
+        .sig
+        .inputs
+        .last()
+        .cloned()
+        .expect("fn need 2 parameters");
     let fn_arg_2_type = rfree_get_param2_type(fn_arg_2).expect("fn 2nd parameter must be Box<T>");
     let vis = cmd_fn.vis.clone();
     let c_fn = quote! {
@@ -130,14 +137,20 @@ pub fn rfree(_: TokenStream, input: TokenStream) -> TokenStream {
 }
 
 fn rfree_get_param2_type(fn_arg: syn::FnArg) -> Option<syn::Type> {
-    if let syn::FnArg::Typed(syn::PatType { ty, ..}) = fn_arg {
-        if let syn::Type::Path(syn::TypePath { path: syn::Path { segments, .. }, ..  })
-        = ty.as_ref() {
+    if let syn::FnArg::Typed(syn::PatType { ty, .. }) = fn_arg {
+        if let syn::Type::Path(syn::TypePath {
+            path: syn::Path { segments, .. },
+            ..
+        }) = ty.as_ref()
+        {
             if let syn::PathSegment {
-                    arguments: syn::PathArguments::AngleBracketed(
-                        syn::AngleBracketedGenericArguments { args, .. }
-                    ), .. 
-            } = segments.first().expect("fn 2nd params must be Box<T>") {
+                arguments:
+                    syn::PathArguments::AngleBracketed(syn::AngleBracketedGenericArguments {
+                        args, ..
+                    }),
+                ..
+            } = segments.first().expect("fn 2nd params must be Box<T>")
+            {
                 if let syn::GenericArgument::Type(v) = args.first().unwrap().clone() {
                     return Some(v.clone());
                 }
@@ -146,7 +159,6 @@ fn rfree_get_param2_type(fn_arg: syn::FnArg) -> Option<syn::Type> {
     }
     None
 }
-
 
 #[derive(Debug, FromMeta)]
 struct TypeDefAttributeOpts {
@@ -157,37 +169,30 @@ struct TypeDefAttributeOpts {
 #[proc_macro_attribute]
 pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
     let item_impl = parse_macro_input!(input as syn::ItemImpl);
-    let attr_args =  parse_macro_input!(attr as AttributeArgs);
+    let attr_args = parse_macro_input!(attr as AttributeArgs);
     let opts: TypeDefAttributeOpts = TypeDefAttributeOpts::from_list(&attr_args).unwrap();
     let type_name_raw = opts.name.as_str();
     let type_version = opts.version;
     let type_name = type_name_raw.replace("-", "_");
     let type_static_ident = Ident::new(&type_name.to_ascii_uppercase(), Span::call_site());
-    let data_name_ident = 
-        if let syn::Type::Path(
-                syn::TypePath {
-                    path: syn::Path { segments, .. },
-                    qself: _ 
-                }
-            ) = item_impl.self_ty.as_ref() 
-        {
-            segments.clone().first().unwrap().ident.clone()
-        } else {
-            panic!("expected impl single type");
-        };
+    let data_name_ident = if let syn::Type::Path(syn::TypePath {
+        path: syn::Path { segments, .. },
+        qself: _,
+    }) = item_impl.self_ty.as_ref()
+    {
+        segments.clone().first().unwrap().ident.clone()
+    } else {
+        panic!("expected impl single type");
+    };
     let method_names: HashSet<String> = item_impl
         .items
         .iter()
         .map(|impl_item| -> Option<String> {
-            if let syn::ImplItem::Method(
-                syn::ImplItemMethod {
-                    sig: syn::Signature {
-                        ident,
-                        ..
-                    },
-                    ..
-                }
-            ) = impl_item  {
+            if let syn::ImplItem::Method(syn::ImplItemMethod {
+                sig: syn::Signature { ident, .. },
+                ..
+            }) = impl_item
+            {
                 Some(ident.to_string())
             } else {
                 None
@@ -198,7 +203,7 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
     let have_method = |name: &str| method_names.contains(name);
 
     let type_name_rdb_load = Ident::new(&format!("{}_rdb_load", &type_name), Span::call_site());
-    let (rdb_load_fn, rdb_load_field) = if have_method("rdb_load")  {
+    let (rdb_load_fn, rdb_load_field) = if have_method("rdb_load") {
         (
             quote! {
                 extern "C" fn #type_name_rdb_load(rdb: *mut redismodule::raw::RedisModuleIO, encver: std::os::raw::c_int) -> *mut std::os::raw::c_void {
@@ -212,14 +217,14 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
             },
             quote! {
                 Some(#type_name_rdb_load)
-            }
+            },
         )
     } else {
         (proc_macro2::TokenStream::new(), quote! { None })
     };
 
     let type_name_rdb_save = Ident::new(&format!("{}_rdb_save", &type_name), Span::call_site());
-    let (rdb_save_fn, rdb_save_field) = if have_method("rdb_save")  {
+    let (rdb_save_fn, rdb_save_field) = if have_method("rdb_save") {
         (
             quote! {
                 unsafe extern "C" fn #type_name_rdb_save(rdb: *mut redismodule::raw::RedisModuleIO, value: *mut std::os::raw::c_void) {
@@ -230,14 +235,15 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
             },
             quote! {
                 Some(#type_name_rdb_save)
-            }
+            },
         )
     } else {
         (proc_macro2::TokenStream::new(), quote! { None })
     };
 
-    let type_name_aof_rewrite = Ident::new(&format!("{}_aof_rewrite", &type_name), Span::call_site());
-    let (aof_rewrite_fn, aof_rewrite_field) = if have_method("aof_rewrite")  {
+    let type_name_aof_rewrite =
+        Ident::new(&format!("{}_aof_rewrite", &type_name), Span::call_site());
+    let (aof_rewrite_fn, aof_rewrite_field) = if have_method("aof_rewrite") {
         (
             quote! {
                 unsafe extern "C" fn #type_name_aof_rewrite(aof: *mut redismodule::raw::RedisModuleIO, key: *mut redismodule::raw::RedisModuleString, value: *mut std::os::raw::c_void) {
@@ -249,14 +255,14 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
             },
             quote! {
                 Some(#type_name_aof_rewrite)
-            }
+            },
         )
     } else {
         (proc_macro2::TokenStream::new(), quote! { None })
     };
 
     let type_name_mem_usage = Ident::new(&format!("{}_mem_usage", &type_name), Span::call_site());
-    let (mem_usage_fn, mem_usage_field) = if have_method("mem_usage")  {
+    let (mem_usage_fn, mem_usage_field) = if have_method("mem_usage") {
         (
             quote! {
                 unsafe extern "C" fn #type_name_mem_usage(value: *const std::os::raw::c_void) -> usize {
@@ -266,14 +272,14 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
             },
             quote! {
                 Some(#type_name_mem_usage)
-            }
+            },
         )
     } else {
         (proc_macro2::TokenStream::new(), quote! { None })
     };
 
     let type_name_digest = Ident::new(&format!("{}_digest", &type_name), Span::call_site());
-    let (digest_fn, digest_field) = if have_method("digest")  {
+    let (digest_fn, digest_field) = if have_method("digest") {
         (
             quote! {
                 unsafe extern "C" fn #type_name_digest(md: *mut redismodule::raw::RedisModuleDigest, value: *mut std::os::raw::c_void) {
@@ -284,14 +290,14 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
             },
             quote! {
                 Some(#type_name_digest)
-            }
+            },
         )
     } else {
         (proc_macro2::TokenStream::new(), quote! { None })
     };
 
     let type_name_free = Ident::new(&format!("{}_free", &type_name), Span::call_site());
-    let (free_fn, free_field) = if have_method("free")  {
+    let (free_fn, free_field) = if have_method("free") {
         (
             quote! {
                 unsafe extern "C" fn #type_name_free(value: *mut std::os::raw::c_void) {
@@ -300,14 +306,14 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
             },
             quote! {
                 Some(#type_name_free)
-            }
+            },
         )
     } else {
         (proc_macro2::TokenStream::new(), quote! { None })
     };
 
     let type_name_aux_load = Ident::new(&format!("{}_aux_load", &type_name), Span::call_site());
-    let (aux_load_fn, aux_load_field) = if have_method("aux_load")  {
+    let (aux_load_fn, aux_load_field) = if have_method("aux_load") {
         (
             quote! {
                 unsafe extern "C" fn #type_name_aux_load(rdb: *mut redismodule::raw::RedisModuleIO, encver: std::os::raw::c_int, when: std::os::raw::c_int) {
@@ -317,14 +323,14 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
             },
             quote! {
                 Some(#type_name_aux_load)
-            }
+            },
         )
     } else {
         (proc_macro2::TokenStream::new(), quote! { None })
     };
 
     let type_name_aux_save = Ident::new(&format!("{}_aux_save", &type_name), Span::call_site());
-    let (aux_save_fn, aux_save_field) = if have_method("aux_save")  {
+    let (aux_save_fn, aux_save_field) = if have_method("aux_save") {
         (
             quote! {
                 unsafe extern "C" fn #type_name_aux_save(rdb: *mut redismodule::raw::RedisModuleIO, when: std::os::raw::c_int) {
@@ -334,20 +340,19 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
             },
             quote! {
                 Some(#type_name_aux_save)
-            }
+            },
         )
     } else {
         (proc_macro2::TokenStream::new(), quote! { None })
     };
 
-
-    let aux_save_triggers = if have_method("aux_save_triggers")  {
+    let aux_save_triggers = if have_method("aux_save_triggers") {
         quote! { #data_name_ident::aux_save_triggers() }
     } else {
         quote! { 0 }
     };
 
-    let type_static =  quote! {
+    let type_static = quote! {
         pub static #type_static_ident: redismodule::RType<#data_name_ident> = redismodule::RType::new(
             #type_name_raw,
             #type_version,

@@ -1,9 +1,9 @@
+use crate::raw;
 use std;
 use std::error;
 use std::fmt;
 use std::fmt::Display;
 use std::str;
-use crate::raw;
 
 #[derive(Debug)]
 pub enum Error {
@@ -51,7 +51,11 @@ impl From<std::string::FromUtf8Error> for Error {
 impl Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Error::WrongType => write!(f, "{}", str::from_utf8(raw::REDISMODULE_ERRORMSG_WRONGTYPE).unwrap()),
+            Error::WrongType => write!(
+                f,
+                "{}",
+                str::from_utf8(raw::REDISMODULE_ERRORMSG_WRONGTYPE).unwrap()
+            ),
             Error::WrongArity => write!(f, "ERR wrong number of arguments"),
             Error::Generic(ref err) => write!(f, "ERR {}", err),
         }
