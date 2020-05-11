@@ -7,10 +7,10 @@ use std::ffi::CString;
 use std::os::raw::{c_char, c_int, c_long, c_void};
 
 mod block_client;
-mod cluster;
 mod mutex;
 mod timer;
-pub use cluster::{ClusterNode, ClusterNodeList, MsgType};
+pub mod cluster;
+pub mod subscribe;
 pub use mutex::MutexContext;
 
 #[repr(C)]
@@ -202,18 +202,6 @@ impl Context {
     }
     pub fn open_write_key(&self, keyname: &RStr) -> WriteKey {
         WriteKey::from_redis_str(self.inner, keyname)
-    }
-    pub fn subscribe_to_keyspace_events<F>(
-        &self,
-        types: i32,
-        callback: raw::RedisModuleNotificationFunc,
-    ) -> Result<(), Error> {
-        handle_status(
-            unsafe {
-                raw::RedisModule_SubscribeToKeyspaceEvents.unwrap()(self.inner, types, callback)
-            },
-            "can not subscribe to keyspace events",
-        )
     }
     pub fn signal_key_as_ready(&self, key: &RStr) {
         unsafe { raw::RedisModule_SignalKeyAsReady.unwrap()(self.inner, key.get_ptr()) };
