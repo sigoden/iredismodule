@@ -37,7 +37,7 @@ impl ReadKey {
         key_type == KeyType::Empty
     }
 
-    pub fn get_value<T>(&self, redis_type: &RType) -> Result<Option<&mut T>, Error> {
+    pub fn get_value<T>(&self, redis_type: &RType<T>) -> Result<Option<&mut T>, Error> {
         let exist = self.verify_module_type(redis_type)?;
         if !exist {
             return Ok(None);
@@ -57,7 +57,7 @@ impl ReadKey {
         Ok(())
     }
 
-    pub fn verify_module_type(&self, redis_type: &RType) -> Result<bool, Error> {
+    pub fn verify_module_type<T>(&self, redis_type: &RType<T>) -> Result<bool, Error> {
         let key_type = self.get_type();
         if key_type == KeyType::Empty {
             return Ok(false);
@@ -139,7 +139,7 @@ impl ReadKey {
                     ZsetRangeDirection::LastIn => (raw::RedisModule_ZsetLastInLexRange.unwrap(), raw::RedisModule_ZsetRangePrev.unwrap()),
                 }
             };
-            let ctx = Context::from_ptr(self.ctx);
+            let ctx = self.get_context();
             ctx.log_debug(&format!("dir = {:?} min={} max={}", dir, min.to_str().unwrap(), max.to_str().unwrap()));
             let check_end  = raw::RedisModule_ZsetRangeEndReached.unwrap();
             let get_elem = raw::RedisModule_ZsetRangeCurrentElement.unwrap();
@@ -184,6 +184,9 @@ impl ReadKey {
             _ => panic!("unknown key type")
         }
     }
+    fn get_context(&self) -> Context {
+        Context::from_ptr(self.ctx)
+    }
 }
 
 pub struct WriteKey {
@@ -214,11 +217,7 @@ impl WriteKey {
         }
     }
 
-    pub fn set_value<T>(&mut self, redis_type: &RType, value: T) -> Result<(), Error> {
-        let exist = self.verify_module_type(redis_type)?;
-        if !exist {
-            return Err(Error::WrongType);
-        }
+    pub fn set_value<T>(&mut self, redis_type: &RType<T>, value: T) -> Result<&mut T, Error> {
         let value = Box::into_raw(Box::new(value)) as *mut c_void;
         handle_status(
             unsafe {
@@ -229,7 +228,8 @@ impl WriteKey {
                 )
             },
             "fail to execute set_value",
-        )
+        )?;
+        Ok(unsafe { &mut *(value as *mut T) })
     }
 
     pub fn delete(&mut self) -> Result<(), Error> {

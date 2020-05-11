@@ -70,6 +70,7 @@ impl TypeMethod for HelloTypeNode {
         io.save_unsigned(eles.len() as u64);
         eles.iter().for_each(|v| io.save_signed(**v));
     }
+    fn free(_: Box<Self>) {}
     fn aof_rewrite(&self, io: &mut IO, key: &RStr) {
         let eles: Vec<&i64> = self.iter().collect();
         let keyname = key.to_str().unwrap();
@@ -92,11 +93,13 @@ fn hellotype_insert(ctx: &mut Context,args: Vec<RStr>) -> RResult {
     let mut key = ctx.open_write_key(&args[1]);
     let exist = key.verify_module_type(&HELLOTYPE)?;
     let value = args[2].get_long_long().map_err(|e| Error::generic("invalid value: must be a signed 64 bit integer"))?;
-    if exist {
+
+    let hto: &mut HelloTypeNode = if exist {
+        key.get_value(&HELLOTYPE)?.unwrap()
+    } else {
         let hto = HelloTypeNode::new();
-        key.set_value(&HELLOTYPE, hto)?;
-    }
-    let hto: &mut HelloTypeNode = key.get_value(&HELLOTYPE)?.unwrap();
+        key.set_value(&HELLOTYPE, hto)?
+    };
     hto.push(value);
     ctx.signal_key_as_ready(&args[1]);
     ctx.replicate_verbatim();
@@ -105,7 +108,7 @@ fn hellotype_insert(ctx: &mut Context,args: Vec<RStr>) -> RResult {
 
 #[rcmd(name="hellotype.range",flags="readonly",first_key=1,last_key=1,key_step=1)]
 fn hellotype_range(ctx: &mut Context,args: Vec<RStr>) -> RResult {
-    assert_len!(args, 3);
+    assert_len!(args, 4);
     let key = ctx.open_write_key(&args[1]);
     key.verify_module_type(&HELLOTYPE)?;
     let first = args[2].get_positive_integer().map_err(|_| Error::generic("invalid first parameters"))? as usize;

@@ -274,7 +274,7 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
         (
             quote! {
                 unsafe extern "C" fn #type_name_free(value: *mut std::os::raw::c_void) {
-                    #data_name_ident::free(Box::from_raw(value as *const #data_name_ident))
+                    #data_name_ident::free(Box::from_raw(value as *mut #data_name_ident))
                 }
             },
             quote! {
@@ -327,7 +327,7 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
     };
 
     let type_static =  quote! {
-        pub static #type_static_ident: redismodule::RType = redismodule::RType::new(
+        pub static #type_static_ident: redismodule::RType<#data_name_ident> = redismodule::RType::new(
             #type_name_raw,
             #type_version,
             redismodule::raw::RedisModuleTypeMethods {
