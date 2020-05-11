@@ -1,14 +1,17 @@
 use crate::raw;
 use crate::{
-    handle_status, CallReply, Error, KeySpaceTypes, LogLevel, ReadKey, RString,
+    handle_status, CallReply, Error, LogLevel, ReadKey, RString,
     RStr, Value, StatusCode, WriteKey, Ptr, ArgvFlags,
 };
 use std::ffi::CString;
 use std::os::raw::{c_int, c_long, c_void, c_char};
 
-pub mod block_client;
-pub mod cluster;
-pub mod timer;
+mod block_client;
+mod cluster;
+mod timer;
+mod mutex;
+pub use cluster::{ClusterNode, MsgType, ClusterNodeList};
+pub use mutex::MutexContext;
 
 #[repr(C)]
 pub struct Context {
@@ -186,8 +189,13 @@ impl Context {
     pub fn open_write_key(&self, keyname: &RStr) -> WriteKey {
         WriteKey::from_redis_str(self.inner, keyname)
     }
-    pub fn subscribe_to_keyspace_events<F>(&self, _types: KeySpaceTypes, _callback: F) {
-        unimplemented!()
+    pub fn subscribe_to_keyspace_events<F>(&self, types: i32, callback: raw::RedisModuleNotificationFunc) -> Result<(), Error> {
+        handle_status(
+            unsafe {
+                raw::RedisModule_SubscribeToKeyspaceEvents.unwrap()(self.inner, types, callback)
+            },
+            "can not subscribe to keyspace events"
+        )
     }
     pub fn signal_key_as_ready(&self, key: &RStr) {
         unsafe { raw::RedisModule_SignalKeyAsReady.unwrap()(self.inner, key.get_ptr()) };
@@ -200,7 +208,7 @@ impl Context {
     pub fn log_debug(&self, message: &str) {
         self.log(LogLevel::Notice, message);
     }
-    pub fn create_command(
+    pub fn create_cmd(
         &self,
         name: &str,
         func: extern "C" fn(*mut raw::RedisModuleCtx, *mut *mut raw::RedisModuleString, c_int) -> c_int,
@@ -238,4 +246,8 @@ pub(crate) fn take_data<T>(data: *mut c_void) -> T {
     let data = unsafe { Box::from_raw(data) };
 
     *data
+}
+
+pub enum NotifyEvent {
+
 }

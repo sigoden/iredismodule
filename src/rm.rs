@@ -73,7 +73,9 @@ impl From<c_int> for StatusCode {
     }
 }
 
-pub enum KeySpaceTypes {}
+pub enum NotifyEvent {
+    
+}
 
 #[derive(Clone, Copy, Debug)]
 pub enum LogLevel {

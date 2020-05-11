@@ -17,7 +17,7 @@ struct CmdAttributeOpts {
 }
 
 #[proc_macro_attribute]
-pub fn rcommand(attr: TokenStream, input: TokenStream) -> TokenStream {
+pub fn rcmd(attr: TokenStream, input: TokenStream) -> TokenStream {
     let cmd_fn = parse_macro_input!(input as syn::ItemFn);
     let attr_args =  parse_macro_input!(attr as AttributeArgs);
     let opts: CmdAttributeOpts = CmdAttributeOpts::from_list(&attr_args).unwrap();
@@ -25,7 +25,7 @@ pub fn rcommand(attr: TokenStream, input: TokenStream) -> TokenStream {
     let vis = cmd_fn.vis.clone();
 
     let raw_fn_name = Ident::new(&format!("{}_c", &fn_name), Span::call_site());
-    let create_fn_name = Ident::new(&format!("create_{}", &fn_name), Span::call_site());
+    let cmd_fn_name = Ident::new(&format!("{}_cmd", &fn_name), Span::call_site());
     let name = opts.name.clone();
     let flags = opts.flags.clone();
     let first_key = opts.first_key;
@@ -37,14 +37,14 @@ pub fn rcommand(attr: TokenStream, input: TokenStream) -> TokenStream {
             argv: *mut *mut redismodule::raw::RedisModuleString,
             argc: std::os::raw::c_int
         ) -> std::os::raw::c_int {
-            let context = redismodule::Context::from_ptr(ctx);
-            let response = #fn_name(&context, redismodule::parse_args(argv, argc));
+            let mut context = redismodule::Context::from_ptr(ctx);
+            let response = #fn_name(&mut context, redismodule::parse_args(argv, argc));
             context.reply(response) as std::os::raw::c_int
         }
     };
     let create_fn = quote! {
-        #vis fn #create_fn_name(ctx: &mut redismodule::Context) -> Result<(), redismodule::Error> {
-            ctx.create_command(#name, #raw_fn_name, #flags, #first_key, #last_key, #key_step)
+        #vis fn #cmd_fn_name(ctx: &mut redismodule::Context) -> Result<(), redismodule::Error> {
+            ctx.create_cmd(#name, #raw_fn_name, #flags, #first_key, #last_key, #key_step)
         }
     };
     let output = quote! {
@@ -80,6 +80,52 @@ pub fn rcall(_: TokenStream, input: TokenStream) -> TokenStream {
     };
     TokenStream::from(output)
 }
+
+#[proc_macro_attribute]
+pub fn rfree(_: TokenStream, input: TokenStream) -> TokenStream {
+    let cmd_fn = parse_macro_input!(input as syn::ItemFn);
+    let fn_name = cmd_fn.sig.ident.clone();
+    let raw_fn_name = Ident::new(&format!("{}_c", &fn_name), Span::call_site());
+    let fn_arg_2 = cmd_fn.sig.inputs.last().cloned().expect("fn need 2 parameters");
+    let fn_arg_2_type = rfree_get_type(fn_arg_2).expect("fn 2nd parameter must be Box<T>");
+    let vis = cmd_fn.vis.clone();
+    let c_fn = quote! {
+        #vis extern "C" fn #raw_fn_name(
+            ctx: *mut redismodule::raw::RedisModuleCtx,
+            data: *mut std::os::raw::c_void
+        ) {
+            let mut context = redismodule::Context::from_ptr(ctx);
+            let data = data as *mut #fn_arg_2_type;
+            let data = unsafe { Box::from_raw(data) };
+            #fn_name(&mut context, data);
+        }
+    };
+    let output = quote! {
+        #c_fn
+        #cmd_fn
+    };
+    TokenStream::from(output)
+}
+
+fn rfree_get_type(fn_arg: syn::FnArg) -> Option<syn::Type> {
+    if let syn::FnArg::Typed(syn::PatType { ty, ..}) = fn_arg {
+        if let syn::Type::Path(syn::TypePath { path: syn::Path { segments, .. }, ..  })
+            = ty.as_ref() {
+            if let syn::PathSegment {
+                    arguments: syn::PathArguments::AngleBracketed(
+                        syn::AngleBracketedGenericArguments { args, .. }
+                    ), .. 
+                }
+                = segments.first().expect("fn 2nd params must be Box<T>") {
+                if let syn::GenericArgument::Type(v) = args.first().unwrap().clone() {
+                    return Some(v.clone());
+                }
+            }
+        }
+    }
+    None
+}
+
 
 #[derive(Debug, FromMeta)]
 struct TypeDefAttributeOpts {
@@ -134,7 +180,7 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
     let (rdb_load_fn, rdb_load_field) = if have_method("rdb_load")  {
         (
             quote! {
-                extern "C" fn #type_name_rdb_load(rdb: *mut redismodule::raw::RedisModuleIO, encver: c_int) -> *mut std::os::raw::c_void {
+                extern "C" fn #type_name_rdb_load(rdb: *mut redismodule::raw::RedisModuleIO, encver: std::os::raw::c_int) -> *mut std::os::raw::c_void {
                     let mut io = redismodule::IO::from_ptr(rdb);
                     let ret = #data_name_ident::rdb_load(&mut io, encver as u32);
                     if ret.is_none() {
@@ -243,7 +289,7 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
     let (aux_load_fn, aux_load_field) = if have_method("aux_load")  {
         (
             quote! {
-                unsafe extern "C" fn #type_name_aux_load(rdb: *mut redismodule::raw::RedisModuleIO, encver: c_int, when: c_int) {
+                unsafe extern "C" fn #type_name_aux_load(rdb: *mut redismodule::raw::RedisModuleIO, encver: std::os::raw::c_int, when: std::os::raw::c_int) {
                     let mut io = redismodule::IO::from_ptr(rdb);
                     #data_name_ident::aux_load(&mut io, encver as u32, when as u32)
                 }
@@ -260,7 +306,7 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
     let (aux_save_fn, aux_save_field) = if have_method("aux_save")  {
         (
             quote! {
-                unsafe extern "C" fn #type_name_aux_save(rdb: *mut redismodule::raw::RedisModuleIO, when: c_int) {
+                unsafe extern "C" fn #type_name_aux_save(rdb: *mut redismodule::raw::RedisModuleIO, when: std::os::raw::c_int) {
                     let mut io = redismodule::IO::from_ptr(rdb);
                     #data_name_ident::aux_save(&mut io, when as u32)
                 }

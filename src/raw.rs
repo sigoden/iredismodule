@@ -16,3 +16,8 @@ extern "C" {
         api_version: c_int,
     ) -> c_int;
 }
+
+
+pub type FreePrivateDataFunc = std::option::Option<
+    unsafe extern "C" fn(arg1: *mut RedisModuleCtx, arg2: *mut ::std::os::raw::c_void),
+>;
