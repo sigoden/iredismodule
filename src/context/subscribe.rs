@@ -1,7 +1,7 @@
 use crate::raw;
-use crate::{Context, Error, handle_status};
 use crate::subscribe::ServerEvent;
-use std::os::raw::{c_int, c_char};
+use crate::{handle_status, Context, Error};
+use std::os::raw::{c_char, c_int};
 
 impl Context {
     pub fn subscribe_to_keyspace_events(
@@ -16,7 +16,11 @@ impl Context {
     ) -> Result<(), Error> {
         handle_status(
             unsafe {
-                raw::RedisModule_SubscribeToKeyspaceEvents.unwrap()(self.inner, types, Some(callback))
+                raw::RedisModule_SubscribeToKeyspaceEvents.unwrap()(
+                    self.inner,
+                    types,
+                    Some(callback),
+                )
             },
             "fail to subscribe to keyspace events",
         )
@@ -30,11 +34,15 @@ impl Context {
             eid: raw::RedisModuleEvent,
             subevent: u64,
             data: *mut ::std::os::raw::c_void,
-        )
+        ),
     ) -> Result<(), Error> {
         handle_status(
             unsafe {
-                raw::RedisModule_SubscribeToServerEvent.unwrap()(self.inner, events.into(), Some(callback))
+                raw::RedisModule_SubscribeToServerEvent.unwrap()(
+                    self.inner,
+                    events.into(),
+                    Some(callback),
+                )
             },
             "fail to subscribe to keyspace events",
         )

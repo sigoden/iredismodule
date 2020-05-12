@@ -1,6 +1,6 @@
-use crate::{raw, RStr, Error};
-use std::os::raw::c_char;
+use crate::{raw, Error};
 use std::ffi::{CStr, CString};
+use std::os::raw::c_char;
 
 pub type MsgType = u8;
 
@@ -13,9 +13,9 @@ impl ClusterNodeList {
     pub fn new(ptr: *mut *mut c_char, len: usize) -> ClusterNodeList {
         let data = unsafe {
             Vec::from_raw_parts(ptr, len, len)
-            .into_iter()
-            .map(|v| CString::from_raw(v))
-            .collect()
+                .into_iter()
+                .map(|v| CString::from_raw(v))
+                .collect()
         };
         ClusterNodeList { data, ptr }
     }
@@ -45,4 +45,3 @@ pub fn get_my_cluster_id() -> Result<String, Error> {
 pub fn get_cluster_size() -> usize {
     unsafe { raw::RedisModule_GetClusterSize.unwrap()() }
 }
-

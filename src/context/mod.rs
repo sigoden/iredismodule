@@ -4,13 +4,13 @@ use crate::{
     Value, WriteKey,
 };
 use std::ffi::CString;
-use std::os::raw::{c_char, c_int, c_long, c_void};
+use std::os::raw::{c_char, c_int, c_long};
 
 mod block_client;
-mod mutex;
-mod timer;
 pub mod cluster;
+mod mutex;
 pub mod subscribe;
+mod timer;
 pub use mutex::MutexContext;
 
 #[repr(C)]

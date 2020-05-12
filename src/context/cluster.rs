@@ -1,15 +1,13 @@
+use crate::cluster::{ClusterNodeList, MsgType};
 use crate::raw;
-use crate::{Context, Error, handle_status};
-use crate::cluster::{MsgType, ClusterNodeList};
-use std::os::raw::{c_char, c_uchar};
+use crate::{handle_status, Context, Error};
 use std::ffi::CString;
+use std::os::raw::{c_char, c_uchar};
 
 impl Context {
     pub fn get_cluster_nodes_list(&self) -> Option<ClusterNodeList> {
         let mut len = 0;
-        let ptr = unsafe {
-            raw::RedisModule_GetClusterNodesList.unwrap()(self.inner, &mut len)
-        };
+        let ptr = unsafe { raw::RedisModule_GetClusterNodesList.unwrap()(self.inner, &mut len) };
         if ptr.is_null() {
             return None;
         }
@@ -27,9 +25,15 @@ impl Context {
             type_: u8,
             payload: *const c_uchar,
             len: u32,
-        )
+        ),
     ) {
-        unsafe { raw::RedisModule_RegisterClusterMessageReceiver.unwrap()(self.inner, msg_type, Some(callback)) }
+        unsafe {
+            raw::RedisModule_RegisterClusterMessageReceiver.unwrap()(
+                self.inner,
+                msg_type,
+                Some(callback),
+            )
+        }
     }
     pub fn send_cluster_message(
         &self,
@@ -40,31 +44,31 @@ impl Context {
         let c_target_id = CString::new(target_id).unwrap();
         let c_msg = CString::new(msg).unwrap();
         handle_status(
-        unsafe { raw::RedisModule_SendClusterMessage.unwrap()(
-                self.inner,
-                c_target_id.as_ptr() as *mut c_char,
-                msg_type,
-                c_msg.as_ptr() as *mut c_uchar,
-                msg.len() as u32,
-            )},
-            "fail to send cluster message"
+            unsafe {
+                raw::RedisModule_SendClusterMessage.unwrap()(
+                    self.inner,
+                    c_target_id.as_ptr() as *mut c_char,
+                    msg_type,
+                    c_msg.as_ptr() as *mut c_uchar,
+                    msg.len() as u32,
+                )
+            },
+            "fail to send cluster message",
         )
     }
-    pub fn send_cluster_message_all(
-        &self,
-        msg_type: MsgType,
-        msg: &[u8],
-    ) -> Result<(), Error> {
+    pub fn send_cluster_message_all(&self, msg_type: MsgType, msg: &[u8]) -> Result<(), Error> {
         let c_msg = CString::new(msg).unwrap();
         handle_status(
-        unsafe { raw::RedisModule_SendClusterMessage.unwrap()(
-                self.inner,
-                0 as *mut c_char,
-                msg_type,
-                c_msg.as_ptr() as *mut c_uchar,
-                msg.len() as u32,
-            )},
-            "fail to send cluster message"
+            unsafe {
+                raw::RedisModule_SendClusterMessage.unwrap()(
+                    self.inner,
+                    0 as *mut c_char,
+                    msg_type,
+                    c_msg.as_ptr() as *mut c_uchar,
+                    msg.len() as u32,
+                )
+            },
+            "fail to send cluster message",
         )
     }
 }

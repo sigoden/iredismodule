@@ -1,5 +1,5 @@
 use redismodule::define_module;
-use redismodule_macros::{rcmd};
+use redismodule_macros::rcmd;
 
 use redismodule::{Context, RResult, RStr};
 

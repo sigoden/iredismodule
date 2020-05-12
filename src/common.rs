@@ -1,6 +1,6 @@
 use std::collections::HashSet;
-use std::ffi::{CStr, CString};
-use std::os::raw::{c_char, c_int};
+use std::ffi::CString;
+use std::os::raw::c_int;
 use std::slice;
 use std::time::Duration;
 
