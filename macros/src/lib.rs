@@ -12,7 +12,6 @@ macro_rules! use_macro {
     };
 }
 
-use_macro!(rcall);
 use_macro!(rcmd);
 use_macro!(rtypedef);
 use_macro!(rwrap);

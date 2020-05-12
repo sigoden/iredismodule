@@ -1,5 +1,5 @@
 use redismodule::define_module;
-use redismodule_macros::{rcall, rcmd, rwrap};
+use redismodule_macros::{rcmd, rwrap};
 
 use rand::random;
 use redismodule::{
@@ -8,13 +8,13 @@ use redismodule::{
 use std::thread;
 use std::time::Duration;
 
-#[rcall]
+#[rwrap("call")]
 fn helloblock_reply(ctx: &mut Context, _: Vec<RStr>) -> RResult {
     let myint: &mut i32 = ctx.get_block_client_private_data();
     Ok((*myint as i64).into())
 }
 
-#[rcall]
+#[rwrap("call")]
 fn helloblock_timeout(_ctx: &mut Context, _: Vec<RStr>) -> RResult {
     Ok("Request timeout".into())
 }

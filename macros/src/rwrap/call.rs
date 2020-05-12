@@ -1,14 +1,13 @@
 use proc_macro::{TokenStream};
 use proc_macro2::Span;
 use quote::quote;
-use syn::{parse_macro_input, Ident};
+use syn::Ident;
 
-pub fn rcall(_: TokenStream, input: TokenStream) -> TokenStream {
-    let cmd_fn = parse_macro_input!(input as syn::ItemFn);
-    let fn_name = cmd_fn.sig.ident.clone();
+pub fn call(item_fn: syn::ItemFn) -> TokenStream {
+    let fn_name = item_fn.sig.ident.clone();
     let c_fn_name = Ident::new(&format!("{}_c", &fn_name), Span::call_site());
-    let is_rresult = rcall_is_ret_rresult(cmd_fn.sig.output.clone());
-    let vis = cmd_fn.vis.clone();
+    let is_rresult = call_is_ret_rresult(item_fn.sig.output.clone());
+    let vis = item_fn.vis.clone();
     let bottom_expr = if is_rresult {
         quote! {
             return context.reply(result) as std::os::raw::c_int;
@@ -32,12 +31,12 @@ pub fn rcall(_: TokenStream, input: TokenStream) -> TokenStream {
             }
             #bottom_expr
         }
-        #cmd_fn
+        #item_fn
     };
     TokenStream::from(output)
 }
 
-fn rcall_is_ret_rresult(ty: syn::ReturnType) -> bool {
+fn call_is_ret_rresult(ty: syn::ReturnType) -> bool {
     if let syn::ReturnType::Type(_, ty2) = ty {
         if let syn::Type::Path(syn::TypePath {
             path: syn::Path { segments, .. },
@@ -51,3 +50,4 @@ fn rcall_is_ret_rresult(ty: syn::ReturnType) -> bool {
     }
     return false;
 }
+

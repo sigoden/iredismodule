@@ -1,6 +1,6 @@
 use redismodule::{assert_len, define_module};
 use redismodule::{ArgvFlags, Context, Digest, Error, RResult, RStr, TypeMethod, Value, IO};
-use redismodule_macros::{rcall, rcmd, rtypedef, rwrap};
+use redismodule_macros::{rcmd, rtypedef, rwrap};
 use std::time::Duration;
 
 pub struct HelloTypeNode {
@@ -177,7 +177,7 @@ fn hellotype_brange(ctx: &mut Context, mut args: Vec<RStr>) -> RResult {
     Ok(Value::NoReply)
 }
 
-#[rcall]
+#[rwrap("call")]
 fn helloblock_reply(ctx: &mut Context, mut args: Vec<RStr>) -> RResult {
     let keyname = ctx.get_blocked_client_ready_key()?;
     let key = ctx.open_read_key(&keyname);
@@ -186,7 +186,7 @@ fn helloblock_reply(ctx: &mut Context, mut args: Vec<RStr>) -> RResult {
     return hellotype_range(ctx, args);
 }
 
-#[rcall]
+#[rwrap("call")]
 fn helloblock_timeout(ctx: &mut Context, _: Vec<RStr>) -> RResult {
     ctx.reply(Ok(Value::SimpleString("Request timeout".into())));
     Ok(().into())

@@ -1,6 +1,6 @@
 use rand::random;
 use redismodule::{assert_len, define_module};
-use redismodule_macros::{rcall, rcmd};
+use redismodule_macros::{rwrap, rcmd};
 use std::time::Duration;
 
 use redismodule::{
@@ -241,7 +241,7 @@ fn hello_leftpad(_ctx: &mut Context, args: Vec<RStr>) -> RResult {
     Ok(pad_str.into())
 }
 
-#[rcall]
+#[rwrap("call")]
 fn init(ctx: &mut Context, args: Vec<RStr>) -> Result<(), Error> {
     ctx.debug(&format!(
         "Module loaded with ARGV[{}] = {:?}\n",

@@ -1,5 +1,5 @@
 use redismodule::define_module;
-use redismodule_macros::{rcall, rcmd, rwrap};
+use redismodule_macros::{rcmd, rwrap};
 
 use redismodule::cluster::MsgType;
 use redismodule::{raw, Context, Error, LogLevel, RResult, RStr, Value};
@@ -52,7 +52,7 @@ fn on_pong(ctx: &Context, sender_id: &str, msg_type: MsgType, payload: &[u8]) {
     )
 }
 
-#[rcall]
+#[rwrap("call")]
 fn init(ctx: &mut Context, _: Vec<RStr>) -> Result<(), Error> {
     ctx.set_cluster_flags(raw::REDISMODULE_CLUSTER_FLAG_NO_REDIRECTION);
     ctx.register_cluster_message_receiver(MSGTYPE_PING, on_ping_c);

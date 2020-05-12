@@ -1,5 +1,5 @@
 use redismodule::define_module;
-use redismodule_macros::rcall;
+use redismodule_macros::rwrap;
 
 use redismodule::subscribe::ServerEvent;
 use redismodule::{raw, ArgvFlags, Context, Error, RStr};
@@ -55,7 +55,7 @@ extern "C" fn flushdb_callback_c(
     }
 }
 
-#[rcall]
+#[rwrap("call")]
 fn init(ctx: &mut Context, _args: Vec<RStr>) -> Result<(), Error> {
     ctx.subscribe_to_server_event(ServerEvent::ClientChange, client_change_callback_c)?;
     ctx.subscribe_to_server_event(ServerEvent::FlushDB, flushdb_callback_c)?;
