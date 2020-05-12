@@ -1,5 +1,7 @@
 pub mod raw;
 
+
+mod alloc;
 mod block_client;
 mod buffer;
 mod call_reply;
@@ -15,9 +17,13 @@ mod string;
 pub mod subscribe;
 mod value;
 
+#[global_allocator]
+static ALLOC: crate::alloc::RedisAlloc = crate::alloc::RedisAlloc;
+
 pub use common::{
     handle_status, is_module_busy, milliseconds, parse_args, ArgvFlags, LogLevel, Ptr, StatusCode,
 };
+
 pub use error::Error;
 
 pub use context::{Context, MutexContext};
