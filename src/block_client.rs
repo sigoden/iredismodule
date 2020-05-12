@@ -26,20 +26,20 @@ impl BlockClient {
         let data = 0 as *mut c_void;
         handle_status(
             unsafe { raw::RedisModule_UnblockClient.unwrap()(self.inner, data) },
-            "can not unblock the blockclient",
+            "fail to unblock the blockclient",
         )
     }
     pub fn unblock_data<T>(&self, privdata: T) -> Result<(), Error> {
         let data = Box::into_raw(Box::from(privdata)) as *mut c_void;
         handle_status(
             unsafe { raw::RedisModule_UnblockClient.unwrap()(self.inner, data) },
-            "can not unblock the blockclient",
+            "fail to unblock the blockclient",
         )
     }
     pub fn abort(&self) -> Result<(), Error> {
         handle_status(
             unsafe { raw::RedisModule_AbortBlock.unwrap()(self.inner) },
-            "can not abort the blockclient",
+            "fail to abort the blockclient",
         )
     }
 

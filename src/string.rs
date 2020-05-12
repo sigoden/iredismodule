@@ -55,7 +55,7 @@ impl RString {
                 )
                 .into()
             },
-            "can not append buffer",
+            "fail to append buffer",
         )
     }
     pub fn len(&self) -> usize {
@@ -97,14 +97,14 @@ impl RStr {
         let mut ll: i64 = 0;
         handle_status(
             unsafe { raw::RedisModule_StringToLongLong.unwrap()(self.inner, &mut ll) },
-            "can not get integer",
+            "fail to get integer",
         )?;
         Ok(ll)
     }
     pub fn get_integer_which(&self, which: fn(i64) -> bool) -> Result<u64, Error> {
         let ll = self.get_integer()?;
         if !which(ll) {
-            return Err(Error::generic("can not get integer"));
+            return Err(Error::generic("fail to get integer"));
         }
         Ok(ll as u64)
     }
@@ -112,7 +112,7 @@ impl RStr {
         let mut d: f64 = 0.0;
         handle_status(
             unsafe { raw::RedisModule_StringToDouble.unwrap()(self.inner, &mut d) },
-            "can not get double",
+            "fail to get double",
         )?;
         Ok(d)
     }

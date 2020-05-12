@@ -36,7 +36,7 @@ pub fn is_module_busy(name: &str) -> Result<(), Error> {
     let name = CString::new(name).unwrap();
     handle_status(
         unsafe { raw::RedisModule_IsModuleNameBusy.unwrap()(name.as_ptr()) },
-        "can not check busy",
+        "fail to check busy",
     )
 }
 

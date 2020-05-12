@@ -40,6 +40,10 @@ crate-type = ["cdylib"]
 name = "helloblock"
 crate-type = ["cdylib"]
 
+[[example]]
+name = "hellocluster"
+crate-type = ["cdylib"]
+
 [workspace]
 members = [
     "macros",

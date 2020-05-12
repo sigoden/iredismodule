@@ -302,7 +302,7 @@ impl WriteKey {
     pub fn list_pop(&mut self, pos: ListPosition) -> Result<RString, Error> {
         let p = unsafe { raw::RedisModule_ListPop.unwrap()(self.inner, pos as i32) };
         if p.is_null() {
-            return Err(Error::generic("can not pop list"));
+            return Err(Error::generic("fail to pop list"));
         }
         Ok(RString::new(self.ctx, p))
     }

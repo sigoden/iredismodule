@@ -39,13 +39,7 @@ fn helloblock_thread_main(bc: BlockClient, delay: u64) {
     bc.unblock_data(r).unwrap();
 }
 
-#[rcmd(
-    name = "hello.block",
-    flags = "",
-    first_key = 0,
-    last_key = 0,
-    key_step = 0
-)]
+#[rcmd("hello.block")]
 fn helloblock_rediscommand(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 3);
     let delay = args[1]
@@ -96,13 +90,7 @@ fn hellokeys_thread_main(bc: BlockClient) {
     bc.unblock().unwrap();
 }
 
-#[rcmd(
-    name = "hello.keys",
-    flags = "",
-    first_key = 0,
-    last_key = 0,
-    key_step = 0
-)]
+#[rcmd("hello.keys")]
 fn hellokeys_rediscommand(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 1);
 

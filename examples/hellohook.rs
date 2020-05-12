@@ -6,12 +6,11 @@ use redismodule::context::subscribe::ServerEvent;
 
 
 extern "C" fn client_change_callback_c(
-    ctx: *mut raw::RedisModuleCtx,
+    _ctx: *mut raw::RedisModuleCtx,
     _eid: raw::RedisModuleEvent,
     subevent: u64,
     data: *mut ::std::os::raw::c_void,
 ) {
-    let context = Context::from_ptr(ctx);
     let ci: &mut raw::RedisModuleClientInfo =  unsafe { &mut *(data as *mut raw::RedisModuleClientInfo) };
     let addr: String = ci.addr.iter().map(|v| (*v as u8) as char).collect();
     println!(

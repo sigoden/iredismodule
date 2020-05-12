@@ -8,13 +8,7 @@ fn timer_handler(ctx: &Context, data: String) {
     ctx.log_debug(&data);
 }
 
-#[rcmd(
-    name = "hellotimer.timer",
-    flags = "readonly",
-    first_key = 0,
-    last_key = 0,
-    key_step = 0
-)]
+#[rcmd("hellotimer.timer")]
 fn hello_timer(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
     for _ in 0..10 {
         let delay: u32 = random::<u32>() % 5000;

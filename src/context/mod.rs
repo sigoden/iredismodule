@@ -159,7 +159,7 @@ impl Context {
                 args.len(),
             )
         };
-        handle_status(result, "can not replicate")
+        handle_status(result, "fail to replicate")
     }
     pub fn replicate_str<T: AsRef<str>>(
         &self,
@@ -191,7 +191,7 @@ impl Context {
     pub fn select_db(&self, newid: i32) -> Result<(), Error> {
         handle_status(
             unsafe { raw::RedisModule_SelectDb.unwrap()(self.inner, newid) },
-            "can not select db",
+            "fail to select db",
         )
     }
     pub fn create_string(&self, value: &str) -> RString {
@@ -241,7 +241,7 @@ impl Context {
                     key_step as c_int,
                 )
             },
-            "can not create command",
+            "fail to create command",
         )
     }
 }

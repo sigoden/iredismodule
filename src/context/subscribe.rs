@@ -17,7 +17,7 @@ impl Context {
             unsafe {
                 raw::RedisModule_SubscribeToKeyspaceEvents.unwrap()(self.inner, types, Some(callback))
             },
-            "can not subscribe to keyspace events",
+            "fail to subscribe to keyspace events",
         )
     }
 
@@ -35,7 +35,7 @@ impl Context {
             unsafe {
                 raw::RedisModule_SubscribeToServerEvent.unwrap()(self.inner, events.into(), Some(callback))
             },
-            "can not subscribe to keyspace events",
+            "fail to subscribe to keyspace events",
         )
     }
 }

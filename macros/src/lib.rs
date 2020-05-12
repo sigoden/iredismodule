@@ -1,13 +1,12 @@
 extern crate proc_macro;
 
-use darling::FromMeta;
-use proc_macro::TokenStream;
+use proc_macro::{TokenStream};
 use proc_macro2::Span;
 use quote::quote;
 use std::collections::HashSet;
-use syn::{parse_macro_input, AttributeArgs, Ident};
+use syn::{parse_macro_input, Ident, Lit};
 
-#[derive(Debug, FromMeta)]
+#[derive(Debug)]
 struct CmdAttributeOpts {
     name: String,
     flags: String,
@@ -16,11 +15,12 @@ struct CmdAttributeOpts {
     key_step: usize,
 }
 
+
 #[proc_macro_attribute]
 pub fn rcmd(attr: TokenStream, input: TokenStream) -> TokenStream {
     let cmd_fn = parse_macro_input!(input as syn::ItemFn);
-    let attr_args = parse_macro_input!(attr as AttributeArgs);
-    let opts: CmdAttributeOpts = CmdAttributeOpts::from_list(&attr_args).unwrap();
+    let attr_args =  parse_macro_input!(attr as syn::AttributeArgs);
+    let opts =  rcmd_parse_attrs(attr_args).expect("fail to parse attr");
     let fn_name = cmd_fn.sig.ident.clone();
     let vis = cmd_fn.vis.clone();
 
@@ -53,6 +53,49 @@ pub fn rcmd(attr: TokenStream, input: TokenStream) -> TokenStream {
         #create_fn
     };
     TokenStream::from(output)
+}
+
+fn rcmd_parse_attrs(args: syn::AttributeArgs) -> Option<CmdAttributeOpts> {
+    let lits: Vec<&Lit> = args.iter()
+        .filter(|v| if let syn::NestedMeta::Lit(_) = v { true } else { false })
+        .map(|v| match v {
+            syn::NestedMeta::Lit(i) => i,
+            _ => unreachable!(),
+        })
+        .collect();
+
+    match lits.as_slice() {
+        [Lit::Str(name)] => {
+            Some(CmdAttributeOpts {
+                name: name.value(),
+                flags: "".to_owned(),
+                first_key: 0,
+                last_key: 0,
+                key_step: 0,
+            })
+        },
+        [Lit::Str(name), Lit::Str(flags)] => {
+            Some(CmdAttributeOpts {
+                name: name.value(),
+                flags: flags.value(),
+                first_key: 0,
+                last_key: 0,
+                key_step: 0,
+            })
+        },
+        [Lit::Str(name), Lit::Str(flags), 
+            Lit::Int(first_key), Lit::Int(last_key), Lit::Int(key_step)
+            ] => {
+            Some(CmdAttributeOpts {
+                name: name.value(),
+                flags: flags.value(),
+                first_key: first_key.base10_parse().unwrap(),
+                last_key: last_key.base10_parse().unwrap(),
+                key_step: key_step.base10_parse().unwrap(),
+            })
+        },
+        _ => None,
+    }
 }
 
 #[proc_macro_attribute]
@@ -160,7 +203,7 @@ fn rfree_get_param2_type(fn_arg: syn::FnArg) -> Option<syn::Type> {
     None
 }
 
-#[derive(Debug, FromMeta)]
+#[derive(Debug)]
 struct TypeDefAttributeOpts {
     name: String,
     version: i32,
@@ -169,8 +212,8 @@ struct TypeDefAttributeOpts {
 #[proc_macro_attribute]
 pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
     let item_impl = parse_macro_input!(input as syn::ItemImpl);
-    let attr_args = parse_macro_input!(attr as AttributeArgs);
-    let opts: TypeDefAttributeOpts = TypeDefAttributeOpts::from_list(&attr_args).unwrap();
+    let attr_args =  parse_macro_input!(attr as syn::AttributeArgs);
+    let opts =  rtypedef_parse_attrs(attr_args).expect("fail to parse attr");
     let type_name_raw = opts.name.as_str();
     let type_version = opts.version;
     let type_name = type_name_raw.replace("-", "_");
@@ -384,4 +427,29 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
         #item_impl
     };
     TokenStream::from(output)
+}
+
+fn rtypedef_parse_attrs(args: syn::AttributeArgs) -> Option<TypeDefAttributeOpts> {
+    let lits: Vec<&Lit> = args.iter()
+        .filter(|v| if let syn::NestedMeta::Lit(_) = v { true } else { false })
+        .map(|v| match v {
+            syn::NestedMeta::Lit(i) => i,
+            _ => unreachable!(),
+        })
+        .collect();
+    match lits.as_slice() {
+        [Lit::Str(name)] => {
+            Some(TypeDefAttributeOpts {
+                name: name.value(),
+                version: 0,
+            })
+        },
+        [Lit::Str(name), Lit::Int(version)] => {
+            Some(TypeDefAttributeOpts {
+                name: name.value(),
+                version: version.base10_parse().unwrap(),
+            })
+        },
+        _ => None,
+    }
 }

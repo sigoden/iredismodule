@@ -8,25 +8,13 @@ use redismodule::{
     Value, ZsetRangeDirection,
 };
 
-#[rcmd(
-    name = "hello.simple",
-    flags = "readonly",
-    first_key = 0,
-    last_key = 0,
-    key_step = 0
-)]
+#[rcmd("hello.simple")]
 fn hello_simple(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
     let db = ctx.get_select_db();
     Ok(db.into())
 }
 
-#[rcmd(
-    name = "hello.push.native",
-    flags = "write deny-oom",
-    first_key = 1,
-    last_key = 1,
-    key_step = 1
-)]
+#[rcmd("hello.push.native", "write deny-oom", 1, 1, 1)]
 fn hello_push_native(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 3);
     let mut key = ctx.open_write_key(&args[1]);
@@ -35,37 +23,19 @@ fn hello_push_native(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     Ok(len.into())
 }
 
-#[rcmd(
-    name = "hello.push.call",
-    flags = "write deny-oom",
-    first_key = 1,
-    last_key = 1,
-    key_step = 1
-)]
+#[rcmd("hello.push.call", "write deny-oom", 1, 1, 1)]
 fn hello_push_call(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 3);
     let call_args: Vec<&RStr> = args.iter().skip(1).collect();
     ctx.call("RPUSH", ArgvFlags::new(), &call_args).into()
 }
 
-#[rcmd(
-    name = "hello.push.call2",
-    flags = "write deny-oom",
-    first_key = 1,
-    last_key = 1,
-    key_step = 1
-)]
+#[rcmd("hello.push.call2", "write deny-oom", 1, 1, 1)]
 fn hello_push_call2(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     hello_push_call(ctx, args)
 }
 
-#[rcmd(
-    name = "hello.push.sum.len",
-    flags = "readonly",
-    first_key = 1,
-    last_key = 1,
-    key_step = 1
-)]
+#[rcmd("hello.push.sum.len", "readonly", 1, 1, 1)]
 fn hello_list_sum_len(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 2);
     let call_args = [&args[1].to_str()?, "0", "-1"];
@@ -78,13 +48,7 @@ fn hello_list_sum_len(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     Ok(Value::from(str_len))
 }
 
-#[rcmd(
-    name = "hello.list.splice",
-    flags = "write deny-oom",
-    first_key = 1,
-    last_key = 2,
-    key_step = 1
-)]
+#[rcmd("hello.list.splice", "write deny-oom", 1, 2, 1)]
 fn hello_list_splice(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 4);
     let mut src_key = ctx.open_write_key(&args[1]);
@@ -107,24 +71,12 @@ fn hello_list_splice(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     Ok(len.into())
 }
 
-#[rcmd(
-    name = "hello.list.splice.auto",
-    flags = "write deny-oom",
-    first_key = 1,
-    last_key = 2,
-    key_step = 1
-)]
+#[rcmd("hello.list.splice.auto", "write deny-oom", 1, 2, 1)]
 fn hello_list_splice_auto(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     hello_list_splice(ctx, args)
 }
 
-#[rcmd(
-    name = "hello.rand.array",
-    flags = "readonly",
-    first_key = 0,
-    last_key = 0,
-    key_step = 0
-)]
+#[rcmd("hello.rand.array")]
 fn hello_rand_array(_ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 2);
     let count = args[1]
@@ -134,13 +86,7 @@ fn hello_rand_array(_ctx: &mut Context, args: Vec<RStr>) -> RResult {
     Ok(Value::Array(value))
 }
 
-#[rcmd(
-    name = "hello.repl1",
-    flags = "readonly",
-    first_key = 0,
-    last_key = 0,
-    key_step = 0
-)]
+#[rcmd("hello.repl1")]
 fn hello_repl1(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
     ctx.replicate_str("ECHO", ArgvFlags::new(), &["foo"])?;
     ctx.call_str("INCR", ArgvFlags::new(), &["foo"]);
@@ -148,13 +94,7 @@ fn hello_repl1(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
     Ok(0i64.into())
 }
 
-#[rcmd(
-    name = "hello.repl2",
-    flags = "write",
-    first_key = 1,
-    last_key = 1,
-    key_step = 1
-)]
+#[rcmd("hello.repl2", "write", 1, 1, 1)]
 fn hello_repl2(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 2);
     let mut key = ctx.open_write_key(&args[1]);
@@ -173,13 +113,7 @@ fn hello_repl2(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     Ok(sum.into())
 }
 
-#[rcmd(
-    name = "hello.toggle.case",
-    flags = "write",
-    first_key = 1,
-    last_key = 1,
-    key_step = 1
-)]
+#[rcmd("hello.toggle.case", "write", 1, 1, 1)]
 fn hello_toggle_case(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 2);
     let mut key = ctx.open_write_key(&args[1]);
@@ -203,13 +137,7 @@ fn hello_toggle_case(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     Ok("OK".into())
 }
 
-#[rcmd(
-    name = "hello.more.expire",
-    flags = "write",
-    first_key = 1,
-    last_key = 1,
-    key_step = 1
-)]
+#[rcmd("hello.more.expire", "write", 1, 1, 1)]
 fn hello_more_expire(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 3);
     let addms = args[2]
@@ -227,13 +155,7 @@ fn hello_more_expire(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     Ok("OK".into())
 }
 
-#[rcmd(
-    name = "hello.zsumrange",
-    flags = "readonly",
-    first_key = 1,
-    last_key = 1,
-    key_step = 1
-)]
+#[rcmd("hello.zsumrange", "readonly", 1, 1, 1)]
 fn hello_zsumrange(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 4);
     let key = ctx.open_write_key(&args[1]);
@@ -266,13 +188,7 @@ fn hello_zsumrange(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     Ok(Value::Array(result))
 }
 
-#[rcmd(
-    name = "hello.lexrange",
-    flags = "readonly",
-    first_key = 1,
-    last_key = 1,
-    key_step = 1
-)]
+#[rcmd("hello.lexrange", "readonly", 1, 1, 1)]
 fn hello_lexrange(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 4);
     let key = ctx.open_write_key(&args[1]);
@@ -285,13 +201,7 @@ fn hello_lexrange(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     Ok(Value::Array(result))
 }
 
-#[rcmd(
-    name = "hello.hcopy",
-    flags = "write deny-oom",
-    first_key = 1,
-    last_key = 1,
-    key_step = 1
-)]
+#[rcmd("hello.hcopy", "write deny-oom", 1, 1, 1)]
 fn hello_hcopy(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 4);
     let key = ctx.open_write_key(&args[1]);
@@ -309,13 +219,7 @@ fn hello_hcopy(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     Ok(ret.into())
 }
 
-#[rcmd(
-    name = "hello.leftpad",
-    flags = "",
-    first_key = 0,
-    last_key = 0,
-    key_step = 0
-)]
+#[rcmd("hello.leftpad", "", 0, 0, 0)]
 fn hello_leftpad(_ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 4);
     let pad_len = args[2]

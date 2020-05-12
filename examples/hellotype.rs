@@ -51,7 +51,7 @@ impl<'a> Iterator for HelloTypeNodeIter<'a> {
     }
 }
 
-#[rtypedef(name = "hellotype", version = 0)]
+#[rtypedef("hellotype", 0)]
 impl TypeMethod for HelloTypeNode {
     fn rdb_load(io: &mut IO, encver: u32) -> Option<Box<Self>> {
         if encver != 0 {
@@ -92,13 +92,7 @@ impl TypeMethod for HelloTypeNode {
     }
 }
 
-#[rcmd(
-    name = "hellotype.insert",
-    flags = "write deny-oom",
-    first_key = 1,
-    last_key = 1,
-    key_step = 1
-)]
+#[rcmd("hellotype.insert", "write deny-oom", 1, 1, 1)]
 fn hellotype_insert(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 3);
     let mut key = ctx.open_write_key(&args[1]);
@@ -119,13 +113,7 @@ fn hellotype_insert(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     Ok(hto.len().into())
 }
 
-#[rcmd(
-    name = "hellotype.range",
-    flags = "readonly",
-    first_key = 1,
-    last_key = 1,
-    key_step = 1
-)]
+#[rcmd("hellotype.range", "readonly", 1, 1, 1)]
 fn hellotype_range(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 4);
     let key = ctx.open_write_key(&args[1]);
@@ -151,13 +139,7 @@ fn hellotype_range(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     Ok(Value::Array(eles))
 }
 
-#[rcmd(
-    name = "hellotype.len",
-    flags = "readonly",
-    first_key = 1,
-    last_key = 1,
-    key_step = 1
-)]
+#[rcmd("hellotype.len", "readonly", 1, 1, 1)]
 fn hellotype_len(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 2);
     let key = ctx.open_write_key(&args[1]);
@@ -170,13 +152,7 @@ fn hellotype_len(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     Ok(len.into())
 }
 
-#[rcmd(
-    name = "hellotype.brange",
-    flags = "readonly",
-    first_key = 1,
-    last_key = 1,
-    key_step = 1
-)]
+#[rcmd("hellotype.brange", "readonly", 1, 1, 1)]
 fn hellotype_brange(ctx: &mut Context, mut args: Vec<RStr>) -> RResult {
     assert_len!(args, 5);
     let key = ctx.open_write_key(&args[1]);
