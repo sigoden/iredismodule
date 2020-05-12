@@ -1,5 +1,5 @@
 use redismodule::define_module;
-use redismodule_macros::{rcall, rcmd, rfree};
+use redismodule_macros::{rcall, rcmd, rwrap};
 
 use rand::random;
 use redismodule::{
@@ -19,7 +19,7 @@ fn helloblock_timeout(_ctx: &mut Context, _: Vec<RStr>) -> RResult {
     Ok("Request timeout".into())
 }
 
-#[rfree]
+#[rwrap("free")]
 fn helloblock_free(_: &mut Context, _: Box<i32>) {}
 
 extern "C" fn helloblock_disconnected(
@@ -69,7 +69,7 @@ fn hellokeys_thread_main(bc: BlockClient) {
     let mut ctx = bc.get_threadsafe_context();
     let mut cursor = 0;
     let mut reply_data: Vec<Value> = vec![];
-    ctx.log_debug(format!("start hellokeys thread, {}", cursor != 0));
+    ctx.debug(format!("start hellokeys thread, {}", cursor != 0));
     loop {
         ctx.lock();
         let reply = ctx.call_str("SCAN", ArgvFlags::new(), &[cursor.to_string()]);
@@ -78,7 +78,7 @@ fn hellokeys_thread_main(bc: BlockClient) {
         let cr_keys = reply.get_array_element(1);
         cursor = cr_cursor.get_string().parse().unwrap();
         let items = reply.get_length();
-        ctx.log_debug(format!("cr_cursor={}, items={}", cursor, items));
+        ctx.debug(format!("cr_cursor={}, items={}", cursor, items));
         for i in 0..items {
             reply_data.push(RResult::from(cr_keys.get_array_element(i).into()).unwrap())
         }

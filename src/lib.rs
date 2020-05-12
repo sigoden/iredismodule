@@ -13,18 +13,18 @@ mod string;
 mod rtype;
 mod value;
 pub mod context;
+pub mod cluster;
+pub mod subscribe;
 
 pub use error::Error;
 pub use common::{
-    get_cluster_size, get_my_cluster_id, handle_status, is_module_busy, milliseconds, parse_args,
+    handle_status, is_module_busy, milliseconds, parse_args,
     ArgvFlags, LogLevel, Ptr, StatusCode,
 };
-use context::take_data;
 
 pub use context::{Context, MutexContext};
 
 pub use raw::RedisModuleTimerID as TimerID;
-
 pub use block_client::BlockClient;
 pub use buffer::Buffer;
 pub use call_reply::CallReply;

@@ -6,12 +6,12 @@ use crate::raw;
 
 #[derive(Debug)]
 pub struct Buffer {
-    buffer: *mut c_char,
+    buffer: *const c_char,
     len: usize,
 }
 
 impl Buffer {
-    pub fn new(buffer: *mut c_char, len: usize) -> Buffer {
+    pub fn new(buffer: *const c_char, len: usize) -> Buffer {
         Buffer { buffer, len }
     }
 

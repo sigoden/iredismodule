@@ -40,22 +40,6 @@ pub fn is_module_busy(name: &str) -> Result<(), Error> {
     )
 }
 
-/// wrap RedisModule_GetMyClusterID
-pub fn get_my_cluster_id() -> Result<String, Error> {
-    let c_buf: *const c_char = unsafe { raw::RedisModule_GetMyClusterID.unwrap()() };
-    if c_buf.is_null() {
-        Err(Error::generic("Cluster is disabled"))
-    } else {
-        let c_str: &CStr = unsafe { CStr::from_ptr(c_buf) };
-        Ok(c_str.to_str()?.to_owned())
-    }
-}
-
-/// wrap RedisModule_GetClusterSize
-pub fn get_cluster_size() -> usize {
-    unsafe { raw::RedisModule_GetClusterSize.unwrap()() }
-}
-
 pub enum StatusCode {
     Ok = raw::REDISMODULE_OK as isize,
     Err = raw::REDISMODULE_ERR as isize,

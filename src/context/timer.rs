@@ -3,7 +3,7 @@ use std::os::raw::c_void;
 use std::time::Duration;
 
 use crate::raw;
-use crate::{handle_status, take_data, Context, Error, TimerID};
+use crate::{handle_status, Context, Error, TimerID};
 
 impl Context {
     pub fn create_timer<F, T>(
@@ -73,7 +73,7 @@ where
 {
     let ctx = &Context::from_ptr(ctx);
     if data.is_null() {
-        ctx.log_debug("Timer callback data is null");
+        ctx.debug("Timer callback data is null");
         return;
     }
     let cb_data: TimerProcData<F, T> = take_data(data);
@@ -81,7 +81,18 @@ where
 }
 
 #[repr(C)]
-pub(crate) struct TimerProcData<F: FnOnce(&Context, T), T> {
+struct TimerProcData<F: FnOnce(&Context, T), T> {
     data: T,
     callback: F,
+}
+
+fn take_data<T>(data: *mut c_void) -> T {
+    // Cast the *mut c_void supplied by the Redis API to a raw pointer of our custom type.
+    let data = data as *mut T;
+
+    // Take back ownership of the original boxed data, so we can unbox it safely.
+    // If we don't do this, the data's memory will be leaked.
+    let data = unsafe { Box::from_raw(data) };
+
+    *data
 }

@@ -1,6 +1,6 @@
 use redismodule::{assert_len, define_module};
 use redismodule::{ArgvFlags, Context, Digest, Error, RResult, RStr, TypeMethod, Value, IO};
-use redismodule_macros::{rcall, rcmd, rfree, rtypedef};
+use redismodule_macros::{rcall, rcmd, rtypedef, rwrap};
 use std::time::Duration;
 
 pub struct HelloTypeNode {
@@ -192,9 +192,9 @@ fn helloblock_timeout(ctx: &mut Context, _: Vec<RStr>) -> RResult {
     Ok(().into())
 }
 
-#[rfree]
+#[rwrap("free")]
 fn helloblock_free(ctx: &mut Context, data: Box<String>) {
-    ctx.log_debug(&format!("free: {}", data.as_str()));
+    ctx.debug(&format!("free: {}", data.as_str()));
 }
 
 define_module! {

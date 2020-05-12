@@ -206,13 +206,22 @@ impl Context {
     pub fn signal_key_as_ready(&self, key: &RStr) {
         unsafe { raw::RedisModule_SignalKeyAsReady.unwrap()(self.inner, key.get_ptr()) };
     }
-    pub fn log(&self, level: LogLevel, message: &str) {
+    pub fn log<T: AsRef<str>>(&self, level: LogLevel, message: T) {
         let level: CString = level.into();
-        let fmt = CString::new(message).unwrap();
+        let fmt = CString::new(message.as_ref()).unwrap();
         unsafe { raw::RedisModule_Log.unwrap()(self.inner, level.as_ptr(), fmt.as_ptr()) }
     }
-    pub fn log_debug<T: AsRef<str>>(&self, message: T) {
+    pub fn notice<T: AsRef<str>>(&self, message: T) {
         self.log(LogLevel::Notice, message.as_ref());
+    }
+    pub fn debug<T: AsRef<str>>(&self, message: T) {
+        self.log(LogLevel::Debug, message.as_ref());
+    }
+    pub fn verbose<T: AsRef<str>>(&self, message: T) {
+        self.log(LogLevel::Verbose, message.as_ref());
+    }
+    pub fn warning<T: AsRef<str>>(&self, message: T) {
+        self.log(LogLevel::Warning, message.as_ref());
     }
     pub fn create_cmd(
         &self,
@@ -244,15 +253,4 @@ impl Context {
             "fail to create command",
         )
     }
-}
-
-pub(crate) fn take_data<T>(data: *mut c_void) -> T {
-    // Cast the *mut c_void supplied by the Redis API to a raw pointer of our custom type.
-    let data = data as *mut T;
-
-    // Take back ownership of the original boxed data, so we can unbox it safely.
-    // If we don't do this, the data's memory will be leaked.
-    let data = unsafe { Box::from_raw(data) };
-
-    *data
 }

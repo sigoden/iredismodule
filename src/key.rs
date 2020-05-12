@@ -169,7 +169,7 @@ impl ReadKey {
                 }
             };
             let ctx = self.get_context();
-            ctx.log_debug(&format!(
+            ctx.debug(&format!(
                 "dir = {:?} min={} max={}",
                 dir,
                 min.to_str().unwrap(),
@@ -181,15 +181,15 @@ impl ReadKey {
                 init(self.inner, min.get_ptr(), max.get_ptr()),
                 "fail to execute zset_lex_range",
             )?;
-            ctx.log_debug(&format!("range start"));
+            ctx.debug(&format!("range start"));
             while check_end(self.inner) == 0 {
                 let mut score = 0.0;
-                ctx.log_debug(&format!("range step"));
+                ctx.debug(&format!("range step"));
                 let elem = get_elem(self.inner, &mut score);
                 result.push((RString::new(self.ctx, elem), score));
                 next(self.inner);
             }
-            ctx.log_debug(&format!("range stop"));
+            ctx.debug(&format!("range stop"));
             raw::RedisModule_ZsetRangeStop.unwrap()(self.inner)
         }
         Ok(result)

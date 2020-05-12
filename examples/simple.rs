@@ -1,10 +1,10 @@
 use redismodule::define_module;
-use redismodule_macros::{rcall, rcmd};
+use redismodule_macros::{rcmd};
 
 use redismodule::{Context, RResult, RStr};
 
 #[rcmd("hello.simple", "readonly", 0, 0, 0)]
-pub fn hello_simple(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
+fn hello_simple(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
     let db = ctx.get_select_db();
     Ok(db.into())
 }

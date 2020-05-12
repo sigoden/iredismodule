@@ -146,11 +146,11 @@ fn hello_more_expire(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     let mut key = ctx.open_write_key(&args[1]);
     let expire = key.get_expire();
     if let Some(d) = expire {
-        ctx.log_debug(&format!("current duration {}", d.as_secs()));
+        ctx.debug(&format!("current duration {}", d.as_secs()));
         let new_d = d.checked_add(Duration::from_millis(addms as u64)).unwrap();
         key.set_expire(new_d)?;
     } else {
-        ctx.log_debug(&format!("current no duration"));
+        ctx.debug(&format!("current no duration"));
     }
     Ok("OK".into())
 }
@@ -208,9 +208,9 @@ fn hello_hcopy(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     key.verify_type(KeyType::ZSet, true)?;
     let old_val = key.hash_get(HashGetFlag::Normal, &args[2])?;
     if let Some(v) = &old_val {
-        ctx.log_debug(&format!("old_val is {}", v.to_str()?));
+        ctx.debug(&format!("old_val is {}", v.to_str()?));
         key.hash_set(HashSetFlag::Normal, &args[3], v)?;
-        ctx.log_debug(&format!("new_val is {}", v.to_str()?));
+        ctx.debug(&format!("new_val is {}", v.to_str()?));
     }
     let ret: i64 = match &old_val {
         Some(_) => 1,
@@ -243,7 +243,7 @@ fn hello_leftpad(_ctx: &mut Context, args: Vec<RStr>) -> RResult {
 
 #[rcall]
 fn init(ctx: &mut Context, args: Vec<RStr>) -> Result<(), Error> {
-    ctx.log_debug(&format!(
+    ctx.debug(&format!(
         "Module loaded with ARGV[{}] = {:?}\n",
         args.len(),
         args.iter()

@@ -5,7 +5,7 @@ use redismodule_macros::rcmd;
 use std::time::Duration;
 
 fn timer_handler(ctx: &Context, data: String) {
-    ctx.log_debug(&data);
+    ctx.debug(&data);
 }
 
 #[rcmd("hellotimer.timer")]
