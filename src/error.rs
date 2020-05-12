@@ -57,7 +57,7 @@ impl Display for Error {
                 str::from_utf8(raw::REDISMODULE_ERRORMSG_WRONGTYPE).unwrap()
             ),
             Error::WrongArity => write!(f, "ERR wrong number of arguments"),
-            Error::Generic(ref err) => write!(f, "ERR {}", err),
+            Error::Generic(ref err) => write!(f, "{}", err),
         }
     }
 }

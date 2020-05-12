@@ -34,7 +34,7 @@ impl Drop for ClusterNodeList {
 pub fn get_my_cluster_id() -> Result<String, Error> {
     let c_buf: *const c_char = unsafe { raw::RedisModule_GetMyClusterID.unwrap()() };
     if c_buf.is_null() {
-        Err(Error::generic("Cluster is disabled"))
+        Err(Error::generic("cluster is disabled"))
     } else {
         let c_str: &CStr = unsafe { CStr::from_ptr(c_buf) };
         Ok(c_str.to_str()?.to_owned())

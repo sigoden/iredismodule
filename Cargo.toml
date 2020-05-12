@@ -9,8 +9,9 @@ bindgen = "0.53"
 cc = "1.0"
 
 [dev-dependencies]
-rand = "0.7.3"
+rand = "0.7"
 redismodule-macros = { path = "./macros" }
+lazy_static = "1.4"
 
 [features]
 default = []
@@ -42,6 +43,10 @@ crate-type = ["cdylib"]
 
 [[example]]
 name = "hellocluster"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "helloacl"
 crate-type = ["cdylib"]
 
 [workspace]

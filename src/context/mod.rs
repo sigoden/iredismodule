@@ -1,10 +1,10 @@
 use crate::raw;
 use crate::{
     handle_status, ArgvFlags, CallReply, Error, LogLevel, Ptr, RStr, RString, ReadKey, StatusCode,
-    Value, WriteKey,
+    Value, WriteKey, User,
 };
 use std::ffi::CString;
-use std::os::raw::{c_char, c_int, c_long};
+use std::os::raw::{c_char, c_int, c_long, c_void};
 
 mod block_client;
 pub mod cluster;
@@ -252,5 +252,59 @@ impl Context {
             },
             "fail to create command",
         )
+    }
+
+    pub fn deauthenticate_and_close_client(&self, id: u64) {
+        unsafe {
+            raw::RedisModule_DeauthenticateAndCloseClient.unwrap()(self.inner, id)
+        }
+    }
+    pub fn authenticate_client_with_acl_user<T>(
+        &self,
+        name: &str,
+        callback: raw::RedisModuleUserChangedFunc,
+        privdata: T,
+        client_id: u64,
+    ) -> Result<u64, Error> {
+        let c_name = CString::new(name).unwrap();
+        let data = Box::into_raw(Box::from(privdata));
+        let mut client_id = client_id;
+        handle_status(
+            unsafe {
+                raw::RedisModule_AuthenticateClientWithACLUser.unwrap()(
+                    self.inner,
+                    c_name.as_ptr(),
+                    name.len(),
+                    callback,
+                    data as *mut c_void,
+                    &mut client_id,
+                )
+            },
+            "fail to authenticate client",
+        )?;
+        Ok(client_id)
+    }
+    pub fn authenticate_client_with_user<T>(
+        &self,
+        user: &User, 
+        callback: raw::RedisModuleUserChangedFunc,
+        privdata: T,
+        client_id: u64,
+    ) -> Result<u64, Error> {
+        let data = Box::into_raw(Box::from(privdata));
+        let mut client_id = client_id;
+        handle_status(
+            unsafe {
+                raw::RedisModule_AuthenticateClientWithUser.unwrap()(
+                    self.inner,
+                    user.get_ptr(),
+                    callback,
+                    data as *mut c_void,
+                    &mut client_id,
+                )
+            },
+            "fail to authenticate client",
+        )?;
+        Ok(client_id)
     }
 }

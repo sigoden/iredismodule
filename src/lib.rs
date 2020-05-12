@@ -16,6 +16,7 @@ mod rtype;
 mod string;
 pub mod subscribe;
 mod value;
+mod user;
 
 #[global_allocator]
 static ALLOC: crate::alloc::RedisAlloc = crate::alloc::RedisAlloc;
@@ -40,3 +41,4 @@ pub use raw::RedisModuleTimerID as TimerID;
 pub use rtype::{RType, TypeMethod};
 pub use string::{RStr, RString};
 pub use value::{RResult, Value};
+pub use user::{User};

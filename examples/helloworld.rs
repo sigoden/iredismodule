@@ -142,7 +142,7 @@ fn hello_more_expire(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 3);
     let addms = args[2]
         .get_integer()
-        .map_err(|_e| Error::generic("invalid expire time"))?;
+        .map_err(|_e| Error::generic("ERR invalid expire time"))?;
     let mut key = ctx.open_write_key(&args[1]);
     let expire = key.get_expire();
     if let Some(d) = expire {
@@ -231,7 +231,7 @@ fn hello_leftpad(_ctx: &mut Context, args: Vec<RStr>) -> RResult {
         return Ok(the_str.into());
     }
     if the_char.len() != 1 {
-        return Err(Error::generic("padding must be a single char"));
+        return Err(Error::generic("ERR padding must be a single char"));
     }
     let the_char = the_char.chars().nth(0).unwrap();
     let mut pad_str = (0..(pad_len - the_str.len()))
