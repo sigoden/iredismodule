@@ -1,12 +1,12 @@
 use super::Context;
-use crate::string::RStr;
-use crate::raw;
 use crate::block_client::BlockClient;
-use crate::Ptr;
 use crate::error::Error;
+use crate::raw;
+use crate::string::RStr;
+use crate::Ptr;
 
-use std::time::Duration;
 use std::os::raw::c_void;
+use std::time::Duration;
 
 impl Context {
     pub fn get_blocked_client_ready_key(&self) -> Result<RStr, Error> {

@@ -3,14 +3,13 @@ use std::ops::Deref;
 use std::os::raw::{c_int, c_void};
 use std::time::Duration;
 
-use crate::raw;
-use crate::{Ptr, handle_status};
-use crate::error::Error;
 use crate::context::Context;
+use crate::error::Error;
+use crate::raw;
 use crate::rtype::RType;
 use crate::scan_cursor::ScanCursor;
 use crate::string::{RStr, RString};
-
+use crate::{handle_status, Ptr};
 
 /// Repersent a Redis key with read permision
 ///
@@ -62,7 +61,7 @@ impl ReadKey {
         Ok(Some(value))
     }
 
-    /// Check the key type. 
+    /// Check the key type.
     ///
     /// When `allow_null` is set, key have no value will pass the check.
     pub fn verify_type(&self, expect_type: KeyType, allow_null: bool) -> Result<(), Error> {
@@ -239,15 +238,17 @@ impl ReadKey {
         &self,
         cursor: &ScanCursor,
         callback: raw::RedisModuleScanKeyCB,
-        privdata: Option<T>
+        privdata: Option<T>,
     ) -> Result<(), Error> {
         let data = match privdata {
             Some(v) => Box::into_raw(Box::from(v)) as *mut c_void,
             None => 0 as *mut c_void,
         };
         handle_status(
-            unsafe { raw::RedisModule_ScanKey.unwrap()(self.ptr, cursor.get_ptr(), callback, data )},
-            "fail to scan"
+            unsafe {
+                raw::RedisModule_ScanKey.unwrap()(self.ptr, cursor.get_ptr(), callback, data)
+            },
+            "fail to scan",
         )
     }
     pub fn get_keyname(&self) -> RStr {
@@ -255,13 +256,15 @@ impl ReadKey {
         RStr::from_ptr({ ptr as *mut raw::RedisModuleString })
     }
     pub fn signal_ready(&self) {
-        unsafe { raw::RedisModule_SignalKeyAsReady.unwrap()(self.ctx, self.get_keyname().get_ptr()) }
+        unsafe {
+            raw::RedisModule_SignalKeyAsReady.unwrap()(self.ctx, self.get_keyname().get_ptr())
+        }
     }
     pub fn get_lfu(&self) -> Result<u64, Error> {
         let mut freq = 0;
         handle_status(
             unsafe { raw::RedisModule_GetLFU.unwrap()(self.ptr, &mut freq) },
-            "fail to get lfu"
+            "fail to get lfu",
         )?;
         Ok(freq as u64)
     }
@@ -269,14 +272,13 @@ impl ReadKey {
         let mut time_ms = 0;
         handle_status(
             unsafe { raw::RedisModule_GetLRU.unwrap()(self.ptr, &mut time_ms) },
-            "fail to get lru"
+            "fail to get lru",
         )?;
         Ok(Duration::from_millis(time_ms as u64))
     }
     fn get_context(&self) -> Context {
         Context::from_ptr(self.ctx)
     }
-    
 }
 
 /// Repersent a Redis key with read and write permision
@@ -325,7 +327,11 @@ impl WriteKey {
         )?;
         Ok(unsafe { &mut *(value as *mut T) })
     }
-    pub fn replace_value<T>(&mut self, redis_type: &RType<T>, value: T) -> Result<(&mut T, Box<T>), Error> {
+    pub fn replace_value<T>(
+        &mut self,
+        redis_type: &RType<T>,
+        value: T,
+    ) -> Result<(&mut T, Box<T>), Error> {
         let value = Box::into_raw(Box::new(value)) as *mut c_void;
         let mut old_value: *mut c_void = std::ptr::null_mut();
         handle_status(
@@ -461,13 +467,13 @@ impl WriteKey {
     pub fn set_lfu(&self, freq: u64) -> Result<(), Error> {
         handle_status(
             unsafe { raw::RedisModule_SetLFU.unwrap()(self.ptr, freq as i64) },
-            "fail to set lfu"
+            "fail to set lfu",
         )
     }
     pub fn set_lru(&self, time_ms: Duration) -> Result<(), Error> {
         handle_status(
             unsafe { raw::RedisModule_SetLRU.unwrap()(self.ptr, time_ms.as_millis() as i64) },
-            "fail to set lru"
+            "fail to set lru",
         )
     }
 }

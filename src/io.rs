@@ -3,11 +3,11 @@
 use std::ffi::CString;
 use std::os::raw::{c_char, c_uchar};
 
-use crate::raw;
-use crate::{ArgvFlags, LogLevel, Ptr};
-use crate::context::Context;
 use crate::buffer::Buffer;
+use crate::context::Context;
+use crate::raw;
 use crate::string::{RStr, RString};
+use crate::{ArgvFlags, LogLevel, Ptr};
 
 #[repr(C)]
 pub struct IO {
@@ -41,7 +41,8 @@ impl IO {
         unsafe { raw::RedisModule_SaveString.unwrap()(self.ptr, value.get_ptr()) }
     }
     pub fn load_redis_string(&mut self) -> RString {
-        let ptr: *mut raw::RedisModuleString = unsafe { raw::RedisModule_LoadString.unwrap()(self.ptr) };
+        let ptr: *mut raw::RedisModuleString =
+            unsafe { raw::RedisModule_LoadString.unwrap()(self.ptr) };
         let ctx = self.get_ctx();
         RString::new(ctx.get_ptr(), ptr)
     }
@@ -99,8 +100,9 @@ impl IO {
         unsafe { raw::RedisModule_LogIOError.unwrap()(self.ptr, level.as_ptr(), fmt.as_ptr()) }
     }
     pub fn get_ctx(&self) -> Context {
-       let ptr: *mut raw::RedisModuleCtx = unsafe { raw::RedisModule_GetContextFromIO.unwrap()(self.ptr) };
-       Context::from_ptr(ptr)
+        let ptr: *mut raw::RedisModuleCtx =
+            unsafe { raw::RedisModule_GetContextFromIO.unwrap()(self.ptr) };
+        Context::from_ptr(ptr)
     }
     pub fn have_error(&self) -> bool {
         unsafe { raw::RedisModule_IsIOError.unwrap()(self.ptr) != 0 }

@@ -1,7 +1,7 @@
-use redismodule_macros::{rcmd, rwrap};
+use redismodule::cluster::MsgType;
 use redismodule::prelude::*;
 use redismodule::raw;
-use redismodule::cluster::MsgType;
+use redismodule_macros::{rcmd, rwrap};
 
 const MSGTYPE_PING: MsgType = 1;
 const MSGTYPE_PONG: MsgType = 2;

@@ -10,7 +10,7 @@ pub struct ScanCursor {
 impl ScanCursor {
     pub fn new() -> Self {
         ScanCursor {
-            ptr: unsafe { raw::RedisModule_ScanCursorCreate.unwrap()() }
+            ptr: unsafe { raw::RedisModule_ScanCursorCreate.unwrap()() },
         }
     }
     /// Restart an existing cursor. The keys will be rescanned.

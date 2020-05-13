@@ -1,9 +1,9 @@
 //! Block client implentation
 
+use crate::context::MutexContext;
+use crate::error::Error;
 use crate::raw;
 use crate::{handle_status, Ptr};
-use crate::error::Error;
-use crate::context::MutexContext;
 use std::os::raw::c_void;
 
 #[repr(C)]

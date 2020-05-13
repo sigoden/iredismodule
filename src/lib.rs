@@ -1,31 +1,30 @@
 pub mod raw;
 
-
 mod alloc;
 pub mod block_client;
 pub mod buffer;
 pub mod call_reply;
-mod common;
-pub mod error;
-pub mod macros;
 pub mod cluster;
+mod common;
 pub mod context;
+pub mod error;
 pub mod io;
 pub mod key;
-pub mod rtype;
-pub mod string;
-pub mod value;
-pub mod user;
-pub mod scan_cursor;
+pub mod macros;
 pub mod prelude;
+pub mod rtype;
+pub mod scan_cursor;
+pub mod string;
+pub mod user;
+pub mod value;
 
 #[global_allocator]
 static ALLOC: crate::alloc::RedisAlloc = crate::alloc::RedisAlloc;
 
 pub use common::{
-    handle_status, is_module_busy, milliseconds, parse_args, reset_dataset, get_client_info_by_id,
-    avoid_replica_traffic, latency_add_sample, get_notify_keyspace_events, get_used_memory_ratio,
-    ArgvFlags, LogLevel, Ptr, StatusCode, ServerEvent
+    avoid_replica_traffic, get_client_info_by_id, get_notify_keyspace_events,
+    get_used_memory_ratio, handle_status, is_module_busy, latency_add_sample, milliseconds,
+    parse_args, reset_dataset, ArgvFlags, LogLevel, Ptr, ServerEvent, StatusCode,
 };
 
 /// Result of redis comamnd call

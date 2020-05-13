@@ -1,9 +1,8 @@
-use redismodule_macros::{rwrap, rcmd};
-use redismodule::prelude::*;
-use redismodule::key::{HashGetFlag, HashSetFlag, KeyType, ListPosition, ZsetRangeDirection};
 use rand::random;
+use redismodule::key::{HashGetFlag, HashSetFlag, KeyType, ListPosition, ZsetRangeDirection};
+use redismodule::prelude::*;
+use redismodule_macros::{rcmd, rwrap};
 use std::time::Duration;
-
 
 #[rcmd("hello.simple")]
 fn hello_simple(ctx: &mut Context, _args: Vec<RStr>) -> RResult {

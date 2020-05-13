@@ -1,8 +1,8 @@
 use super::Context;
-use crate::raw;
-use crate::{handle_status, Ptr, ServerEvent};
 use crate::error::Error;
+use crate::raw;
 use crate::string::RStr;
+use crate::{handle_status, Ptr, ServerEvent};
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int};
 
@@ -19,11 +19,7 @@ impl Context {
     ) -> Result<(), Error> {
         handle_status(
             unsafe {
-                raw::RedisModule_SubscribeToKeyspaceEvents.unwrap()(
-                    self.ptr,
-                    types,
-                    Some(callback),
-                )
+                raw::RedisModule_SubscribeToKeyspaceEvents.unwrap()(self.ptr, types, Some(callback))
             },
             "fail to subscribe to keyspace events",
         )
@@ -54,8 +50,15 @@ impl Context {
     pub fn notify_keyspace_event(&self, type_: i32, event: &str, key: &RStr) -> Result<(), Error> {
         let event = CString::new(event).unwrap();
         handle_status(
-            unsafe { raw::RedisModule_NotifyKeyspaceEvent.unwrap()( self.ptr, type_, event.as_ptr(), key.get_ptr()) },
-            "fail to notify keyspace event"
+            unsafe {
+                raw::RedisModule_NotifyKeyspaceEvent.unwrap()(
+                    self.ptr,
+                    type_,
+                    event.as_ptr(),
+                    key.get_ptr(),
+                )
+            },
+            "fail to notify keyspace event",
         )
     }
 }

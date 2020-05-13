@@ -1,13 +1,13 @@
 //! Redis data type supports
 //!
 //! # Examples
-//! 
+//!
 //! ```rust,no_run
 //!
 //! pub struct MyType {
 //!     pub data: i64,
 //! }
-//! 
+//!
 //! #[rtypedef("mytype-00", 0)]
 //! impl TypeMethod for MyType {
 //!     fn rdb_load(io: &mut IO, encver: u32) -> Option<Box<Self>> {
@@ -30,7 +30,7 @@
 //!         )
 //!     }
 //! }
-//! 
+//!
 //! define_module! {
 //!     ...
 //!     data_types: [
@@ -38,27 +38,26 @@
 //!     ],
 //!     ...
 //! }
-//! 
+//!
 //! ```
 
 use std::cell::RefCell;
 use std::ffi::CString;
 use std::marker::PhantomData;
-use std::ptr;
 use std::os::raw::c_void;
+use std::ptr;
 
-use crate::raw;
-use crate::{LogLevel, Ptr};
-use crate::error::Error;
 use crate::context::Context;
+use crate::error::Error;
 use crate::io::{Digest, IO};
+use crate::raw;
 use crate::string::{RStr, RString};
-
+use crate::{LogLevel, Ptr};
 
 /// A help trait for registing new data type
 pub trait TypeMethod {
     /// Bit flags control when triggers the aux_load and aux_save callbacks
-    const AUX_SAVE_TRIGGERS: AuxSaveTriggerFlag = AuxSaveTriggerFlag::AuxBeforeRdb; 
+    const AUX_SAVE_TRIGGERS: AuxSaveTriggerFlag = AuxSaveTriggerFlag::AuxBeforeRdb;
     /// A callback function pointer that loads data from RDB files
     #[allow(unused_variables)]
     fn rdb_load(io: &mut IO, encver: u32) -> Option<Box<Self>> {
@@ -74,7 +73,7 @@ pub trait TypeMethod {
     fn aof_rewrite(&self, io: &mut IO, key: &RStr) {
         unimplemented!()
     }
-    /// A callback function pointer that report memory usage 
+    /// A callback function pointer that report memory usage
     ///
     /// It should currently be omitted since it is not yet implemented inside the Redis modules core.
     fn mem_usage(&self) -> usize {
@@ -117,7 +116,7 @@ impl Into<i32> for AuxSaveTriggerFlag {
 }
 
 /// A redis data type
-/// 
+///
 /// Recommand creating rtype with `rdeftype` macro and `TypeMethods` trait.
 pub struct RType<T> {
     /// A 9 characters data type name that MUST be unique in the Redis
@@ -174,7 +173,7 @@ impl<T> RType<T> {
     pub fn load(&self, value: RStr) -> Box<T> {
         unsafe {
             let ptr = raw::RedisModule_LoadDataTypeFromString.unwrap()(
-                value.get_ptr() as *const raw::RedisModuleString, 
+                value.get_ptr() as *const raw::RedisModuleString,
                 *self.raw_type.borrow_mut(),
             );
             Box::from_raw(ptr as *mut T)
@@ -183,17 +182,17 @@ impl<T> RType<T> {
 
     /// Encode a module data type 'mt' value 'data' into serialized form, and return it
     /// as a newly allocated RedisModuleString.
-    /// 
+    ///
     /// This call basically reuses the 'rdb_save' callback which module data types
     /// implement in order to allow a module to arbitrarily serialize/de-serialize
     /// keys, similar to how the Redis 'DUMP' and 'RESTORE' commands are implemented.
     pub fn save(&self, ctx: &Context, value: T) -> Option<(Box<T>, RString)> {
         let value = Box::into_raw(Box::new(value));
         unsafe {
-           let ptr = raw::RedisModule_SaveDataTypeToString.unwrap()(
+            let ptr = raw::RedisModule_SaveDataTypeToString.unwrap()(
                 ctx.get_ptr(),
                 value as *mut c_void,
-                *self.raw_type.borrow_mut()
+                *self.raw_type.borrow_mut(),
             );
             if ptr.is_null() {
                 return None;

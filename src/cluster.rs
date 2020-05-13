@@ -1,9 +1,9 @@
 //! Cluster related structs and functions
 
-use crate::{raw};
+use crate::error::Error;
+use crate::raw;
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
-use crate::error::Error;
 
 pub type MsgType = u8;
 

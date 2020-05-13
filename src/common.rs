@@ -4,8 +4,8 @@ use std::os::raw::{c_int, c_void};
 use std::slice;
 use std::time::Duration;
 
-use crate::raw;
 use crate::error::Error;
+use crate::raw;
 use crate::string::RStr;
 
 pub trait Ptr {
@@ -48,7 +48,7 @@ pub fn get_client_info_by_id(id: u64) -> Result<&'static raw::RedisModuleClientI
     let ptr: *mut raw::RedisModuleClientInfo = std::ptr::null_mut();
     handle_status(
         unsafe { raw::RedisModule_GetClientInfoById.unwrap()(ptr as *mut c_void, id) },
-        "fail to get client info"
+        "fail to get client info",
     )?;
     Ok(unsafe { &(*ptr) })
 }
@@ -56,14 +56,12 @@ pub fn get_client_info_by_id(id: u64) -> Result<&'static raw::RedisModuleClientI
 pub fn avoid_replica_traffic() -> Result<(), Error> {
     handle_status(
         unsafe { raw::RedisModule_AvoidReplicaTraffic.unwrap()() },
-        "fail to call avoid_replica_traffic"
+        "fail to call avoid_replica_traffic",
     )
 }
 pub fn latency_add_sample(name: &str, ms: Duration) {
     let name = CString::new(name).unwrap();
-    unsafe {
-        raw::RedisModule_LatencyAddSample.unwrap()(name.as_ptr(), ms.as_millis() as i64)
-     }
+    unsafe { raw::RedisModule_LatencyAddSample.unwrap()(name.as_ptr(), ms.as_millis() as i64) }
 }
 
 pub fn get_notify_keyspace_events() -> i32 {

@@ -1,7 +1,7 @@
 use super::Context;
-use crate::raw;
-use crate::{handle_status};
 use crate::error::Error;
+use crate::handle_status;
+use crate::raw;
 
 use std::convert::TryInto;
 use std::os::raw::c_void;

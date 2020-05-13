@@ -6,10 +6,10 @@
 /// ```rust,no_run
 /// #[rcmd("hello.repl2", "write", 1, 1, 1)]
 /// fn hello_repl2(ctx: &mut Context, args: Vec<RStr>) -> RResult {
-///     assert_len!(args, 2); 
-///     ... 
+///     assert_len!(args, 2);
+///     ...
 /// }
-/// 
+///
 /// ```
 #[macro_export]
 macro_rules! assert_len {

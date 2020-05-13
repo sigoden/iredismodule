@@ -1,8 +1,8 @@
 use super::Context;
-use crate::cluster::{ClusterNodeList, MsgType, ClusterNodeInfo};
-use crate::raw;
-use crate::{handle_status};
+use crate::cluster::{ClusterNodeInfo, ClusterNodeList, MsgType};
 use crate::error::Error;
+use crate::handle_status;
+use crate::raw;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_uchar};
 
@@ -23,7 +23,7 @@ impl Context {
         let ip: *mut c_char = std::ptr::null_mut();
         let master_id: *mut c_char = std::ptr::null_mut();
         let mut port = 0;
-        let mut flags  = 0;
+        let mut flags = 0;
         handle_status(
             unsafe {
                 raw::RedisModule_GetClusterNodeInfo.unwrap()(
@@ -35,12 +35,12 @@ impl Context {
                     &mut flags,
                 )
             },
-            "fail to get cluster node info"
+            "fail to get cluster node info",
         )?;
         Ok(unsafe {
             ClusterNodeInfo {
                 ip: CString::from_raw(ip).to_str()?.to_owned(),
-                master_id:  CString::from_raw(ip).to_str()?.to_owned(),
+                master_id: CString::from_raw(ip).to_str()?.to_owned(),
                 port,
                 flags,
             }

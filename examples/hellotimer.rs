@@ -1,6 +1,6 @@
-use redismodule_macros::rcmd;
 use redismodule::prelude::*;
-use redismodule::raw;
+use redismodule_macros::rcmd;
+
 use rand::random;
 use std::time::Duration;
 

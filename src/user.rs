@@ -1,9 +1,9 @@
 //! Acl user
 
-use crate::raw;
-use crate::{Ptr, handle_status};
-use std::ffi::CString;
 use crate::error::Error;
+use crate::raw;
+use crate::{handle_status, Ptr};
+use std::ffi::CString;
 
 /// Redis ACL user that the module can use to authenticate a client
 #[repr(C)]
@@ -17,19 +17,15 @@ impl User {
     }
     pub fn new<T: AsRef<str>>(name: T) -> Self {
         let name = CString::new(name.as_ref()).unwrap();
-        let ptr = unsafe {
-            raw::RedisModule_CreateModuleUser.unwrap()(name.as_ptr())
-        };
+        let ptr = unsafe { raw::RedisModule_CreateModuleUser.unwrap()(name.as_ptr()) };
         Self::from_ptr(ptr)
     }
-    /// Sets the permissions on ACL user. 
+    /// Sets the permissions on ACL user.
     pub fn set_acl<T: AsRef<str>>(&mut self, acl: T) -> Result<(), Error> {
         let acl = CString::new(acl.as_ref()).unwrap();
         handle_status(
-            unsafe {
-                raw::RedisModule_SetModuleUserACL.unwrap()(self.ptr, acl.as_ptr())
-            },
-            "fail to set acl"
+            unsafe { raw::RedisModule_SetModuleUserACL.unwrap()(self.ptr, acl.as_ptr()) },
+            "fail to set acl",
         )
     }
 }

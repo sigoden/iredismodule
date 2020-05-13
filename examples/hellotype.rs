@@ -1,6 +1,6 @@
+use redismodule::io::{Digest, IO};
 use redismodule::prelude::*;
 use redismodule::rtype::TypeMethod;
-use redismodule::io::{IO, Digest};
 use redismodule_macros::{rcmd, rtypedef, rwrap};
 use std::time::Duration;
 
