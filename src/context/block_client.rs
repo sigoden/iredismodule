@@ -9,7 +9,7 @@ impl Context {
         let p: *mut raw::RedisModuleString =
             unsafe { raw::RedisModule_GetBlockedClientReadyKey.unwrap()(self.ptr) };
         if p.is_null() {
-            Err(Error::generic("fail to get read key"))
+            Err(Error::new("fail to get read key"))
         } else {
             Ok(RStr::from_ptr(p))
         }

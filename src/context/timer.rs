@@ -25,7 +25,7 @@ impl Context {
                 period
                     .as_millis()
                     .try_into()
-                    .map_err(|_e| Error::generic("invalid timer period"))?,
+                    .map_err(|_e| Error::new("invalid timer period"))?,
                 Some(timer_proc::<F, T>),
                 data as *mut c_void,
             )

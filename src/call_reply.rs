@@ -66,8 +66,8 @@ impl Into<RResult> for CallReply {
     fn into(self) -> RResult {
         let reply_type = self.get_type();
         match reply_type {
-            ReplyType::Error => Err(Error::generic(&self.get_string())),
-            ReplyType::Unknown => Err(Error::generic("Error on method call")),
+            ReplyType::Error => Err(Error::new(&self.get_string())),
+            ReplyType::Unknown => Err(Error::new("Error on method call")),
             ReplyType::Array => {
                 let length = self.get_length();
                 let mut vec = Vec::with_capacity(length);

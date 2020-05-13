@@ -83,7 +83,7 @@ impl ReadKey {
                 raw::REDISMODULE_READ as c_int,
             ) as *mut u8;
             if data.is_null() {
-                return Err(Error::generic("fail to execute string_dma"));
+                return Err(Error::new("fail to execute string_dma"));
             }
             Ok(RString::from_raw_parts(self.ctx, data, len as usize))
         }
@@ -302,7 +302,7 @@ impl WriteKey {
     pub fn list_pop(&mut self, pos: ListPosition) -> Result<RString, Error> {
         let p = unsafe { raw::RedisModule_ListPop.unwrap()(self.ptr, pos as i32) };
         if p.is_null() {
-            return Err(Error::generic("fail to pop list"));
+            return Err(Error::new("fail to pop list"));
         }
         Ok(RString::new(self.ctx, p))
     }

@@ -77,7 +77,7 @@ impl<T> RType<T> {
                 LogLevel::Warning,
                 &format!("{}, name is: '{}'", msg, self.name),
             );
-            return Err(Error::generic(msg));
+            return Err(Error::new(msg));
         }
 
         let type_name = CString::new(self.name).unwrap();
@@ -94,7 +94,7 @@ impl<T> RType<T> {
         if redis_type.is_null() {
             let msg = "Created data type is null";
             ctx.log(LogLevel::Warning, msg);
-            return Err(Error::generic(msg));
+            return Err(Error::new(msg));
         }
 
         *self.raw_type.borrow_mut() = redis_type;

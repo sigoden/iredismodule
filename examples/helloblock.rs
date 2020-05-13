@@ -44,10 +44,10 @@ fn helloblock_rediscommand(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 3);
     let delay = args[1]
         .get_integer()
-        .map_err(|_| Error::generic("ERR invalid delay"))? as u64;
+        .map_err(|_| Error::new("ERR invalid delay"))? as u64;
     let timeout = args[2]
         .get_integer()
-        .map_err(|_| Error::generic("ERR invalid timeout"))? as u64;
+        .map_err(|_| Error::new("ERR invalid timeout"))? as u64;
     let bc = ctx.block_client(
         Some(helloblock_reply_c),
         Some(helloblock_timeout_c),

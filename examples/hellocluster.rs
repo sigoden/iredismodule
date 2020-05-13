@@ -17,7 +17,7 @@ fn hellocluster_pingall(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
 fn hellocluster_list(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
     let ids = ctx.get_cluster_nodes_list();
     if ids.is_none() {
-        return Err(Error::generic("ERR cluster not enabled"));
+        return Err(Error::new("ERR cluster not enabled"));
     }
     let values = ids
         .unwrap()

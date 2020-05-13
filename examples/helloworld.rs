@@ -57,7 +57,7 @@ fn hello_list_splice(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     dest_key.verify_type(KeyType::List, true)?;
     let count = args[3]
         .get_integer_which(|v| v > 0)
-        .map_err(|_| Error::generic("ERR invalid count"))?;
+        .map_err(|_| Error::new("ERR invalid count"))?;
     for _ in 0..count {
         let ele = src_key.list_pop(ListPosition::Tail);
         match ele {
@@ -81,7 +81,7 @@ fn hello_rand_array(_ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 2);
     let count = args[1]
         .get_integer_which(|v| v > 0)
-        .map_err(|_| Error::generic("ERR invalid count"))?;
+        .map_err(|_| Error::new("ERR invalid count"))?;
     let value: Vec<Value> = (0..count).map(|_| random::<i64>().into()).collect();
     Ok(Value::Array(value))
 }
@@ -142,7 +142,7 @@ fn hello_more_expire(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 3);
     let addms = args[2]
         .get_integer()
-        .map_err(|_e| Error::generic("ERR invalid expire time"))?;
+        .map_err(|_e| Error::new("ERR invalid expire time"))?;
     let mut key = ctx.open_write_key(&args[1]);
     let expire = key.get_expire();
     if let Some(d) = expire {
@@ -165,7 +165,7 @@ fn hello_zsumrange(ctx: &mut Context, args: Vec<RStr>) -> RResult {
         .skip(2)
         .map(|v| v.get_integer())
         .collect::<Result<Vec<i64>, Error>>()
-        .map_err(|_e| Error::generic("invalid range"))?;
+        .map_err(|_e| Error::new("invalid range"))?;
     let score_start = tail_args[0] as f64;
     let score_end = tail_args[1] as f64;
     let v1 = key.zset_score_range(
@@ -224,14 +224,14 @@ fn hello_leftpad(_ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 4);
     let pad_len = args[2]
         .get_integer_which(|v| v > 0)
-        .map_err(|_| Error::generic("ERR invalid padding length"))? as usize;
+        .map_err(|_| Error::new("ERR invalid padding length"))? as usize;
     let the_str: &str = args[1].to_str()?;
     let the_char: &str = args[3].to_str()?;
     if the_str.len() >= pad_len {
         return Ok(the_str.into());
     }
     if the_char.len() != 1 {
-        return Err(Error::generic("ERR padding must be a single char"));
+        return Err(Error::new("ERR padding must be a single char"));
     }
     let the_char = the_char.chars().nth(0).unwrap();
     let mut pad_str = (0..(pad_len - the_str.len()))

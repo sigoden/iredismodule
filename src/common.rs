@@ -28,7 +28,7 @@ pub fn handle_status(status: i32, message: &str) -> Result<(), Error> {
     if status == raw::REDISMODULE_OK as i32 {
         Ok(())
     } else {
-        Err(Error::generic(message))
+        Err(Error::new(message))
     }
 }
 

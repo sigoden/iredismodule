@@ -104,7 +104,7 @@ impl RStr {
     pub fn get_integer_which(&self, which: fn(i64) -> bool) -> Result<u64, Error> {
         let ll = self.get_integer()?;
         if !which(ll) {
-            return Err(Error::generic("fail to get integer"));
+            return Err(Error::new("fail to get integer"));
         }
         Ok(ll as u64)
     }

@@ -99,7 +99,7 @@ fn hellotype_insert(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     let exist = key.verify_module_type(&HELLOTYPE)?;
     let value = args[2]
         .get_integer()
-        .map_err(|_e| Error::generic("ERR invalid value: must be a signed 64 bit integer"))?;
+        .map_err(|_e| Error::new("ERR invalid value: must be a signed 64 bit integer"))?;
 
     let hto: &mut HelloTypeNode = if exist {
         key.get_value(&HELLOTYPE)?.unwrap()
@@ -120,10 +120,10 @@ fn hellotype_range(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     key.verify_module_type(&HELLOTYPE)?;
     let first = args[2]
         .get_integer_which(|v| v > 0)
-        .map_err(|_| Error::generic("ERR invalid first parameters"))? as usize;
+        .map_err(|_| Error::new("ERR invalid first parameters"))? as usize;
     let count = args[3]
         .get_integer_which(|v| v > 0)
-        .map_err(|_| Error::generic("ERR invalid count parameters"))? as usize;
+        .map_err(|_| Error::new("ERR invalid count parameters"))? as usize;
     let hto = key.get_value::<HelloTypeNode>(&HELLOTYPE)?;
     if hto.is_none() {
         return Ok(Value::Array(vec![]));
@@ -159,7 +159,7 @@ fn hellotype_brange(ctx: &mut Context, mut args: Vec<RStr>) -> RResult {
     let exists = key.verify_module_type(&HELLOTYPE)?;
     let timeout = args[4]
         .get_integer_which(|v| v > 0)
-        .map_err(|_| Error::generic("ERR invalid timeout parameter"))?;
+        .map_err(|_| Error::new("ERR invalid timeout parameter"))?;
     if exists {
         args.remove(args.len() - 1);
         return hellotype_range(ctx, args);

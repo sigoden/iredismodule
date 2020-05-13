@@ -28,7 +28,7 @@ fn helloacl_reset(_ctx: &mut Context, _args: Vec<RStr>) -> RResult {
 fn helloacl_revoke(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
     let id = GLOBAL_ID.lock().unwrap();
     if *id == 0 {
-        return Err(Error::generic("Global user currently not used"))
+        return Err(Error::new("Global user currently not used"))
     }
     ctx.deauthenticate_and_close_client(*id);
     Ok("Ok".into())
@@ -42,7 +42,7 @@ extern "C" fn helloac_user_changed(_client_id: u64, _privdata: *mut c_void) {
 fn helloacl_authglobal(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
     let id = GLOBAL_ID.lock().unwrap();
     if *id == 0 {
-        return Err(Error::generic("Global user currently not used"))
+        return Err(Error::new("Global user currently not used"))
     }
     let user_ = GLOBAL_USER.lock().unwrap();
     if let Some(ref user) = *user_ {
