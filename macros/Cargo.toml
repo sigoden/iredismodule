@@ -3,6 +3,11 @@ name = "iredismodule-macros"
 version = "0.1.0"
 authors = ["sigoden <sigoden@gmail.com>"]
 edition = "2018"
+description = "A toolkit for building Redis modules in Rust"
+license = "MIT"
+repository = "https://github.com/sigoden/iredismodule"
+categories = ["development-tools::ffi"]
+keywords = ["redis", "module", "redismodule", "redis-plugin"]
 
 [lib]
 proc-macro = true
