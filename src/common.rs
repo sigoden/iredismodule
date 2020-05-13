@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 use std::ffi::CString;
-use std::os::raw::c_int;
+use std::os::raw::{c_int, c_void};
 use std::slice;
 use std::time::Duration;
 
@@ -38,6 +38,40 @@ pub fn is_module_busy(name: &str) -> Result<(), Error> {
         unsafe { raw::RedisModule_IsModuleNameBusy.unwrap()(name.as_ptr()) },
         "fail to check busy",
     )
+}
+
+pub fn reset_dataset(restart_aof: bool, async_: bool) {
+    unsafe { raw::RedisModule_ResetDataset.unwrap()(restart_aof as i32, async_ as i32) }
+}
+
+pub fn get_client_info_by_id(id: u64) -> Result<&'static raw::RedisModuleClientInfo, Error> {
+    let ptr: *mut raw::RedisModuleClientInfo = std::ptr::null_mut();
+    handle_status(
+        unsafe { raw::RedisModule_GetClientInfoById.unwrap()(ptr as *mut c_void, id) },
+        "fail to get client info"
+    )?;
+    Ok(unsafe { &(*ptr) })
+}
+
+pub fn avoid_replica_traffic() -> Result<(), Error> {
+    handle_status(
+        unsafe { raw::RedisModule_AvoidReplicaTraffic.unwrap()() },
+        "fail to call avoid_replica_traffic"
+    )
+}
+pub fn latency_add_sample(name: &str, ms: Duration) {
+    let name = CString::new(name).unwrap();
+    unsafe {
+        raw::RedisModule_LatencyAddSample.unwrap()(name.as_ptr(), ms.as_millis() as i64)
+     }
+}
+
+pub fn get_notify_keyspace_events() -> i32 {
+    unsafe { raw::RedisModule_GetNotifyKeyspaceEvents.unwrap()() }
+}
+
+pub fn get_used_memory_ratio() -> f32 {
+    unsafe { raw::RedisModule_GetUsedMemoryRatio.unwrap()() }
 }
 
 pub enum StatusCode {

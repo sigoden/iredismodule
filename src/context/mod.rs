@@ -1,7 +1,7 @@
 use crate::raw;
 use crate::{
     handle_status, ArgvFlags, CallReply, Error, LogLevel, Ptr, RStr, RString, ReadKey, StatusCode,
-    Value, WriteKey, User,
+    Value, WriteKey, User, ScanCursor,
 };
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int, c_long, c_void};
@@ -279,7 +279,7 @@ impl Context {
                     c_name.as_ptr(),
                     name.len(),
                     callback,
-                    data as *mut c_void,
+                    data,
                     &mut client_id,
                 )
             },
@@ -312,5 +312,53 @@ impl Context {
             "fail to authenticate client",
         )?;
         Ok(client_id)
+    }
+    pub fn db_size(&self) -> u64 {
+        unsafe { raw::RedisModule_DbSize.unwrap()(self.ptr)}
+    }
+    pub fn publish_message(&self, channel: &RStr, msg: &RStr) -> Result<(), Error> {
+        handle_status(
+            unsafe { raw::RedisModule_PublishMessage.unwrap()(self.ptr, channel.get_ptr(), msg.get_ptr())},
+            "fail to publish message"
+        )
+    }
+    pub fn signal_modified_key(&self, key: &RStr) -> Result<(), Error> {
+        handle_status(
+            unsafe { raw::RedisModule_SignalModifiedKey.unwrap()(self.ptr, key.get_ptr())},
+            "fail to signal key modified"
+        )
+    }
+    pub fn set_module_options(&self, options: i32) {
+        unsafe { raw::RedisModule_SetModuleOptions.unwrap()(self.ptr, options) }
+    }
+    pub fn scan<T>(
+        &self,
+        cursor: &ScanCursor,
+        callback: raw::RedisModuleScanCB,
+        privdata: Option<T>
+    ) -> Result<(), Error> {
+        let data = match privdata {
+            Some(v) => Box::into_raw(Box::from(v)) as *mut c_void,
+            None => 0 as *mut c_void,
+        };
+        handle_status(
+            unsafe { raw::RedisModule_Scan.unwrap()(self.ptr, cursor.get_ptr(), callback, data )},
+            "fail to scan"
+        )
+    }
+    pub fn export_shared_api(&self, name: &str, fn_ptr: *mut c_void) -> Result<(), Error>{
+        let name = CString::new(name).unwrap();
+        handle_status(
+            unsafe { raw::RedisModule_ExportSharedAPI.unwrap()(self.ptr, name.as_ptr(), fn_ptr) },
+            "fail to export shared api"
+        )
+    }
+    pub fn get_shared_api(&self, name: &str) -> Option<*mut c_void>{
+        let name = CString::new(name).unwrap();
+        let ptr: *mut c_void = unsafe { raw::RedisModule_GetSharedAPI.unwrap()(self.ptr, name.as_ptr()) };
+        if ptr.is_null() {
+            return None;
+        }
+        Some(ptr)
     }
 }

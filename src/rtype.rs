@@ -2,9 +2,10 @@ use std::cell::RefCell;
 use std::ffi::CString;
 use std::marker::PhantomData;
 use std::ptr;
+use std::os::raw::c_void;
 
 use crate::raw;
-use crate::{Context, Digest, Error, LogLevel, Ptr, RStr, IO};
+use crate::{Context, Digest, Error, LogLevel, Ptr, RStr, IO, RString};
 
 pub trait TypeMethod {
     #[allow(unused_variables)]
@@ -67,6 +68,31 @@ impl<T> RType<T> {
             type_methods,
             marker: PhantomData,
             raw_type: RefCell::new(ptr::null_mut()),
+        }
+    }
+
+    pub fn load(&self, value: RStr) -> Box<T> {
+        unsafe {
+            let ptr = raw::RedisModule_LoadDataTypeFromString.unwrap()(
+                value.get_ptr() as *const raw::RedisModuleString, 
+                *self.raw_type.borrow_mut(),
+            );
+            Box::from_raw(ptr as *mut T)
+        }
+    }
+
+    pub fn save(&self, ctx: &Context, value: T) -> Option<(Box<T>, RString)> {
+        let value = Box::into_raw(Box::new(value));
+        unsafe {
+           let ptr = raw::RedisModule_SaveDataTypeToString.unwrap()(
+                ctx.get_ptr(),
+                value as *mut c_void,
+                *self.raw_type.borrow_mut()
+            );
+            if ptr.is_null() {
+                return None;
+            }
+            Some((Box::from_raw(value), RString::new(ctx.get_ptr(), ptr)))
         }
     }
 

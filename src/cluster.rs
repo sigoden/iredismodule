@@ -4,6 +4,14 @@ use std::os::raw::c_char;
 
 pub type MsgType = u8;
 
+#[derive(Debug)]
+pub struct ClusterNodeInfo {
+    pub ip: String,
+    pub master_id: String,
+    pub port: i32,
+    pub flags: i32,
+}
+
 pub struct ClusterNodeList {
     data: Vec<CString>,
     ptr: *mut *mut c_char,

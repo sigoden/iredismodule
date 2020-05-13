@@ -89,10 +89,6 @@ impl RStr {
         RStr { ptr }
     }
 
-    pub fn get_ptr(&self) -> *mut raw::RedisModuleString {
-        self.ptr
-    }
-
     pub fn get_integer(&self) -> Result<i64, Error> {
         let mut ll: i64 = 0;
         handle_status(

@@ -17,12 +17,15 @@ mod string;
 pub mod subscribe;
 mod value;
 mod user;
+mod scan_cursor;
 
 #[global_allocator]
 static ALLOC: crate::alloc::RedisAlloc = crate::alloc::RedisAlloc;
 
 pub use common::{
-    handle_status, is_module_busy, milliseconds, parse_args, ArgvFlags, LogLevel, Ptr, StatusCode,
+    handle_status, is_module_busy, milliseconds, parse_args, reset_dataset, get_client_info_by_id,
+    avoid_replica_traffic, latency_add_sample, get_notify_keyspace_events, get_used_memory_ratio,
+    ArgvFlags, LogLevel, Ptr, StatusCode,
 };
 
 pub use error::Error;
@@ -42,3 +45,4 @@ pub use rtype::{RType, TypeMethod};
 pub use string::{RStr, RString};
 pub use value::{RResult, Value};
 pub use user::{User};
+pub use scan_cursor::ScanCursor;

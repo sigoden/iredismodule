@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use crate::raw;
-use crate::{BlockClient, Context, Error, RStr};
+use crate::{BlockClient, Context, Ptr, Error, RStr};
 use std::os::raw::c_void;
 
 impl Context {

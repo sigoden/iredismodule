@@ -3,7 +3,7 @@ use std::os::raw::{c_int, c_void};
 use std::time::Duration;
 
 use crate::raw;
-use crate::{handle_status, Context, Error, Ptr, RStr, RString, RType};
+use crate::{handle_status, Context, Error, Ptr, RStr, RString, RType, ScanCursor};
 
 pub struct ReadKey {
     ptr: *mut raw::RedisModuleKey,
@@ -218,9 +218,48 @@ impl ReadKey {
             _ => panic!("unknown key type"),
         }
     }
+    pub fn scan<T>(
+        &self,
+        cursor: &ScanCursor,
+        callback: raw::RedisModuleScanKeyCB,
+        privdata: Option<T>
+    ) -> Result<(), Error> {
+        let data = match privdata {
+            Some(v) => Box::into_raw(Box::from(v)) as *mut c_void,
+            None => 0 as *mut c_void,
+        };
+        handle_status(
+            unsafe { raw::RedisModule_ScanKey.unwrap()(self.ptr, cursor.get_ptr(), callback, data )},
+            "fail to scan"
+        )
+    }
+    pub fn get_keyname(&self) -> RStr {
+        let ptr = unsafe { raw::RedisModule_GetKeyNameFromModuleKey.unwrap()(self.ptr) };
+        RStr::from_ptr({ ptr as *mut raw::RedisModuleString })
+    }
+    pub fn signal_ready(&self) {
+        unsafe { raw::RedisModule_SignalKeyAsReady.unwrap()(self.ctx, self.get_keyname().get_ptr()) }
+    }
+    pub fn get_lfu(&self) -> Result<u64, Error> {
+        let mut freq = 0;
+        handle_status(
+            unsafe { raw::RedisModule_GetLFU.unwrap()(self.ptr, &mut freq) },
+            "fail to get lfu"
+        )?;
+        Ok(freq as u64)
+    }
+    pub fn get_lru(&self) -> Result<Duration, Error> {
+        let mut time_ms = 0;
+        handle_status(
+            unsafe { raw::RedisModule_GetLRU.unwrap()(self.ptr, &mut time_ms) },
+            "fail to get lru"
+        )?;
+        Ok(Duration::from_millis(time_ms as u64))
+    }
     fn get_context(&self) -> Context {
         Context::from_ptr(self.ctx)
     }
+    
 }
 
 pub struct WriteKey {
@@ -262,9 +301,25 @@ impl WriteKey {
                     value,
                 )
             },
-            "fail to execute set_value",
+            "fail to set value",
         )?;
         Ok(unsafe { &mut *(value as *mut T) })
+    }
+    pub fn replace_value<T>(&mut self, redis_type: &RType<T>, value: T) -> Result<(&mut T, Box<T>), Error> {
+        let value = Box::into_raw(Box::new(value)) as *mut c_void;
+        let mut old_value: *mut c_void = std::ptr::null_mut();
+        handle_status(
+            unsafe {
+                raw::RedisModule_ModuleTypeReplaceValue.unwrap()(
+                    self.ptr,
+                    *redis_type.raw_type.borrow(),
+                    value,
+                    &mut old_value,
+                )
+            },
+            "fail to replace value",
+        )?;
+        Ok(unsafe { (&mut *(value as *mut T), Box::from_raw(old_value as *mut T)) })
     }
 
     pub fn delete(&mut self) -> Result<(), Error> {
@@ -382,6 +437,18 @@ impl WriteKey {
             )?;
             Ok(score)
         }
+    }
+    pub fn set_lfu(&self, freq: u64) -> Result<(), Error> {
+        handle_status(
+            unsafe { raw::RedisModule_SetLFU.unwrap()(self.ptr, freq as i64) },
+            "fail to set lfu"
+        )
+    }
+    pub fn set_lru(&self, time_ms: Duration) -> Result<(), Error> {
+        handle_status(
+            unsafe { raw::RedisModule_SetLRU.unwrap()(self.ptr, time_ms.as_millis() as i64) },
+            "fail to set lru"
+        )
     }
 }
 

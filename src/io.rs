@@ -2,7 +2,7 @@ use std::ffi::CString;
 use std::os::raw::{c_char, c_uchar};
 
 use crate::raw;
-use crate::{ArgvFlags, Buffer, LogLevel, Ptr, RString, Context};
+use crate::{ArgvFlags, Buffer, LogLevel, Ptr, RString, Context, RStr};
 
 #[repr(C)]
 pub struct IO {
@@ -96,6 +96,13 @@ impl IO {
     pub fn get_ctx(&self) -> Context {
        let ptr: *mut raw::RedisModuleCtx = unsafe { raw::RedisModule_GetContextFromIO.unwrap()(self.ptr) };
        Context::from_ptr(ptr)
+    }
+    pub fn have_error(&self) -> bool {
+        unsafe { raw::RedisModule_IsIOError.unwrap()(self.ptr) != 0 }
+    }
+    pub fn get_keyname(&self) -> RStr {
+        let ptr = unsafe { raw::RedisModule_GetKeyNameFromIO.unwrap()(self.ptr) };
+        RStr::from_ptr({ ptr as *mut raw::RedisModuleString })
     }
 }
 

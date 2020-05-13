@@ -1,4 +1,4 @@
-use crate::cluster::{ClusterNodeList, MsgType};
+use crate::cluster::{ClusterNodeList, MsgType, ClusterNodeInfo};
 use crate::raw;
 use crate::{handle_status, Context, Error};
 use std::ffi::CString;
@@ -15,6 +15,34 @@ impl Context {
     }
     pub fn set_cluster_flags(&self, flags: u32) {
         unsafe { raw::RedisModule_SetClusterFlags.unwrap()(self.ptr, flags as u64) }
+    }
+    pub fn get_cluster_node_info(&self, id: &str) -> Result<ClusterNodeInfo, Error> {
+        let id = CString::new(id).unwrap();
+        let ip: *mut c_char = std::ptr::null_mut();
+        let master_id: *mut c_char = std::ptr::null_mut();
+        let mut port = 0;
+        let mut flags  = 0;
+        handle_status(
+            unsafe {
+                raw::RedisModule_GetClusterNodeInfo.unwrap()(
+                    self.ptr,
+                    id.as_ptr(),
+                    ip,
+                    master_id,
+                    &mut port,
+                    &mut flags,
+                )
+            },
+            "fail to get cluster node info"
+        )?;
+        Ok(unsafe {
+            ClusterNodeInfo {
+                ip: CString::from_raw(ip).to_str()?.to_owned(),
+                master_id:  CString::from_raw(ip).to_str()?.to_owned(),
+                port,
+                flags,
+            }
+        })
     }
     pub fn register_cluster_message_receiver(
         &self,
