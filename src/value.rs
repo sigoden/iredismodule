@@ -1,4 +1,4 @@
-/// Implement a redis module value
+//! Implement a redis module value
 
 /// Represents the data which will be replied to client
 #[derive(Debug, PartialEq)]
