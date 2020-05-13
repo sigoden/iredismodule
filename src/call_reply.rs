@@ -1,5 +1,9 @@
+//! Handle redis call reply
+
 use crate::raw;
-use crate::{Error, Ptr, RResult, Value};
+use crate::{Ptr, RResult};
+use crate::value::Value;
+use crate::error::Error;
 use std::slice;
 
 #[repr(C)]

@@ -1,6 +1,8 @@
+use super::Context;
 use crate::cluster::{ClusterNodeList, MsgType, ClusterNodeInfo};
 use crate::raw;
-use crate::{handle_status, Context, Error};
+use crate::{handle_status};
+use crate::error::Error;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_uchar};
 

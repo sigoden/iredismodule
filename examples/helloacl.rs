@@ -6,7 +6,9 @@ use std::os::raw::c_void;
 use std::thread;
 use std::time::Duration;
 
-use redismodule::{Context, RResult, Error, RStr, User, Value, BlockClient};
+use redismodule::prelude::*;
+use redismodule::user::User;
+use redismodule::block_client::BlockClient;
 
 const TIMEOUT_TIME: Duration = Duration::from_millis(1000);
 

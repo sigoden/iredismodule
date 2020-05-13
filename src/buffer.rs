@@ -1,3 +1,5 @@
+//! Owned u8 slice
+
 use std::os::raw::{c_char, c_void};
 use std::slice;
 use std::string::FromUtf8Error;

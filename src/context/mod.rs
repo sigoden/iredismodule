@@ -1,15 +1,22 @@
+//! Module context
+
 use crate::raw;
-use crate::{
-    handle_status, ArgvFlags, CallReply, Error, LogLevel, Ptr, RStr, RString, ReadKey, StatusCode,
-    Value, WriteKey, User, ScanCursor,
-};
+use crate::{ handle_status, ArgvFlags, LogLevel, Ptr, StatusCode, RResult };
+use crate::user::User;
+use crate::value::{Value};
+use crate::scan_cursor::ScanCursor;
+use crate::call_reply::CallReply;
+use crate::string::{RStr, RString};
+use crate::key::{ReadKey, WriteKey};
+use crate::error::Error;
+
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int, c_long, c_void};
 
 mod block_client;
-pub mod cluster;
+mod cluster;
 mod mutex;
-pub mod subscribe;
+mod subscribe;
 mod timer;
 pub use mutex::MutexContext;
 
@@ -46,7 +53,7 @@ impl Context {
             raw::RedisModule_KeyAtPos.unwrap()(self.ptr, pos as c_int);
         }
     }
-    pub fn reply(&self, r: crate::RResult) -> StatusCode {
+    pub fn reply(&self, r: RResult) -> StatusCode {
         match r {
             Ok(Value::Integer(v)) => unsafe {
                 raw::RedisModule_ReplyWithLongLong.unwrap()(self.ptr, v).into()

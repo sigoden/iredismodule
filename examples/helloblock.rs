@@ -1,10 +1,9 @@
-use redismodule::define_module;
+use redismodule::prelude::*;
+use redismodule::raw;
 use redismodule_macros::{rcmd, rwrap};
+use redismodule::block_client::BlockClient;
 
 use rand::random;
-use redismodule::{
-    assert_len, raw, ArgvFlags, BlockClient, Context, Error, LogLevel, RResult, RStr, Value,
-};
 use std::thread;
 use std::time::Duration;
 
@@ -27,10 +26,7 @@ extern "C" fn helloblock_disconnected(
     bc: *mut raw::RedisModuleBlockedClient,
 ) {
     let context = Context::from_ptr(ctx);
-    context.log(
-        LogLevel::Warning,
-        &format!("Block client {:p} disconnected!", bc),
-    )
+    context.warning(format!("Block client {:p} disconnected!", bc));
 }
 
 fn helloblock_thread_main(bc: BlockClient, delay: u64) {

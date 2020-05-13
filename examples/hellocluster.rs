@@ -1,8 +1,7 @@
-use redismodule::define_module;
 use redismodule_macros::{rcmd, rwrap};
-
+use redismodule::prelude::*;
+use redismodule::raw;
 use redismodule::cluster::MsgType;
-use redismodule::{raw, Context, Error, LogLevel, RResult, RStr, Value};
 
 const MSGTYPE_PING: MsgType = 1;
 const MSGTYPE_PONG: MsgType = 2;
@@ -31,25 +30,19 @@ fn hellocluster_list(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
 #[rwrap("cluster_msg")]
 fn on_ping(ctx: &Context, sender_id: &str, msg_type: MsgType, payload: &[u8]) {
     let msg = std::str::from_utf8(payload).unwrap();
-    ctx.log(
-        LogLevel::Notice,
-        format!(
-            "PING (type {}) RECEIVED from {} {}",
-            msg_type, sender_id, msg
-        ),
-    )
+    ctx.notice(format!(
+        "PING (type {}) RECEIVED from {} {}",
+        msg_type, sender_id, msg
+    ));
 }
 
 #[rwrap("cluster_msg")]
 fn on_pong(ctx: &Context, sender_id: &str, msg_type: MsgType, payload: &[u8]) {
     let msg = std::str::from_utf8(payload).unwrap();
-    ctx.log(
-        LogLevel::Notice,
-        format!(
-            "PING (type {}) RECEIVED from {} {}",
-            msg_type, sender_id, msg
-        ),
-    )
+    ctx.notice(format!(
+        "PING (type {}) RECEIVED from {} {}",
+        msg_type, sender_id, msg
+    ));
 }
 
 #[rwrap("call")]

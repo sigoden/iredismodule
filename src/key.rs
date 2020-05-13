@@ -1,10 +1,20 @@
+//! A implementation of Redis key
 use std::ops::Deref;
 use std::os::raw::{c_int, c_void};
 use std::time::Duration;
 
 use crate::raw;
-use crate::{handle_status, Context, Error, Ptr, RStr, RString, RType, ScanCursor};
+use crate::{Ptr, handle_status};
+use crate::error::Error;
+use crate::context::Context;
+use crate::rtype::RType;
+use crate::scan_cursor::ScanCursor;
+use crate::string::{RStr, RString};
 
+
+/// Repersent a Redis key with read permision
+///
+/// create with [`ctx.open_read_key`](./context/struct.Context.html#method.open_read_key)
 pub struct ReadKey {
     ptr: *mut raw::RedisModuleKey,
     ctx: *mut raw::RedisModuleCtx,
@@ -33,11 +43,15 @@ impl ReadKey {
         ReadKey { ptr, ctx }
     }
 
+    /// Where the key pointer is NULL
     pub fn is_empty(&self) -> bool {
         let key_type = self.get_type();
         key_type == KeyType::Empty
     }
 
+    /// Assuming `get_type` returned REDISMODULE_KEYTYPE_MODULE on
+    /// the key, returns the module type low-level value stored at key, as
+    /// it was set by the user via `set_value`.
     pub fn get_value<T>(&self, redis_type: &RType<T>) -> Result<Option<&mut T>, Error> {
         let exist = self.verify_module_type(redis_type)?;
         if !exist {
@@ -48,6 +62,9 @@ impl ReadKey {
         Ok(Some(value))
     }
 
+    /// Check the key type. 
+    ///
+    /// When `allow_null` is set, key have no value will pass the check.
     pub fn verify_type(&self, expect_type: KeyType, allow_null: bool) -> Result<(), Error> {
         let key_type = self.get_type();
         if key_type != expect_type {
@@ -262,6 +279,9 @@ impl ReadKey {
     
 }
 
+/// Repersent a Redis key with read and write permision
+///
+/// create with [`ctx.open_write_key`](./context/struct.Context.html#method.open_write_key)
 pub struct WriteKey {
     read_key: ReadKey,
 }

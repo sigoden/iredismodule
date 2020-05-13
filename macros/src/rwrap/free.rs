@@ -19,7 +19,7 @@ pub fn free(item_fn: syn::ItemFn) -> TokenStream {
             ctx: *mut redismodule::raw::RedisModuleCtx,
             data: *mut std::os::raw::c_void
         ) {
-            let mut context = redismodule::Context::from_ptr(ctx);
+            let mut context = redismodule::context::Context::from_ptr(ctx);
             let data = data as *mut #fn_arg_2_type;
             let data = unsafe { Box::from_raw(data) };
             #fn_name(&mut context, data);

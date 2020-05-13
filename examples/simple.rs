@@ -1,7 +1,9 @@
 use redismodule::define_module;
 use redismodule_macros::rcmd;
 
-use redismodule::{Context, RResult, RStr};
+use redismodule::context::Context;
+use redismodule::RResult;
+use redismodule::string::RStr;
 
 #[rcmd("hello.simple", "readonly", 0, 0, 0)]
 fn hello_simple(ctx: &mut Context, _args: Vec<RStr>) -> RResult {

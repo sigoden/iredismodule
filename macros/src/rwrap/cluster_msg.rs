@@ -10,13 +10,13 @@ pub fn cluster_msg(item_fn: syn::ItemFn) -> TokenStream {
 
     let output = quote! {
         #vis extern "C" fn #c_fn_name(
-            ctx: *mut raw::RedisModuleCtx,
+            ctx: *mut redismodule::raw::RedisModuleCtx,
             sender_id: *const std::os::raw::c_char,
             type_: u8,
             payload: *const std::os::raw::c_uchar,
             len: u32,
         ) {
-            let mut context = redismodule::Context::from_ptr(ctx);
+            let mut context = redismodule::context::Context::from_ptr(ctx);
             let sender_id = std::str::from_utf8(unsafe {
                 std::slice::from_raw_parts(
                     sender_id as *const std::os::raw::c_uchar,

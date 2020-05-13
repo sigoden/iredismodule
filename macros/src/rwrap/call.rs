@@ -24,7 +24,7 @@ pub fn call(item_fn: syn::ItemFn) -> TokenStream {
             argc: std::os::raw::c_int,
         ) -> std::os::raw::c_int {
             let args = redismodule::parse_args(argv, argc);
-            let mut context = redismodule::Context::from_ptr(ctx);
+            let mut context = redismodule::context::Context::from_ptr(ctx);
             let result = #fn_name(&mut context, args);
             if result.is_err() {
                 return redismodule::raw::REDISMODULE_ERR as std::os::raw::c_int;

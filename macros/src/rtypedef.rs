@@ -50,7 +50,7 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
         (
             quote! {
                 extern "C" fn #type_name_rdb_load(rdb: *mut redismodule::raw::RedisModuleIO, encver: std::os::raw::c_int) -> *mut std::os::raw::c_void {
-                    let mut io = redismodule::IO::from_ptr(rdb);
+                    let mut io = redismodule::io::IO::from_ptr(rdb);
                     let ret = #data_name_ident::rdb_load(&mut io, encver as u32);
                     if ret.is_none() {
                         return  0 as *mut std::os::raw::c_void;
@@ -71,7 +71,7 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
         (
             quote! {
                 unsafe extern "C" fn #type_name_rdb_save(rdb: *mut redismodule::raw::RedisModuleIO, value: *mut std::os::raw::c_void) {
-                    let mut io = redismodule::IO::from_ptr(rdb);
+                    let mut io = redismodule::io::IO::from_ptr(rdb);
                     let hto = &*(value as *mut #data_name_ident);
                     hto.rdb_save(&mut io)
                 }
@@ -90,9 +90,9 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
         (
             quote! {
                 unsafe extern "C" fn #type_name_aof_rewrite(aof: *mut redismodule::raw::RedisModuleIO, key: *mut redismodule::raw::RedisModuleString, value: *mut std::os::raw::c_void) {
-                    let mut io = redismodule::IO::from_ptr(aof);
+                    let mut io = redismodule::io::IO::from_ptr(aof);
                     let hto = &*(value as *mut #data_name_ident);
-                    let key = redismodule::RStr::from_ptr(key);
+                    let key = redismodule::string::RStr::from_ptr(key);
                     hto.aof_rewrite(&mut io, &key)
                 }
             },
@@ -126,7 +126,7 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
         (
             quote! {
                 unsafe extern "C" fn #type_name_digest(md: *mut redismodule::raw::RedisModuleDigest, value: *mut std::os::raw::c_void) {
-                    let mut digest = redismodule::Digest::from_ptr(md);
+                    let mut digest = redismodule::io::Digest::from_ptr(md);
                     let hto = &*(value as *const #data_name_ident);
                     hto.digest(&mut digest)
                 }
@@ -160,7 +160,7 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
         (
             quote! {
                 unsafe extern "C" fn #type_name_aux_load(rdb: *mut redismodule::raw::RedisModuleIO, encver: std::os::raw::c_int, when: std::os::raw::c_int) {
-                    let mut io = redismodule::IO::from_ptr(rdb);
+                    let mut io = redismodule::io::IO::from_ptr(rdb);
                     #data_name_ident::aux_load(&mut io, encver as u32, when as u32)
                 }
             },
@@ -177,7 +177,7 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
         (
             quote! {
                 unsafe extern "C" fn #type_name_aux_save(rdb: *mut redismodule::raw::RedisModuleIO, when: std::os::raw::c_int) {
-                    let mut io = redismodule::IO::from_ptr(rdb);
+                    let mut io = redismodule::io::IO::from_ptr(rdb);
                     #data_name_ident::aux_save(&mut io, when as u32)
                 }
             },
@@ -189,14 +189,12 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
         (proc_macro2::TokenStream::new(), quote! { None })
     };
 
-    let aux_save_triggers = if have_method("aux_save_triggers") {
-        quote! { #data_name_ident::aux_save_triggers() }
-    } else {
-        quote! { 0 }
+    let aux_save_triggers = {
+        quote! { #data_name_ident::AUX_SAVE_TRIGGERS as i32 }
     };
 
     let type_static = quote! {
-        pub static #type_static_ident: redismodule::RType<#data_name_ident> = redismodule::RType::new(
+        pub static #type_static_ident: redismodule::rtype::RType<#data_name_ident> = redismodule::rtype::RType::new(
             #type_name_raw,
             #type_version,
             redismodule::raw::RedisModuleTypeMethods {

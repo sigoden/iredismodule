@@ -1,9 +1,11 @@
+use super::Context;
+use crate::raw;
+use crate::{handle_status};
+use crate::error::Error;
+
 use std::convert::TryInto;
 use std::os::raw::c_void;
 use std::time::Duration;
-
-use crate::raw;
-use crate::{handle_status, Context, Error, TimerID};
 
 impl Context {
     pub fn create_timer<F, T>(
@@ -11,7 +13,7 @@ impl Context {
         period: Duration,
         callback: F,
         data: T,
-    ) -> Result<TimerID, Error>
+    ) -> Result<raw::RedisModuleTimerID, Error>
     where
         F: FnOnce(&Context, T),
     {
@@ -31,9 +33,9 @@ impl Context {
             )
         };
 
-        Ok(timer_id as TimerID)
+        Ok(timer_id as raw::RedisModuleTimerID)
     }
-    pub fn stop_timer<T>(&self, id: TimerID) -> Result<T, Error> {
+    pub fn stop_timer<T>(&self, id: raw::RedisModuleTimerID) -> Result<T, Error> {
         let mut data: *mut c_void = std::ptr::null_mut();
 
         handle_status(
@@ -45,7 +47,7 @@ impl Context {
         return Ok(data);
     }
 
-    pub fn get_timer_info<T>(&self, id: TimerID) -> Result<(Duration, &T), Error> {
+    pub fn get_timer_info<T>(&self, id: raw::RedisModuleTimerID) -> Result<(Duration, &T), Error> {
         let mut remaining: u64 = 0;
         let mut data: *mut c_void = std::ptr::null_mut();
 

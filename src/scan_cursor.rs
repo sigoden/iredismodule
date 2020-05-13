@@ -1,5 +1,8 @@
+//! Define ScanCursor struct
+
 use crate::{raw, Ptr};
 
+/// A cursor be used with scan
 pub struct ScanCursor {
     ptr: *mut raw::RedisModuleScanCursor,
 }
@@ -10,6 +13,7 @@ impl ScanCursor {
             ptr: unsafe { raw::RedisModule_ScanCursorCreate.unwrap()() }
         }
     }
+    /// Restart an existing cursor. The keys will be rescanned.
     pub fn restart(&mut self) {
         unsafe { raw::RedisModule_ScanCursorRestart.unwrap()(self.ptr) }
     }

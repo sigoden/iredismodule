@@ -1,6 +1,6 @@
-use crate::Error;
-pub type RResult = Result<Value, Error>;
+/// Implement a redis module value
 
+/// Represents the data which will be replied to client
 #[derive(Debug, PartialEq)]
 pub enum Value {
     String(String),
@@ -9,7 +9,7 @@ pub enum Value {
     Float(f64),
     Array(Vec<Value>),
     Null,
-    NoReply, // No reply at all (as opposed to a Null reply)
+    NoReply,
 }
 
 impl From<()> for Value {

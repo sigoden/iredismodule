@@ -1,8 +1,13 @@
+//! Deal with rdb and digest
+
 use std::ffi::CString;
 use std::os::raw::{c_char, c_uchar};
 
 use crate::raw;
-use crate::{ArgvFlags, Buffer, LogLevel, Ptr, RString, Context, RStr};
+use crate::{ArgvFlags, LogLevel, Ptr};
+use crate::context::Context;
+use crate::buffer::Buffer;
+use crate::string::{RStr, RString};
 
 #[repr(C)]
 pub struct IO {

@@ -1,8 +1,7 @@
-use redismodule::define_module;
 use redismodule_macros::rwrap;
-
-use redismodule::subscribe::ServerEvent;
-use redismodule::{raw, ArgvFlags, Context, Error, RStr};
+use redismodule::prelude::*;
+use redismodule::raw;
+use redismodule::ServerEvent;
 
 extern "C" fn client_change_callback_c(
     _ctx: *mut raw::RedisModuleCtx,

@@ -1,3 +1,16 @@
+//! Helper macros
+
+/// Assert the length of args, throw `Error::WrongArity` when failed
+///
+/// # Examples
+/// ```rust,no_run
+/// #[rcmd("hello.repl2", "write", 1, 1, 1)]
+/// fn hello_repl2(ctx: &mut Context, args: Vec<RStr>) -> RResult {
+///     assert_len!(args, 2); 
+///     ... 
+/// }
+/// 
+/// ```
 #[macro_export]
 macro_rules! assert_len {
     ($args:expr, $n:expr) => {
@@ -7,6 +20,7 @@ macro_rules! assert_len {
     };
 }
 
+/// Create a redis module will be so easy
 #[macro_export]
 macro_rules! define_module {
     (
@@ -50,7 +64,7 @@ macro_rules! define_module {
             } == c_err {
                 return c_err;
             }
-            let mut context = $crate::Context::from_ptr(ctx);
+            let mut context = $crate::context::Context::from_ptr(ctx);
 
             $(
                 if $init_func(ctx, argv, argc) == c_err {

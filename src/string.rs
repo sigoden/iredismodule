@@ -1,13 +1,16 @@
+//! Represent Redis module string
 use crate::raw;
-use crate::{handle_status, Error, Ptr};
+use crate::{handle_status, Ptr};
 
 use std::ffi::CString;
 use std::ops::Deref;
 use std::os::raw::c_char;
+use crate::error::Error;
 
 use std::slice;
 use std::str;
 
+/// Repersent module owned RedisModuleString
 pub struct RString {
     redis_str: RStr,
     ctx: *mut raw::RedisModuleCtx,
@@ -72,6 +75,7 @@ impl Deref for RString {
     }
 }
 
+/// Repersent redis core owned RedisModuleString
 #[repr(C)]
 pub struct RStr {
     ptr: *mut raw::RedisModuleString,

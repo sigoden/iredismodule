@@ -1,6 +1,8 @@
+use super::Context;
 use crate::raw;
-use crate::subscribe::ServerEvent;
-use crate::{handle_status, Context, Error, RStr, Ptr};
+use crate::{handle_status, Ptr, ServerEvent};
+use crate::error::Error;
+use crate::string::RStr;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int};
 

@@ -1,5 +1,6 @@
+use super::Context;
 use crate::raw;
-use crate::{Context, Ptr};
+use crate::Ptr;
 use std::ops::Deref;
 
 pub struct MutexContext {

@@ -1,3 +1,5 @@
+//! Error management
+
 use crate::raw;
 use std;
 use std::error;

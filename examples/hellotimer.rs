@@ -1,7 +1,7 @@
-use rand::random;
-use redismodule::define_module;
-use redismodule::{Context, RResult, RStr};
 use redismodule_macros::rcmd;
+use redismodule::prelude::*;
+use redismodule::raw;
+use rand::random;
 use std::time::Duration;
 
 fn timer_handler(ctx: &Context, data: String) {

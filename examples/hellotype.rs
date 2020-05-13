@@ -1,5 +1,6 @@
-use redismodule::{assert_len, define_module};
-use redismodule::{ArgvFlags, Context, Digest, Error, RResult, RStr, TypeMethod, Value, IO};
+use redismodule::prelude::*;
+use redismodule::rtype::TypeMethod;
+use redismodule::io::{IO, Digest};
 use redismodule_macros::{rcmd, rtypedef, rwrap};
 use std::time::Duration;
 
