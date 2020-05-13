@@ -78,7 +78,7 @@ impl Into<RResult> for CallReply {
                 Ok(Value::Array(vec))
             }
             ReplyType::Integer => Ok(Value::Integer(self.get_integer() as i64)),
-            ReplyType::String => Ok(Value::SimpleString(self.get_string())),
+            ReplyType::String => Ok(Value::String(self.get_string())),
             ReplyType::Null => Ok(Value::Null),
         }
     }

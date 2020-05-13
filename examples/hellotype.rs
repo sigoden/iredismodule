@@ -188,7 +188,7 @@ fn helloblock_reply(ctx: &mut Context, mut args: Vec<RStr>) -> RResult {
 
 #[rwrap("call")]
 fn helloblock_timeout(ctx: &mut Context, _: Vec<RStr>) -> RResult {
-    ctx.reply(Ok(Value::SimpleString("Request timeout".into())));
+    ctx.reply(Ok(Value::String("Request timeout".into())));
     Ok(().into())
 }
 

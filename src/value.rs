@@ -3,8 +3,7 @@ pub type RResult = Result<Value, Error>;
 
 #[derive(Debug, PartialEq)]
 pub enum Value {
-    SimpleString(String),
-    BulkString(String),
+    String(String),
     Buffer(Vec<u8>),
     Integer(i64),
     Float(f64),
@@ -39,7 +38,7 @@ impl From<f64> for Value {
 
 impl From<String> for Value {
     fn from(s: String) -> Self {
-        Value::BulkString(s)
+        Value::String(s)
     }
 }
 
@@ -73,49 +72,5 @@ impl<T: Into<Value>> From<Option<T>> for Value {
 impl<T: Into<Value>> From<Vec<T>> for Value {
     fn from(items: Vec<T>) -> Self {
         Value::Array(items.into_iter().map(|item| item.into()).collect())
-    }
-}
-
-//////////////////////////////////////////////////////////
-
-#[cfg(test)]
-mod tests {
-    use super::Value;
-
-    #[test]
-    fn from_vec_string() {
-        assert_eq!(
-            Value::from(vec!["foo".to_string()]),
-            Value::Array(vec![Value::BulkString("foo".to_owned())])
-        );
-    }
-
-    #[test]
-    fn from_vec_str() {
-        assert_eq!(
-            Value::from(vec!["foo"]),
-            Value::Array(vec![Value::BulkString("foo".to_owned())])
-        );
-    }
-
-    #[test]
-    fn from_vec_string_ref() {
-        assert_eq!(
-            Value::from(vec![&"foo".to_string()]),
-            Value::Array(vec![Value::BulkString("foo".to_owned())])
-        );
-    }
-
-    #[test]
-    fn from_option_str() {
-        assert_eq!(
-            Value::from(Some("foo")),
-            Value::BulkString("foo".to_owned())
-        );
-    }
-
-    #[test]
-    fn from_option_none() {
-        assert_eq!(Value::from(None::<()>), Value::Null,);
     }
 }

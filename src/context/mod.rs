@@ -56,36 +56,26 @@ impl Context {
                 raw::RedisModule_ReplyWithDouble.unwrap()(self.ptr, v).into()
             },
 
-            Ok(Value::SimpleString(s)) => unsafe {
-                let msg = CString::new(s).unwrap();
+            Ok(Value::String(v)) => unsafe {
+                let msg = CString::new(v).unwrap();
                 raw::RedisModule_ReplyWithSimpleString.unwrap()(self.ptr, msg.as_ptr()).into()
             },
 
-            Ok(Value::BulkString(s)) => unsafe {
-                raw::RedisModule_ReplyWithString.unwrap()(
-                    self.ptr,
-                    RString::from_str(self.ptr, &s).get_ptr(),
-                )
-                .into()
-            },
-
-            Ok(Value::Buffer(b)) => unsafe {
+            Ok(Value::Buffer(v)) => unsafe {
                 raw::RedisModule_ReplyWithStringBuffer.unwrap()(
                     self.ptr,
-                    b.as_ptr() as *const c_char,
-                    b.len(),
+                    v.as_ptr() as *const c_char,
+                    v.len(),
                 )
                 .into()
             },
 
-            Ok(Value::Array(array)) => {
+            Ok(Value::Array(v)) => {
                 unsafe {
-                    // According to the Redis source code this always succeeds,
-                    // so there is no point in checking its return value.
-                    raw::RedisModule_ReplyWithArray.unwrap()(self.ptr, array.len() as c_long);
+                    raw::RedisModule_ReplyWithArray.unwrap()(self.ptr, v.len() as c_long);
                 }
 
-                for elem in array {
+                for elem in v {
                     self.reply(Ok(elem));
                 }
 
