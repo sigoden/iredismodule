@@ -1,5 +1,5 @@
-use redismodule::prelude::*;
-use redismodule_macros::rcmd;
+use iredismodule::prelude::*;
+use iredismodule_macros::rcmd;
 
 use rand::random;
 use std::time::Duration;

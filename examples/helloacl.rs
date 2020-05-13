@@ -1,13 +1,13 @@
 use lazy_static::lazy_static;
-use redismodule_macros::{rcmd, rwrap};
+use iredismodule_macros::{rcmd, rwrap};
 use std::os::raw::c_void;
 use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
 
-use redismodule::block_client::BlockClient;
-use redismodule::prelude::*;
-use redismodule::user::User;
+use iredismodule::block_client::BlockClient;
+use iredismodule::prelude::*;
+use iredismodule::user::User;
 
 const TIMEOUT_TIME: Duration = Duration::from_millis(1000);
 

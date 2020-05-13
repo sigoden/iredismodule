@@ -28,17 +28,17 @@ pub fn rcmd(attr: TokenStream, input: TokenStream) -> TokenStream {
     let key_step = opts.key_step;
     let raw_fn = quote! {
         #vis extern "C" fn #c_fn_name(
-            ctx: *mut redismodule::raw::RedisModuleCtx,
-            argv: *mut *mut redismodule::raw::RedisModuleString,
+            ctx: *mut iredismodule::raw::RedisModuleCtx,
+            argv: *mut *mut iredismodule::raw::RedisModuleString,
             argc: std::os::raw::c_int
         ) -> std::os::raw::c_int {
-            let mut context = redismodule::context::Context::from_ptr(ctx);
-            let response = #fn_name(&mut context, redismodule::parse_args(argv, argc));
+            let mut context = iredismodule::context::Context::from_ptr(ctx);
+            let response = #fn_name(&mut context, iredismodule::parse_args(argv, argc));
             context.reply(response) as std::os::raw::c_int
         }
     };
     let create_fn = quote! {
-        #vis fn #cmd_fn_name(ctx: &mut redismodule::context::Context) -> Result<(), redismodule::error::Error> {
+        #vis fn #cmd_fn_name(ctx: &mut iredismodule::context::Context) -> Result<(), iredismodule::error::Error> {
             ctx.create_cmd(#name, #c_fn_name, #flags, #first_key, #last_key, #key_step)
         }
     };

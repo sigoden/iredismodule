@@ -14,20 +14,20 @@ pub fn call(item_fn: syn::ItemFn) -> TokenStream {
         }
     } else {
         quote! {
-            return redismodule::raw::REDISMODULE_OK as std::os::raw::c_int;
+            return iredismodule::raw::REDISMODULE_OK as std::os::raw::c_int;
         }
     };
     let output = quote! {
         #vis extern "C" fn #c_fn_name(
-            ctx: *mut redismodule::raw::RedisModuleCtx,
-            argv: *mut *mut redismodule::raw::RedisModuleString,
+            ctx: *mut iredismodule::raw::RedisModuleCtx,
+            argv: *mut *mut iredismodule::raw::RedisModuleString,
             argc: std::os::raw::c_int,
         ) -> std::os::raw::c_int {
-            let args = redismodule::parse_args(argv, argc);
-            let mut context = redismodule::context::Context::from_ptr(ctx);
+            let args = iredismodule::parse_args(argv, argc);
+            let mut context = iredismodule::context::Context::from_ptr(ctx);
             let result = #fn_name(&mut context, args);
             if result.is_err() {
-                return redismodule::raw::REDISMODULE_ERR as std::os::raw::c_int;
+                return iredismodule::raw::REDISMODULE_ERR as std::os::raw::c_int;
             }
             #bottom_expr
         }

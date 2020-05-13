@@ -49,8 +49,8 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
     let (rdb_load_fn, rdb_load_field) = if have_method("rdb_load") {
         (
             quote! {
-                extern "C" fn #type_name_rdb_load(rdb: *mut redismodule::raw::RedisModuleIO, encver: std::os::raw::c_int) -> *mut std::os::raw::c_void {
-                    let mut io = redismodule::io::IO::from_ptr(rdb);
+                extern "C" fn #type_name_rdb_load(rdb: *mut iredismodule::raw::RedisModuleIO, encver: std::os::raw::c_int) -> *mut std::os::raw::c_void {
+                    let mut io = iredismodule::io::IO::from_ptr(rdb);
                     let ret = #data_name_ident::rdb_load(&mut io, encver as u32);
                     if ret.is_none() {
                         return  0 as *mut std::os::raw::c_void;
@@ -70,8 +70,8 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
     let (rdb_save_fn, rdb_save_field) = if have_method("rdb_save") {
         (
             quote! {
-                unsafe extern "C" fn #type_name_rdb_save(rdb: *mut redismodule::raw::RedisModuleIO, value: *mut std::os::raw::c_void) {
-                    let mut io = redismodule::io::IO::from_ptr(rdb);
+                unsafe extern "C" fn #type_name_rdb_save(rdb: *mut iredismodule::raw::RedisModuleIO, value: *mut std::os::raw::c_void) {
+                    let mut io = iredismodule::io::IO::from_ptr(rdb);
                     let hto = &*(value as *mut #data_name_ident);
                     hto.rdb_save(&mut io)
                 }
@@ -89,10 +89,10 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
     let (aof_rewrite_fn, aof_rewrite_field) = if have_method("aof_rewrite") {
         (
             quote! {
-                unsafe extern "C" fn #type_name_aof_rewrite(aof: *mut redismodule::raw::RedisModuleIO, key: *mut redismodule::raw::RedisModuleString, value: *mut std::os::raw::c_void) {
-                    let mut io = redismodule::io::IO::from_ptr(aof);
+                unsafe extern "C" fn #type_name_aof_rewrite(aof: *mut iredismodule::raw::RedisModuleIO, key: *mut iredismodule::raw::RedisModuleString, value: *mut std::os::raw::c_void) {
+                    let mut io = iredismodule::io::IO::from_ptr(aof);
                     let hto = &*(value as *mut #data_name_ident);
-                    let key = redismodule::string::RStr::from_ptr(key);
+                    let key = iredismodule::string::RStr::from_ptr(key);
                     hto.aof_rewrite(&mut io, &key)
                 }
             },
@@ -125,8 +125,8 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
     let (digest_fn, digest_field) = if have_method("digest") {
         (
             quote! {
-                unsafe extern "C" fn #type_name_digest(md: *mut redismodule::raw::RedisModuleDigest, value: *mut std::os::raw::c_void) {
-                    let mut digest = redismodule::io::Digest::from_ptr(md);
+                unsafe extern "C" fn #type_name_digest(md: *mut iredismodule::raw::RedisModuleDigest, value: *mut std::os::raw::c_void) {
+                    let mut digest = iredismodule::io::Digest::from_ptr(md);
                     let hto = &*(value as *const #data_name_ident);
                     hto.digest(&mut digest)
                 }
@@ -159,8 +159,8 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
     let (aux_load_fn, aux_load_field) = if have_method("aux_load") {
         (
             quote! {
-                unsafe extern "C" fn #type_name_aux_load(rdb: *mut redismodule::raw::RedisModuleIO, encver: std::os::raw::c_int, when: std::os::raw::c_int) {
-                    let mut io = redismodule::io::IO::from_ptr(rdb);
+                unsafe extern "C" fn #type_name_aux_load(rdb: *mut iredismodule::raw::RedisModuleIO, encver: std::os::raw::c_int, when: std::os::raw::c_int) {
+                    let mut io = iredismodule::io::IO::from_ptr(rdb);
                     #data_name_ident::aux_load(&mut io, encver as u32, when as u32)
                 }
             },
@@ -176,8 +176,8 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
     let (aux_save_fn, aux_save_field) = if have_method("aux_save") {
         (
             quote! {
-                unsafe extern "C" fn #type_name_aux_save(rdb: *mut redismodule::raw::RedisModuleIO, when: std::os::raw::c_int) {
-                    let mut io = redismodule::io::IO::from_ptr(rdb);
+                unsafe extern "C" fn #type_name_aux_save(rdb: *mut iredismodule::raw::RedisModuleIO, when: std::os::raw::c_int) {
+                    let mut io = iredismodule::io::IO::from_ptr(rdb);
                     #data_name_ident::aux_save(&mut io, when as u32)
                 }
             },
@@ -194,11 +194,11 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
     };
 
     let type_static = quote! {
-        pub static #type_static_ident: redismodule::rtype::RType<#data_name_ident> = redismodule::rtype::RType::new(
+        pub static #type_static_ident: iredismodule::rtype::RType<#data_name_ident> = iredismodule::rtype::RType::new(
             #type_name_raw,
             #type_version,
-            redismodule::raw::RedisModuleTypeMethods {
-                version: redismodule::raw::REDISMODULE_TYPE_METHOD_VERSION as u64,
+            iredismodule::raw::RedisModuleTypeMethods {
+                version: iredismodule::raw::REDISMODULE_TYPE_METHOD_VERSION as u64,
                 rdb_load: #rdb_load_field,
                 rdb_save: #rdb_save_field,
                 aof_rewrite: #aof_rewrite_field,

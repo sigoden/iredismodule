@@ -1,7 +1,7 @@
-use redismodule::prelude::*;
-use redismodule::raw;
-use redismodule::ServerEvent;
-use redismodule_macros::rwrap;
+use iredismodule::prelude::*;
+use iredismodule::raw;
+use iredismodule::ServerEvent;
+use iredismodule_macros::rwrap;
 
 extern "C" fn client_change_callback_c(
     _ctx: *mut raw::RedisModuleCtx,

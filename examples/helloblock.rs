@@ -1,7 +1,7 @@
-use redismodule::block_client::BlockClient;
-use redismodule::prelude::*;
-use redismodule::raw;
-use redismodule_macros::{rcmd, rwrap};
+use iredismodule::block_client::BlockClient;
+use iredismodule::prelude::*;
+use iredismodule::raw;
+use iredismodule_macros::{rcmd, rwrap};
 
 use rand::random;
 use std::thread;

@@ -1,7 +1,7 @@
-use redismodule::io::{Digest, IO};
-use redismodule::prelude::*;
-use redismodule::rtype::TypeMethod;
-use redismodule_macros::{rcmd, rtypedef, rwrap};
+use iredismodule::io::{Digest, IO};
+use iredismodule::prelude::*;
+use iredismodule::rtype::TypeMethod;
+use iredismodule_macros::{rcmd, rtypedef, rwrap};
 use std::time::Duration;
 
 pub struct HelloTypeNode {

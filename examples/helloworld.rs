@@ -1,7 +1,7 @@
 use rand::random;
-use redismodule::key::{HashGetFlag, HashSetFlag, KeyType, ListPosition, ZsetRangeDirection};
-use redismodule::prelude::*;
-use redismodule_macros::{rcmd, rwrap};
+use iredismodule::key::{HashGetFlag, HashSetFlag, KeyType, ListPosition, ZsetRangeDirection};
+use iredismodule::prelude::*;
+use iredismodule_macros::{rcmd, rwrap};
 use std::time::Duration;
 
 #[rcmd("hello.simple")]
