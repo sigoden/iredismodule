@@ -4,38 +4,41 @@ use std::ffi::CString;
 
 #[repr(C)]
 pub struct User {
-    inner: *mut raw::RedisModuleUser,
+    ptr: *mut raw::RedisModuleUser,
 }
 
 impl User {
-    pub fn from_ptr(inner: *mut raw::RedisModuleUser) -> Self {
-        User { inner }
+    pub fn from_ptr(ptr: *mut raw::RedisModuleUser) -> Self {
+        User { ptr }
     }
     pub fn new<T: AsRef<str>>(name: T) -> Self {
         let name = CString::new(name.as_ref()).unwrap();
-        let inner = unsafe {
+        let ptr = unsafe {
             raw::RedisModule_CreateModuleUser.unwrap()(name.as_ptr())
         };
-        Self::from_ptr(inner)
+        Self::from_ptr(ptr)
     }
     pub fn set_acl<T: AsRef<str>>(&mut self, acl: T) -> Result<(), Error> {
         let acl = CString::new(acl.as_ref()).unwrap();
         handle_status(
             unsafe {
-                raw::RedisModule_SetModuleUserACL.unwrap()(self.inner, acl.as_ptr())
+                raw::RedisModule_SetModuleUserACL.unwrap()(self.ptr, acl.as_ptr())
             },
             "fail to set acl"
         )
-    }
-    pub fn free(&mut self) {
-        unsafe { raw::RedisModule_FreeModuleUser.unwrap()(self.inner) }
     }
 }
 
 impl Ptr for User {
     type PtrType = raw::RedisModuleUser;
     fn get_ptr(&self) -> *mut Self::PtrType {
-        self.inner
+        self.ptr
+    }
+}
+
+impl Drop for User {
+    fn drop(&mut self) {
+        unsafe { raw::RedisModule_FreeModuleUser.unwrap()(self.ptr) }
     }
 }
 

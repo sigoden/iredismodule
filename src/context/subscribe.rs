@@ -17,7 +17,7 @@ impl Context {
         handle_status(
             unsafe {
                 raw::RedisModule_SubscribeToKeyspaceEvents.unwrap()(
-                    self.inner,
+                    self.ptr,
                     types,
                     Some(callback),
                 )
@@ -39,7 +39,7 @@ impl Context {
         handle_status(
             unsafe {
                 raw::RedisModule_SubscribeToServerEvent.unwrap()(
-                    self.inner,
+                    self.ptr,
                     events.into(),
                     Some(callback),
                 )

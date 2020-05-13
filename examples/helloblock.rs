@@ -36,7 +36,7 @@ extern "C" fn helloblock_disconnected(
 fn helloblock_thread_main(bc: BlockClient, delay: u64) {
     thread::sleep(Duration::from_secs(delay));
     let r: i32 = random();
-    bc.unblock_data(r).unwrap();
+    bc.unblock(Some(r)).unwrap();
 }
 
 #[rcmd("hello.block")]
@@ -87,7 +87,7 @@ fn hellokeys_thread_main(bc: BlockClient) {
         }
     }
     ctx.reply(Ok(Value::Array(reply_data)));
-    bc.unblock().unwrap();
+    bc.unblock::<i32>(None).unwrap();
 }
 
 #[rcmd("hello.keys")]

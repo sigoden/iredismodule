@@ -15,19 +15,19 @@ pub use mutex::MutexContext;
 
 #[repr(C)]
 pub struct Context {
-    inner: *mut raw::RedisModuleCtx,
+    ptr: *mut raw::RedisModuleCtx,
 }
 
 impl Ptr for Context {
     type PtrType = raw::RedisModuleCtx;
     fn get_ptr(&self) -> *mut Self::PtrType {
-        self.inner
+        self.ptr
     }
 }
 
 impl Context {
-    pub fn from_ptr(inner: *mut raw::RedisModuleCtx) -> Self {
-        Context { inner }
+    pub fn from_ptr(ptr: *mut raw::RedisModuleCtx) -> Self {
+        Context { ptr }
     }
     pub fn is_keys_position_request(&self) -> bool {
         // We want this to be available in tests where we don't have an actual Redis to call
@@ -35,7 +35,7 @@ impl Context {
             return false;
         }
 
-        let result = unsafe { raw::RedisModule_IsKeysPositionRequest.unwrap()(self.inner) };
+        let result = unsafe { raw::RedisModule_IsKeysPositionRequest.unwrap()(self.ptr) };
 
         result != 0
     }
@@ -43,35 +43,35 @@ impl Context {
         // TODO: This will crash redis if `pos` is out of range.
         // Think of a way to make this safe by checking the range.
         unsafe {
-            raw::RedisModule_KeyAtPos.unwrap()(self.inner, pos as c_int);
+            raw::RedisModule_KeyAtPos.unwrap()(self.ptr, pos as c_int);
         }
     }
     pub fn reply(&self, r: crate::RResult) -> StatusCode {
         match r {
             Ok(Value::Integer(v)) => unsafe {
-                raw::RedisModule_ReplyWithLongLong.unwrap()(self.inner, v).into()
+                raw::RedisModule_ReplyWithLongLong.unwrap()(self.ptr, v).into()
             },
 
             Ok(Value::Float(v)) => unsafe {
-                raw::RedisModule_ReplyWithDouble.unwrap()(self.inner, v).into()
+                raw::RedisModule_ReplyWithDouble.unwrap()(self.ptr, v).into()
             },
 
             Ok(Value::SimpleString(s)) => unsafe {
                 let msg = CString::new(s).unwrap();
-                raw::RedisModule_ReplyWithSimpleString.unwrap()(self.inner, msg.as_ptr()).into()
+                raw::RedisModule_ReplyWithSimpleString.unwrap()(self.ptr, msg.as_ptr()).into()
             },
 
             Ok(Value::BulkString(s)) => unsafe {
                 raw::RedisModule_ReplyWithString.unwrap()(
-                    self.inner,
-                    RString::from_str(self.inner, &s).get_ptr(),
+                    self.ptr,
+                    RString::from_str(self.ptr, &s).get_ptr(),
                 )
                 .into()
             },
 
             Ok(Value::Buffer(b)) => unsafe {
                 raw::RedisModule_ReplyWithStringBuffer.unwrap()(
-                    self.inner,
+                    self.ptr,
                     b.as_ptr() as *const c_char,
                     b.len(),
                 )
@@ -82,7 +82,7 @@ impl Context {
                 unsafe {
                     // According to the Redis source code this always succeeds,
                     // so there is no point in checking its return value.
-                    raw::RedisModule_ReplyWithArray.unwrap()(self.inner, array.len() as c_long);
+                    raw::RedisModule_ReplyWithArray.unwrap()(self.ptr, array.len() as c_long);
                 }
 
                 for elem in array {
@@ -93,7 +93,7 @@ impl Context {
             }
 
             Ok(Value::Null) => unsafe {
-                raw::RedisModule_ReplyWithNull.unwrap()(self.inner).into()
+                raw::RedisModule_ReplyWithNull.unwrap()(self.ptr).into()
             },
 
             Ok(Value::NoReply) => StatusCode::Ok,
@@ -102,12 +102,12 @@ impl Context {
                 if self.is_keys_position_request() {
                     StatusCode::Err
                 } else {
-                    unsafe { raw::RedisModule_WrongArity.unwrap()(self.inner).into() }
+                    unsafe { raw::RedisModule_WrongArity.unwrap()(self.ptr).into() }
                 }
             }
             Err(err) => unsafe {
                 let msg = CString::new(err.to_string()).unwrap();
-                raw::RedisModule_ReplyWithError.unwrap()(self.inner, msg.as_ptr()).into()
+                raw::RedisModule_ReplyWithError.unwrap()(self.ptr, msg.as_ptr()).into()
             },
         }
     }
@@ -121,7 +121,7 @@ impl Context {
         let reply_: *mut raw::RedisModuleCallReply = unsafe {
             let p_call = raw::RedisModule_Call.unwrap();
             p_call(
-                self.inner,
+                self.ptr,
                 cmd.as_ptr(),
                 flags.as_ptr(),
                 args.as_ptr() as *mut c_char,
@@ -152,7 +152,7 @@ impl Context {
         let result = unsafe {
             let p_call = raw::RedisModule_Replicate.unwrap();
             p_call(
-                self.inner,
+                self.ptr,
                 cmd.as_ptr(),
                 flags.as_ptr(),
                 args.as_ptr() as *mut c_char,
@@ -176,40 +176,40 @@ impl Context {
     }
     pub fn replicate_verbatim(&self) {
         unsafe {
-            raw::RedisModule_ReplicateVerbatim.unwrap()(self.inner);
+            raw::RedisModule_ReplicateVerbatim.unwrap()(self.ptr);
         }
     }
     pub fn get_client_id(&self) -> u64 {
-        unsafe { raw::RedisModule_GetClientId.unwrap()(self.inner) as u64 }
+        unsafe { raw::RedisModule_GetClientId.unwrap()(self.ptr) as u64 }
     }
     pub fn get_select_db(&self) -> i64 {
-        unsafe { raw::RedisModule_GetSelectedDb.unwrap()(self.inner) as i64 }
+        unsafe { raw::RedisModule_GetSelectedDb.unwrap()(self.ptr) as i64 }
     }
     pub fn get_context_flags(&self) -> u64 {
-        unsafe { raw::RedisModule_GetContextFlags.unwrap()(self.inner) as u64 }
+        unsafe { raw::RedisModule_GetContextFlags.unwrap()(self.ptr) as u64 }
     }
     pub fn select_db(&self, newid: i32) -> Result<(), Error> {
         handle_status(
-            unsafe { raw::RedisModule_SelectDb.unwrap()(self.inner, newid) },
+            unsafe { raw::RedisModule_SelectDb.unwrap()(self.ptr, newid) },
             "fail to select db",
         )
     }
     pub fn create_string(&self, value: &str) -> RString {
-        RString::from_str(self.inner, value)
+        RString::from_str(self.ptr, value)
     }
     pub fn open_read_key(&self, keyname: &RStr) -> ReadKey {
-        ReadKey::from_redis_str(self.inner, keyname)
+        ReadKey::from_redis_str(self.ptr, keyname)
     }
     pub fn open_write_key(&self, keyname: &RStr) -> WriteKey {
-        WriteKey::from_redis_str(self.inner, keyname)
+        WriteKey::from_redis_str(self.ptr, keyname)
     }
     pub fn signal_key_as_ready(&self, key: &RStr) {
-        unsafe { raw::RedisModule_SignalKeyAsReady.unwrap()(self.inner, key.get_ptr()) };
+        unsafe { raw::RedisModule_SignalKeyAsReady.unwrap()(self.ptr, key.get_ptr()) };
     }
     pub fn log<T: AsRef<str>>(&self, level: LogLevel, message: T) {
         let level: CString = level.into();
         let fmt = CString::new(message.as_ref()).unwrap();
-        unsafe { raw::RedisModule_Log.unwrap()(self.inner, level.as_ptr(), fmt.as_ptr()) }
+        unsafe { raw::RedisModule_Log.unwrap()(self.ptr, level.as_ptr(), fmt.as_ptr()) }
     }
     pub fn notice<T: AsRef<str>>(&self, message: T) {
         self.log(LogLevel::Notice, message.as_ref());
@@ -241,7 +241,7 @@ impl Context {
         handle_status(
             unsafe {
                 raw::RedisModule_CreateCommand.unwrap()(
-                    self.inner,
+                    self.ptr,
                     name.as_ptr(),
                     Some(func),
                     flags.as_ptr(),
@@ -256,23 +256,26 @@ impl Context {
 
     pub fn deauthenticate_and_close_client(&self, id: u64) {
         unsafe {
-            raw::RedisModule_DeauthenticateAndCloseClient.unwrap()(self.inner, id)
+            raw::RedisModule_DeauthenticateAndCloseClient.unwrap()(self.ptr, id)
         }
     }
     pub fn authenticate_client_with_acl_user<T>(
         &self,
         name: &str,
         callback: raw::RedisModuleUserChangedFunc,
-        privdata: T,
+        privdata: Option<T>,
         client_id: u64,
     ) -> Result<u64, Error> {
         let c_name = CString::new(name).unwrap();
-        let data = Box::into_raw(Box::from(privdata));
+        let data = match privdata {
+            Some(v) => Box::into_raw(Box::from(v)) as *mut c_void,
+            None => 0 as *mut c_void,
+        };
         let mut client_id = client_id;
         handle_status(
             unsafe {
                 raw::RedisModule_AuthenticateClientWithACLUser.unwrap()(
-                    self.inner,
+                    self.ptr,
                     c_name.as_ptr(),
                     name.len(),
                     callback,
@@ -288,18 +291,21 @@ impl Context {
         &self,
         user: &User, 
         callback: raw::RedisModuleUserChangedFunc,
-        privdata: T,
+        privdata: Option<T>,
         client_id: u64,
     ) -> Result<u64, Error> {
-        let data = Box::into_raw(Box::from(privdata));
+        let data = match privdata {
+            Some(v) => Box::into_raw(Box::from(v)) as *mut c_void,
+            None => 0 as *mut c_void,
+        };
         let mut client_id = client_id;
         handle_status(
             unsafe {
                 raw::RedisModule_AuthenticateClientWithUser.unwrap()(
-                    self.inner,
+                    self.ptr,
                     user.get_ptr(),
                     callback,
-                    data as *mut c_void,
+                    data,
                     &mut client_id,
                 )
             },

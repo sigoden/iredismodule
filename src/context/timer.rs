@@ -21,7 +21,7 @@ impl Context {
 
         let timer_id = unsafe {
             raw::RedisModule_CreateTimer.unwrap()(
-                self.inner,
+                self.ptr,
                 period
                     .as_millis()
                     .try_into()
@@ -37,7 +37,7 @@ impl Context {
         let mut data: *mut c_void = std::ptr::null_mut();
 
         handle_status(
-            unsafe { raw::RedisModule_StopTimer.unwrap()(self.inner, id, &mut data) },
+            unsafe { raw::RedisModule_StopTimer.unwrap()(self.ptr, id, &mut data) },
             "fail to stop timer",
         )?;
 
@@ -51,7 +51,7 @@ impl Context {
 
         handle_status(
             unsafe {
-                raw::RedisModule_GetTimerInfo.unwrap()(self.inner, id, &mut remaining, &mut data)
+                raw::RedisModule_GetTimerInfo.unwrap()(self.ptr, id, &mut remaining, &mut data)
             },
             "fail to get timer info",
         )?;

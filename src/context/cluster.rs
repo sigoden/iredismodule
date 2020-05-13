@@ -7,14 +7,14 @@ use std::os::raw::{c_char, c_uchar};
 impl Context {
     pub fn get_cluster_nodes_list(&self) -> Option<ClusterNodeList> {
         let mut len = 0;
-        let ptr = unsafe { raw::RedisModule_GetClusterNodesList.unwrap()(self.inner, &mut len) };
+        let ptr = unsafe { raw::RedisModule_GetClusterNodesList.unwrap()(self.ptr, &mut len) };
         if ptr.is_null() {
             return None;
         }
         Some(ClusterNodeList::new(ptr, len))
     }
     pub fn set_cluster_flags(&self, flags: u32) {
-        unsafe { raw::RedisModule_SetClusterFlags.unwrap()(self.inner, flags as u64) }
+        unsafe { raw::RedisModule_SetClusterFlags.unwrap()(self.ptr, flags as u64) }
     }
     pub fn register_cluster_message_receiver(
         &self,
@@ -29,7 +29,7 @@ impl Context {
     ) {
         unsafe {
             raw::RedisModule_RegisterClusterMessageReceiver.unwrap()(
-                self.inner,
+                self.ptr,
                 msg_type,
                 Some(callback),
             )
@@ -46,7 +46,7 @@ impl Context {
         handle_status(
             unsafe {
                 raw::RedisModule_SendClusterMessage.unwrap()(
-                    self.inner,
+                    self.ptr,
                     c_target_id.as_ptr() as *mut c_char,
                     msg_type,
                     c_msg.as_ptr() as *mut c_uchar,
@@ -61,7 +61,7 @@ impl Context {
         handle_status(
             unsafe {
                 raw::RedisModule_SendClusterMessage.unwrap()(
-                    self.inner,
+                    self.ptr,
                     0 as *mut c_char,
                     msg_type,
                     c_msg.as_ptr() as *mut c_uchar,
