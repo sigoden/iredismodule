@@ -3,6 +3,11 @@ name = "redismodule"
 version = "0.1.0"
 authors = ["sigoden <sigoden@gmail.com>"]
 edition = "2018"
+build = "build.rs"
+description = "A toolkit for building Redis modules in Rust"
+license = "MIT"
+repository = "https://github.com/sigoden/redismodule"
+readme = "README.md"
 
 [build-dependencies]
 bindgen = "0.53"
@@ -11,11 +16,10 @@ cc = "1.0"
 [dev-dependencies]
 rand = "0.7"
 redismodule-macros = { path = "./macros" }
-lazy_static = "1.4.0"
+lazy_static = "1.4"
 
 [features]
 default = []
-experimental-api = []
 
 [[example]]
 name = "simple"
