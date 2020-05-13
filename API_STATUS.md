@@ -232,7 +232,7 @@
 | RedisModule_MallocSize | :arrow_down:  :rocket: |
 | RedisModule_CreateModuleUser | :white_check_mark:  :rocket: |
 | RedisModule_FreeModuleUser | :white_check_mark:  :rocket: |
-| RedisModule_SetModuleUserACL | Provide  :rocket: |
+| RedisModule_SetModuleUserACL | :white_check_mark:  :rocket: |
 | RedisModule_AuthenticateClientWithACLUser | :white_check_mark:  :rocket: |
 | RedisModule_AuthenticateClientWithUser | :white_check_mark:  :rocket: |
 | RedisModule_DeauthenticateAndCloseClient | :white_check_mark:  :rocket: |
