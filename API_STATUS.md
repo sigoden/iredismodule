@@ -2,7 +2,7 @@
 
 - :white_check_mark: - api provided
 - :sparkle: - api internal used
-- :arrow_down: - api is low priority; open an issue
+- :arrow_down: - api is not needed or in low priority
 - :x: - api is not supported
 - :rocket: - experiment api
 
@@ -112,9 +112,9 @@
 | RedisModule_LoadSigned | :white_check_mark: |
 | RedisModule_EmitAOF | :white_check_mark: |
 | RedisModule_SaveString | :white_check_mark: |
-| RedisModule_SaveStringBuffer | :white_check_mark: |
+| RedisModule_SaveStringBuffer | ::arrow_down: |
 | RedisModule_LoadString | :white_check_mark: |
-| RedisModule_LoadStringBuffer | :white_check_mark: |
+| RedisModule_LoadStringBuffer | ::arrow_down: |
 | RedisModule_SaveDouble | :white_check_mark: |
 | RedisModule_LoadDouble | :white_check_mark: |
 | RedisModule_SaveFloat | :white_check_mark: |

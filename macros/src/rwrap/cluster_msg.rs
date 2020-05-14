@@ -1,4 +1,4 @@
-use proc_macro::{TokenStream};
+use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
 use syn::Ident;
@@ -16,6 +16,7 @@ pub fn cluster_msg(item_fn: syn::ItemFn) -> TokenStream {
             payload: *const std::os::raw::c_uchar,
             len: u32,
         ) {
+            use iredismodule::FromPtr;
             let mut context = iredismodule::context::Context::from_ptr(ctx);
             let sender_id = std::str::from_utf8(unsafe {
                 std::slice::from_raw_parts(

@@ -44,12 +44,14 @@ fn helloblock_rediscommand(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     let timeout = args[2]
         .get_integer()
         .map_err(|_| Error::new("ERR invalid timeout"))? as u64;
-    let bc = ctx.block_client(
-        Some(helloblock_reply_c),
-        Some(helloblock_timeout_c),
-        Some(helloblock_free_c),
-        Duration::from_secs(timeout),
-    );
+    let bc = ctx
+        .block_client(
+            Some(helloblock_reply_c),
+            Some(helloblock_timeout_c),
+            Some(helloblock_free_c),
+            Duration::from_secs(timeout),
+        )
+        .unwrap();
     bc.set_disconnect_callback(helloblock_disconnected);
     if thread::Builder::new()
         .spawn(move || helloblock_thread_main(bc, delay))
@@ -68,15 +70,17 @@ fn hellokeys_thread_main(bc: BlockClient) {
     ctx.debug(format!("start hellokeys thread, {}", cursor != 0));
     loop {
         ctx.lock();
-        let reply = ctx.call_str("SCAN", ArgvFlags::new(), &[cursor.to_string()]);
+        let reply = ctx
+            .call_str("SCAN", ReplicateFlag::None, &[cursor.to_string()])
+            .unwrap();
         ctx.unlock();
-        let cr_cursor = reply.get_array_element(0);
-        let cr_keys = reply.get_array_element(1);
+        let cr_cursor = reply.get_array_element(0).unwrap();
+        let cr_keys = reply.get_array_element(1).unwrap();
         cursor = cr_cursor.get_string().parse().unwrap();
         let items = reply.get_length();
         ctx.debug(format!("cr_cursor={}, items={}", cursor, items));
         for i in 0..items {
-            reply_data.push(RResult::from(cr_keys.get_array_element(i).into()).unwrap())
+            reply_data.push(RResult::from(cr_keys.get_array_element(i).unwrap().into()).unwrap())
         }
         if cursor == 0 {
             break;
@@ -90,7 +94,9 @@ fn hellokeys_thread_main(bc: BlockClient) {
 fn hellokeys_rediscommand(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 1);
 
-    let bc = ctx.block_client(None, None, None, Duration::from_millis(0));
+    let bc = ctx
+        .block_client(None, None, None, Duration::from_millis(0))
+        .unwrap();
 
     if thread::Builder::new()
         .spawn(move || hellokeys_thread_main(bc))

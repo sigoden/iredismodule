@@ -44,6 +44,7 @@ macro_rules! define_module {
             argv: *mut *mut $crate::raw::RedisModuleString,
             argc: std::os::raw::c_int,
         ) -> std::os::raw::c_int {
+            use iredismodule::FromPtr;
             let mut name_buffer = [0; 64];
             unsafe {
                 std::ptr::copy(

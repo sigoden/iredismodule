@@ -3,25 +3,31 @@
 use crate::error::Error;
 use crate::raw;
 use crate::value::Value;
-use crate::{Ptr, RResult};
+use crate::{FromPtr, GetPtr, RResult};
 use std::slice;
 
+/// Wrap the pointer of a RedisModuleCallReply
 #[repr(C)]
 pub struct CallReply {
     ptr: *mut raw::RedisModuleCallReply,
 }
 
-impl Ptr for CallReply {
+impl GetPtr for CallReply {
     type PtrType = raw::RedisModuleCallReply;
     fn get_ptr(&self) -> *mut Self::PtrType {
         self.ptr
     }
 }
 
-impl CallReply {
-    pub fn from_ptr(ptr: *mut raw::RedisModuleCallReply) -> Self {
+impl FromPtr for CallReply {
+    type PtrType = raw::RedisModuleCallReply;
+    fn from_ptr(ptr: *mut raw::RedisModuleCallReply) -> CallReply {
         CallReply { ptr }
     }
+}
+
+impl CallReply {
+    /// Return the reply type
     pub fn get_type(&self) -> ReplyType {
         let x = unsafe { raw::RedisModule_CallReplyType.unwrap()(self.ptr) as u32 };
         match x {
@@ -33,6 +39,7 @@ impl CallReply {
             _ => ReplyType::Unknown,
         }
     }
+    /// Get the string value from a string type reply
     pub fn get_string(&self) -> String {
         unsafe {
             let mut len = 0;
@@ -47,14 +54,24 @@ impl CallReply {
             .unwrap()
         }
     }
+    /// Get the integer value from a integer type reply
     pub fn get_integer(&self) -> i64 {
         unsafe { raw::RedisModule_CallReplyInteger.unwrap()(self.ptr) }
     }
-    pub fn get_array_element(&self, idx: usize) -> CallReply {
-        CallReply::from_ptr(unsafe {
-            raw::RedisModule_CallReplyArrayElement.unwrap()(self.ptr, idx)
-        })
+    /// Return the 'idx'-th nested call reply element of an array reply, or None
+    /// if the reply type is wrong or the index is out of range
+    pub fn get_array_element(&self, idx: usize) -> Option<CallReply> {
+        let ptr = unsafe { raw::RedisModule_CallReplyArrayElement.unwrap()(self.ptr, idx) };
+        if ptr.is_null() {
+            None
+        } else {
+            Some(CallReply::from_ptr(ptr))
+        }
     }
+
+    /// Return the length of array reply type.
+    ///
+    /// If the reply is not array type, 0 is returned
     pub fn get_length(&self) -> usize {
         unsafe { raw::RedisModule_CallReplyLength.unwrap()(self.ptr) }
     }
@@ -76,7 +93,7 @@ impl Into<RResult> for CallReply {
                 let length = self.get_length();
                 let mut vec = Vec::with_capacity(length);
                 for i in 0..length {
-                    let value: RResult = self.get_array_element(i).into();
+                    let value: RResult = self.get_array_element(i).unwrap().into();
                     vec.push(value?)
                 }
                 Ok(Value::Array(vec))
@@ -88,6 +105,7 @@ impl Into<RResult> for CallReply {
     }
 }
 
+/// Kind of reply type
 pub enum ReplyType {
     Unknown = raw::REDISMODULE_REPLY_UNKNOWN as isize,
     String = raw::REDISMODULE_REPLY_STRING as isize,

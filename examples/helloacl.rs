@@ -1,5 +1,5 @@
-use lazy_static::lazy_static;
 use iredismodule_macros::{rcmd, rwrap};
+use lazy_static::lazy_static;
 use std::os::raw::c_void;
 use std::sync::Mutex;
 use std::thread;
@@ -48,7 +48,7 @@ fn helloacl_authglobal(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
     let user_ = GLOBAL_USER.lock().unwrap();
     if let Some(ref user) = *user_ {
         let new_id =
-            ctx.authenticate_client_with_user::<i32>(user, Some(helloac_user_changed), None, *id)?;
+            ctx.authenticate_client_with_user::<i32>(user, Some(helloac_user_changed), None)?;
         update_global_auth_client_id(new_id);
     }
 
@@ -58,7 +58,7 @@ fn helloacl_authglobal(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
 #[rwrap("call")]
 fn helloacl_reply(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
     let name = ctx.get_block_client_private_data::<String>();
-    ctx.authenticate_client_with_acl_user::<i32>(name, None, None, 0)?;
+    ctx.authenticate_client_with_acl_user::<i32>(name, None, None)?;
     Ok("Ok".into())
 }
 
@@ -77,12 +77,14 @@ fn helloacl_thread_main(bc: BlockClient, user: String) {
 #[rcmd("helloacl.authasync", "no-auth")]
 fn helloacl_authasync(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 2);
-    let bc = ctx.block_client(
-        Some(helloacl_reply_c),
-        Some(helloacl_timeout_c),
-        Some(helloacl_free_c),
-        TIMEOUT_TIME,
-    );
+    let bc = ctx
+        .block_client(
+            Some(helloacl_reply_c),
+            Some(helloacl_timeout_c),
+            Some(helloacl_free_c),
+            TIMEOUT_TIME,
+        )
+        .unwrap();
 
     let name = args[1].to_str()?.to_owned();
     if thread::Builder::new()

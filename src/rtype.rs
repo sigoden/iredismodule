@@ -25,7 +25,7 @@
 //!         let keyname = key.to_str().unwrap();
 //!         io.emit_aof(
 //!             "HELLOTYPE.INSERT",
-//!             ArgvFlags::new(),
+//!             ReplicateFlag::new(),
 //!             &[keyname, self.data.to_string().as_str() ],
 //!         )
 //!     }
@@ -52,7 +52,7 @@ use crate::error::Error;
 use crate::io::{Digest, IO};
 use crate::raw;
 use crate::string::{RStr, RString};
-use crate::{LogLevel, Ptr};
+use crate::{FromPtr, GetPtr, LogLevel};
 
 /// A help trait for registing new data type
 pub trait TypeMethod {
@@ -197,11 +197,15 @@ impl<T> RType<T> {
             if ptr.is_null() {
                 return None;
             }
-            Some((Box::from_raw(value), RString::new(ctx.get_ptr(), ptr)))
+            Some((Box::from_raw(value), RString::from_ptr(ptr)))
         }
     }
 
+    /// Call ffi to create data type
     pub fn create(&self, ctx: &mut Context) -> Result<(), Error> {
+        if !self.raw_type.borrow_mut().is_null() {
+            return Err(Error::new("Already create type, no need create again"));
+        }
         if self.name.len() != 9 {
             let msg = "Redis requires the length of native type names to be exactly 9 characters";
             ctx.log(

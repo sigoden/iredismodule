@@ -1,4 +1,4 @@
-use proc_macro::{TokenStream};
+use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
 use syn::Ident;
@@ -19,6 +19,7 @@ pub fn free(item_fn: syn::ItemFn) -> TokenStream {
             ctx: *mut iredismodule::raw::RedisModuleCtx,
             data: *mut std::os::raw::c_void
         ) {
+            use iredismodule::FromPtr;
             let mut context = iredismodule::context::Context::from_ptr(ctx);
             let data = data as *mut #fn_arg_2_type;
             let data = unsafe { Box::from_raw(data) };

@@ -7,6 +7,7 @@ use std::fmt;
 use std::fmt::Display;
 use std::str;
 
+/// The core error component
 #[derive(Debug)]
 pub enum Error {
     WrongArity,
@@ -73,7 +74,7 @@ impl error::Error for Error {
         }
     }
 }
-
+/// A custom eror
 #[derive(Debug)]
 pub struct CustomError {
     message: String,

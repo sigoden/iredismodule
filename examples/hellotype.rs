@@ -75,13 +75,8 @@ impl TypeMethod for HelloTypeNode {
     fn aof_rewrite(&self, io: &mut IO, key: &RStr) {
         let eles: Vec<&i64> = self.iter().collect();
         let keyname = key.to_str().unwrap();
-        eles.iter().for_each(|v| {
-            io.emit_aof(
-                "HELLOTYPE.INSERT",
-                ArgvFlags::new(),
-                &[keyname, &v.to_string()],
-            )
-        })
+        eles.iter()
+            .for_each(|v| io.emit_aof("HELLOTYPE.INSERT", &[keyname, &v.to_string()]))
     }
     fn mem_usage(&self) -> usize {
         std::mem::size_of::<Self>() * self.len()
@@ -120,10 +115,10 @@ fn hellotype_range(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     let key = ctx.open_write_key(&args[1]);
     key.verify_module_type(&HELLOTYPE)?;
     let first = args[2]
-        .get_integer_which(|v| v > 0)
+        .assert_integer(|v| v > 0)
         .map_err(|_| Error::new("ERR invalid first parameters"))? as usize;
     let count = args[3]
-        .get_integer_which(|v| v > 0)
+        .assert_integer(|v| v > 0)
         .map_err(|_| Error::new("ERR invalid count parameters"))? as usize;
     let hto = key.get_value::<HelloTypeNode>(&HELLOTYPE)?;
     if hto.is_none() {
@@ -159,7 +154,7 @@ fn hellotype_brange(ctx: &mut Context, mut args: Vec<RStr>) -> RResult {
     let key = ctx.open_write_key(&args[1]);
     let exists = key.verify_module_type(&HELLOTYPE)?;
     let timeout = args[4]
-        .get_integer_which(|v| v > 0)
+        .assert_integer(|v| v > 0)
         .map_err(|_| Error::new("ERR invalid timeout parameter"))?;
     if exists {
         args.remove(args.len() - 1);
@@ -180,7 +175,7 @@ fn hellotype_brange(ctx: &mut Context, mut args: Vec<RStr>) -> RResult {
 
 #[rwrap("call")]
 fn helloblock_reply(ctx: &mut Context, mut args: Vec<RStr>) -> RResult {
-    let keyname = ctx.get_blocked_client_ready_key()?;
+    let keyname = ctx.get_blocked_client_ready_key().unwrap();
     let key = ctx.open_read_key(&keyname);
     key.verify_module_type(&HELLOTYPE)?;
     args.remove(args.len() - 1);

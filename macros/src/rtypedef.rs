@@ -1,4 +1,4 @@
-use proc_macro::{TokenStream};
+use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
 use std::collections::HashSet;
@@ -12,8 +12,8 @@ struct TypeDefAttributeOpts {
 
 pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
     let item_impl = parse_macro_input!(input as syn::ItemImpl);
-    let attr_args =  parse_macro_input!(attr as syn::AttributeArgs);
-    let opts =  rtypedef_parse_attrs(attr_args).expect("fail to parse attr");
+    let attr_args = parse_macro_input!(attr as syn::AttributeArgs);
+    let opts = rtypedef_parse_attrs(attr_args).expect("fail to parse attr");
     let type_name_raw = opts.name.as_str();
     let type_version = opts.version;
     let type_name = type_name_raw.replace("-", "_");
@@ -50,6 +50,7 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
         (
             quote! {
                 extern "C" fn #type_name_rdb_load(rdb: *mut iredismodule::raw::RedisModuleIO, encver: std::os::raw::c_int) -> *mut std::os::raw::c_void {
+                    use iredismodule::FromPtr;
                     let mut io = iredismodule::io::IO::from_ptr(rdb);
                     let ret = #data_name_ident::rdb_load(&mut io, encver as u32);
                     if ret.is_none() {
@@ -71,6 +72,7 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
         (
             quote! {
                 unsafe extern "C" fn #type_name_rdb_save(rdb: *mut iredismodule::raw::RedisModuleIO, value: *mut std::os::raw::c_void) {
+                    use iredismodule::FromPtr;
                     let mut io = iredismodule::io::IO::from_ptr(rdb);
                     let hto = &*(value as *mut #data_name_ident);
                     hto.rdb_save(&mut io)
@@ -90,6 +92,7 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
         (
             quote! {
                 unsafe extern "C" fn #type_name_aof_rewrite(aof: *mut iredismodule::raw::RedisModuleIO, key: *mut iredismodule::raw::RedisModuleString, value: *mut std::os::raw::c_void) {
+                    use iredismodule::FromPtr;
                     let mut io = iredismodule::io::IO::from_ptr(aof);
                     let hto = &*(value as *mut #data_name_ident);
                     let key = iredismodule::string::RStr::from_ptr(key);
@@ -126,6 +129,7 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
         (
             quote! {
                 unsafe extern "C" fn #type_name_digest(md: *mut iredismodule::raw::RedisModuleDigest, value: *mut std::os::raw::c_void) {
+                    use iredismodule::FromPtr;
                     let mut digest = iredismodule::io::Digest::from_ptr(md);
                     let hto = &*(value as *const #data_name_ident);
                     hto.digest(&mut digest)
@@ -160,6 +164,7 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
         (
             quote! {
                 unsafe extern "C" fn #type_name_aux_load(rdb: *mut iredismodule::raw::RedisModuleIO, encver: std::os::raw::c_int, when: std::os::raw::c_int) {
+                    use iredismodule::FromPtr;
                     let mut io = iredismodule::io::IO::from_ptr(rdb);
                     #data_name_ident::aux_load(&mut io, encver as u32, when as u32)
                 }
@@ -177,6 +182,7 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
         (
             quote! {
                 unsafe extern "C" fn #type_name_aux_save(rdb: *mut iredismodule::raw::RedisModuleIO, when: std::os::raw::c_int) {
+                    use iredismodule::FromPtr;
                     let mut io = iredismodule::io::IO::from_ptr(rdb);
                     #data_name_ident::aux_save(&mut io, when as u32)
                 }
@@ -228,26 +234,29 @@ pub fn rtypedef(attr: TokenStream, input: TokenStream) -> TokenStream {
 }
 
 fn rtypedef_parse_attrs(args: syn::AttributeArgs) -> Option<TypeDefAttributeOpts> {
-    let lits: Vec<&Lit> = args.iter()
-        .filter(|v| if let syn::NestedMeta::Lit(_) = v { true } else { false })
+    let lits: Vec<&Lit> = args
+        .iter()
+        .filter(|v| {
+            if let syn::NestedMeta::Lit(_) = v {
+                true
+            } else {
+                false
+            }
+        })
         .map(|v| match v {
             syn::NestedMeta::Lit(i) => i,
             _ => unreachable!(),
         })
         .collect();
     match lits.as_slice() {
-        [Lit::Str(name)] => {
-            Some(TypeDefAttributeOpts {
-                name: name.value(),
-                version: 0,
-            })
-        },
-        [Lit::Str(name), Lit::Int(version)] => {
-            Some(TypeDefAttributeOpts {
-                name: name.value(),
-                version: version.base10_parse().unwrap(),
-            })
-        },
+        [Lit::Str(name)] => Some(TypeDefAttributeOpts {
+            name: name.value(),
+            version: 0,
+        }),
+        [Lit::Str(name), Lit::Int(version)] => Some(TypeDefAttributeOpts {
+            name: name.value(),
+            version: version.base10_parse().unwrap(),
+        }),
         _ => None,
     }
 }

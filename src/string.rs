@@ -1,6 +1,6 @@
 //! Represent Redis module string
 use crate::raw;
-use crate::{handle_status, Ptr};
+use crate::{handle_status, FromPtr, GetPtr};
 
 use crate::error::Error;
 use std::ffi::CString;
@@ -12,46 +12,54 @@ use std::str;
 
 /// Repersent module owned RedisModuleString
 pub struct RString {
-    redis_str: RStr,
-    ctx: *mut raw::RedisModuleCtx,
+    rstr: RStr,
+}
+
+impl FromPtr for RString {
+    type PtrType = raw::RedisModuleString;
+    fn from_ptr(ptr: *mut raw::RedisModuleString) -> RString {
+        let rstr = RStr::from_ptr(ptr);
+        RString { rstr }
+    }
 }
 
 impl RString {
-    pub fn new(ctx: *mut raw::RedisModuleCtx, ptr: *mut raw::RedisModuleString) -> RString {
-        let redis_str = RStr::from_ptr(ptr);
-        RString { ctx, redis_str }
-    }
-    pub fn from_str(ctx: *mut raw::RedisModuleCtx, value: &str) -> RString {
+    /// Generate RString from str
+    pub fn from_str(value: &str) -> RString {
         let str = CString::new(value).unwrap();
-        let ptr = unsafe { raw::RedisModule_CreateString.unwrap()(ctx, str.as_ptr(), value.len()) };
-        Self::new(ctx, ptr)
+        let ptr = unsafe {
+            raw::RedisModule_CreateString.unwrap()(
+                0 as *mut raw::RedisModuleCtx,
+                str.as_ptr(),
+                value.len(),
+            )
+        };
+        Self::from_ptr(ptr)
     }
-    pub unsafe fn from_raw_parts(
-        ctx: *mut raw::RedisModuleCtx,
-        data: *mut u8,
-        len: usize,
-    ) -> RString {
+    /// Generate RString from ptr and len
+    pub unsafe fn from_raw_parts(data: *mut u8, len: usize) -> RString {
         let value = std::slice::from_raw_parts(data, len);
         let str = CString::new(value).unwrap();
-        let ptr = raw::RedisModule_CreateString.unwrap()(ctx, str.as_ptr(), len);
-        Self::new(ctx, ptr)
+        let ptr = {
+            raw::RedisModule_CreateString.unwrap()(
+                0 as *mut raw::RedisModuleCtx,
+                str.as_ptr(),
+                value.len(),
+            )
+        };
+        Self::from_ptr(ptr)
     }
-    pub fn get_redis_str(&self) -> &RStr {
-        &self.redis_str
+    /// Get RStr repersentation
+    pub fn to_rstr(&self) -> &RStr {
+        &self.rstr
     }
-    pub fn ptr_to_str<'a>(ptr: *const raw::RedisModuleString) -> Result<&'a str, Error> {
-        let mut len = 0;
-        let bytes = unsafe { raw::RedisModule_StringPtrLen.unwrap()(ptr, &mut len) };
-
-        str::from_utf8(unsafe { slice::from_raw_parts(bytes as *const u8, len) })
-            .map_err(|e| e.into())
-    }
+    /// Append the specified buffer to the string 'str'.
     pub fn append(&mut self, s: &str) -> Result<(), Error> {
         handle_status(
             unsafe {
                 raw::RedisModule_StringAppendBuffer.unwrap()(
-                    self.ctx,
-                    self.redis_str.ptr,
+                    0 as *mut raw::RedisModuleCtx,
+                    self.rstr.ptr,
                     s.as_ptr() as *mut c_char,
                     s.len(),
                 )
@@ -70,28 +78,49 @@ impl RString {
 impl Deref for RString {
     type Target = RStr;
     fn deref(&self) -> &Self::Target {
-        &self.redis_str
+        &self.rstr
     }
 }
 
-/// Repersent redis core owned RedisModuleString
+impl Drop for RString {
+    fn drop(&mut self) {
+        unsafe { raw::RedisModule_FreeString.unwrap()(0 as *mut raw::RedisModuleCtx, self.ptr) }
+    }
+}
+
+/// Repersent non-owned RedisModuleString
 #[repr(C)]
 pub struct RStr {
     ptr: *mut raw::RedisModuleString,
 }
 
-impl Ptr for RStr {
+impl GetPtr for RStr {
     type PtrType = raw::RedisModuleString;
     fn get_ptr(&self) -> *mut Self::PtrType {
         self.ptr
     }
 }
 
-impl RStr {
-    pub fn from_ptr(ptr: *mut raw::RedisModuleString) -> Self {
+impl FromPtr for RStr {
+    type PtrType = raw::RedisModuleString;
+    fn from_ptr(ptr: *mut raw::RedisModuleString) -> RStr {
         RStr { ptr }
     }
+}
 
+impl AsRef<str> for RStr {
+    fn as_ref(&self) -> &str {
+        self.to_str().unwrap()
+    }
+}
+
+impl AsRef<[u8]> for RStr {
+    fn as_ref(&self) -> &[u8] {
+        self.to_str().unwrap().as_ref()
+    }
+}
+
+impl RStr {
     pub fn get_integer(&self) -> Result<i64, Error> {
         let mut ll: i64 = 0;
         handle_status(
@@ -100,9 +129,9 @@ impl RStr {
         )?;
         Ok(ll)
     }
-    pub fn get_integer_which(&self, which: fn(i64) -> bool) -> Result<u64, Error> {
+    pub fn assert_integer(&self, check: fn(i64) -> bool) -> Result<u64, Error> {
         let ll = self.get_integer()?;
-        if !which(ll) {
+        if !check(ll) {
             return Err(Error::new("fail to get integer"));
         }
         Ok(ll as u64)
@@ -120,7 +149,6 @@ impl RStr {
         let bytes = unsafe { raw::RedisModule_StringPtrLen.unwrap()(self.ptr, &mut len) };
         unsafe { slice::from_raw_parts(bytes as *const u8, len) }
     }
-
     pub fn to_str(&self) -> Result<&str, Error> {
         let buffer = self.get_buffer();
         Ok(str::from_utf8(&buffer)?)

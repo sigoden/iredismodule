@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use std::ffi::CString;
 use std::os::raw::{c_int, c_void};
 use std::slice;
@@ -8,15 +7,23 @@ use crate::error::Error;
 use crate::raw;
 use crate::string::RStr;
 
-pub trait Ptr {
+/// Get the inner ptr from a wrapper struct
+pub trait GetPtr {
     type PtrType;
     fn get_ptr(&self) -> *mut Self::PtrType;
 }
+/// Generate a wrapper struct from raw ptr
+pub trait FromPtr {
+    type PtrType;
+    fn from_ptr(ptr: *mut Self::PtrType) -> Self;
+}
 
+/// Return the current UNIX time in milliseconds.
 pub fn milliseconds() -> Duration {
     Duration::from_millis(unsafe { raw::RedisModule_Milliseconds.unwrap()() } as u64)
 }
 
+/// Parse the argv/argc of redis command func
 pub fn parse_args<'a>(argv: *mut *mut raw::RedisModuleString, argc: c_int) -> Vec<RStr> {
     unsafe { slice::from_raw_parts(argv, argc as usize) }
         .into_iter()
@@ -24,6 +31,7 @@ pub fn parse_args<'a>(argv: *mut *mut raw::RedisModuleString, argc: c_int) -> Ve
         .collect()
 }
 
+/// Check ret return code of redis module api
 pub fn handle_status(status: i32, message: &str) -> Result<(), Error> {
     if status == raw::REDISMODULE_OK as i32 {
         Ok(())
@@ -32,6 +40,7 @@ pub fn handle_status(status: i32, message: &str) -> Result<(), Error> {
     }
 }
 
+/// Check whether module name is used
 pub fn is_module_busy(name: &str) -> Result<(), Error> {
     let name = CString::new(name).unwrap();
     handle_status(
@@ -39,11 +48,46 @@ pub fn is_module_busy(name: &str) -> Result<(), Error> {
         "fail to check busy",
     )
 }
-
+/// Performs similar operation to FLUSHALL, and optionally start a new AOF file (if enabled)
+///
+/// If restart_aof is true, you must make sure the command that triggered this call is not
+/// propagated to the AOF file.
+/// When async is set to true, db contents will be freed by a background thread.
 pub fn reset_dataset(restart_aof: bool, async_: bool) {
     unsafe { raw::RedisModule_ResetDataset.unwrap()(restart_aof as i32, async_ as i32) }
 }
 
+/// Return information about the client with the specified ID
+///
+/// If the client exists, Ok is returned, otherwise Err is returned.
+///
+/// When the client exist and the `ci` pointer is not NULL, but points to
+/// a structure of type RedisModuleClientInfo, previously initialized with
+/// the correct REDISMODULE_CLIENTINFO_INITIALIZER, the structure is populated
+/// with the following fields:
+///
+///      uint64_t flags;         // REDISMODULE_CLIENTINFO_FLAG_*
+///      uint64_t id;            // Client ID
+///      char addr[46];          // IPv4 or IPv6 address.
+///      uint16_t port;          // TCP port.
+///      uint16_t db;            // Selected DB.
+///
+/// Note: the client ID is useless in the context of this call, since we
+///       already know, however the same structure could be used in other
+///       contexts where we don't know the client ID, yet the same structure
+///       is returned.
+///
+/// With flags having the following meaning:
+///
+///     REDISMODULE_CLIENTINFO_FLAG_SSL          Client using SSL connection.
+///     REDISMODULE_CLIENTINFO_FLAG_PUBSUB       Client in Pub/Sub mode.
+///     REDISMODULE_CLIENTINFO_FLAG_BLOCKED      Client blocked in command.
+///     REDISMODULE_CLIENTINFO_FLAG_TRACKING     Client with keys tracking on.
+///     REDISMODULE_CLIENTINFO_FLAG_UNIXSOCKET   Client using unix domain socket.
+///     REDISMODULE_CLIENTINFO_FLAG_MULTI        Client in MULTI state.
+///
+/// However passing NULL is a way to just check if the client exists in case
+/// we are not interested in any additional information.
 pub fn get_client_info_by_id(id: u64) -> Result<&'static raw::RedisModuleClientInfo, Error> {
     let ptr: *mut raw::RedisModuleClientInfo = std::ptr::null_mut();
     handle_status(
@@ -53,39 +97,61 @@ pub fn get_client_info_by_id(id: u64) -> Result<&'static raw::RedisModuleClientI
     Ok(unsafe { &(*ptr) })
 }
 
+/// Returns true if some client sent the CLIENT PAUSE command to the server or
+/// if Redis Cluster is doing a manual failover, and paused tue clients.
+///
+/// This is needed when we have a master with replicas, and want to write,
+/// without adding further data to the replication channel, that the replicas
+/// replication offset, match the one of the master. When this happens, it is
+/// safe to failover the master without data loss.
+///
+/// However modules may generate traffic by calling `Context::call` with
+/// the "!" flag, or by calling `Context::replicate`, in a context outside
+/// commands execution, for instance in timeout callbacks, threads safe
+/// contexts, and so forth. When modules will generate too much traffic, it
+/// will be hard for the master and replicas offset to match, because there
+/// is more data to send in the replication channel.
+///
+/// So modules may want to try to avoid very heavy background work that has
+/// the effect of creating data to the replication channel, when this function
+/// returns true. This is mostly useful for modules that have background
+/// garbage collection tasks, or that do writes and replicate such writes
+/// periodically in timer callbacks or other periodic callbacks.
 pub fn avoid_replica_traffic() -> Result<(), Error> {
     handle_status(
         unsafe { raw::RedisModule_AvoidReplicaTraffic.unwrap()() },
         "fail to call avoid_replica_traffic",
     )
 }
+
+/// Allows adding event to the latency monitor to be observed by the LATENCY
+/// command.
+///
+/// The call is skipped if the latency is smaller than the configured
+/// latency-monitor-threshold.
 pub fn latency_add_sample(name: &str, ms: Duration) {
     let name = CString::new(name).unwrap();
     unsafe { raw::RedisModule_LatencyAddSample.unwrap()(name.as_ptr(), ms.as_millis() as i64) }
 }
 
+/// Get the configured bitmap of notify-keyspace-events (Could be used
+/// for additional filtering in RedisModuleNotificationFunc)
 pub fn get_notify_keyspace_events() -> i32 {
     unsafe { raw::RedisModule_GetNotifyKeyspaceEvents.unwrap()() }
 }
 
+/// Return the a number between 0 to 1 indicating the amount of memory
+/// currently used, relative to the Redis "maxmemory" configuration.
+///
+/// 0 - No memory limit configured.
+/// Between 0 and 1 - The percentage of the memory used normalized in 0-1 range.
+/// Exactly 1 - Memory limit reached.
+/// Greater 1 - More memory used than the configured limit.
 pub fn get_used_memory_ratio() -> f32 {
     unsafe { raw::RedisModule_GetUsedMemoryRatio.unwrap()() }
 }
 
-pub enum StatusCode {
-    Ok = raw::REDISMODULE_OK as isize,
-    Err = raw::REDISMODULE_ERR as isize,
-}
-impl From<c_int> for StatusCode {
-    fn from(v: c_int) -> Self {
-        if v == raw::REDISMODULE_OK as c_int {
-            StatusCode::Ok
-        } else {
-            StatusCode::Err
-        }
-    }
-}
-
+/// Redis log level
 #[derive(Clone, Copy, Debug)]
 pub enum LogLevel {
     Debug,
@@ -100,36 +166,30 @@ impl Into<CString> for LogLevel {
     }
 }
 
-#[derive(Debug)]
-pub struct ArgvFlags(HashSet<char>);
-
-impl ArgvFlags {
-    pub fn new() -> ArgvFlags {
-        let mut s = HashSet::new();
-        s.insert('v');
-        ArgvFlags(s)
-    }
-    pub fn replicate(&mut self) -> &mut ArgvFlags {
-        self.0.insert('!');
-        self
-    }
-    pub fn no_aof(&mut self) -> &mut ArgvFlags {
-        self.0.insert('A');
-        self
-    }
-    pub fn no_replicas(&mut self) -> &mut ArgvFlags {
-        self.0.insert('R');
-        self
-    }
+/// Controls the Whether replicate the command
+pub enum ReplicateFlag {
+    /// Tells the function do not replicate the command
+    None,
+    /// Tells the function to replicate the command to replicas and AOF
+    All,
+    /// Tells the function to replicate the command to AOF only
+    Aof,
+    /// Tells the function to replicate the command to replicas
+    Replicas,
 }
 
-impl Into<CString> for ArgvFlags {
+impl Into<CString> for ReplicateFlag {
     fn into(self) -> CString {
-        let v = self.0.into_iter().collect::<String>();
-        CString::new(v).unwrap()
+        match self {
+            ReplicateFlag::None => CString::new("v").unwrap(),
+            ReplicateFlag::All => CString::new("v!").unwrap(),
+            ReplicateFlag::Aof => CString::new("vR").unwrap(),
+            ReplicateFlag::Replicas => CString::new("vA").unwrap(),
+        }
     }
 }
 
+/// Events kind used in `Context::subscribe_to_server_event`
 pub enum ServerEvent {
     ReplicationRoleChanged = raw::REDISMODULE_EVENT_REPLICATION_ROLE_CHANGED as isize,
     Persistence = raw::REDISMODULE_EVENT_PERSISTENCE as isize,
@@ -160,4 +220,37 @@ impl Into<raw::RedisModuleEvent> for ServerEvent {
             ServerEvent::LoadingProgress => raw::RedisModuleEvent_LoadingProgress,
         }
     }
+}
+
+/// Produces a log message to the standard Redis log
+///
+/// There is a fixed limit to the length of the log line this function is able
+/// to emit, this limit is not specified but is guaranteed to be more than
+/// a few lines of text.
+pub fn log<T: AsRef<str>>(level: LogLevel, message: T) {
+    let level: CString = level.into();
+    let fmt = CString::new(message.as_ref()).unwrap();
+    unsafe {
+        raw::RedisModule_Log.unwrap()(0 as *mut raw::RedisModuleCtx, level.as_ptr(), fmt.as_ptr())
+    }
+}
+
+/// Log with notice loglevel
+pub fn notice<T: AsRef<str>>(message: T) {
+    log(LogLevel::Notice, message.as_ref());
+}
+
+/// Log with debug loglevel
+pub fn debug<T: AsRef<str>>(message: T) {
+    log(LogLevel::Debug, message.as_ref());
+}
+
+/// Log with verbose loglevel
+pub fn verbose<T: AsRef<str>>(message: T) {
+    log(LogLevel::Verbose, message.as_ref());
+}
+
+/// Log with warning loglevel
+pub fn warning<T: AsRef<str>>(message: T) {
+    log(LogLevel::Warning, message.as_ref());
 }

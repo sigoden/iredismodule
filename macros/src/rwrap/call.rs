@@ -1,4 +1,4 @@
-use proc_macro::{TokenStream};
+use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
 use syn::Ident;
@@ -10,7 +10,8 @@ pub fn call(item_fn: syn::ItemFn) -> TokenStream {
     let vis = item_fn.vis.clone();
     let bottom_expr = if is_rresult {
         quote! {
-            return context.reply(result) as std::os::raw::c_int;
+            context.reply(result);
+            return iredismodule::raw::REDISMODULE_OK as std::os::raw::c_int;
         }
     } else {
         quote! {
@@ -50,4 +51,3 @@ fn call_is_ret_rresult(ty: syn::ReturnType) -> bool {
     }
     return false;
 }
-

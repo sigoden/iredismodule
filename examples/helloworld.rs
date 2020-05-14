@@ -1,7 +1,7 @@
-use rand::random;
 use iredismodule::key::{HashGetFlag, HashSetFlag, KeyType, ListPosition, ZsetRangeDirection};
 use iredismodule::prelude::*;
 use iredismodule_macros::{rcmd, rwrap};
+use rand::random;
 use std::time::Duration;
 
 #[rcmd("hello.simple")]
@@ -23,7 +23,9 @@ fn hello_push_native(ctx: &mut Context, args: Vec<RStr>) -> RResult {
 fn hello_push_call(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 3);
     let call_args: Vec<&RStr> = args.iter().skip(1).collect();
-    ctx.call("RPUSH", ArgvFlags::new(), &call_args).into()
+    ctx.call("RPUSH", ReplicateFlag::None, &call_args)
+        .unwrap()
+        .into()
 }
 
 #[rcmd("hello.push.call2", "write deny-oom", 1, 1, 1)]
@@ -35,11 +37,11 @@ fn hello_push_call2(ctx: &mut Context, args: Vec<RStr>) -> RResult {
 fn hello_list_sum_len(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 2);
     let call_args = [&args[1].to_str()?, "0", "-1"];
-    let reply = ctx.call_str("LRANGE", ArgvFlags::new(), &call_args);
+    let reply = ctx.call_str("LRANGE", ReplicateFlag::None, &call_args)?;
 
     let elem_len = reply.get_length();
     let str_len: usize = (0..elem_len)
-        .map(|v| reply.get_array_element(v).get_length())
+        .map(|v| reply.get_array_element(v).unwrap().get_length())
         .sum();
     Ok(Value::from(str_len))
 }
@@ -52,7 +54,7 @@ fn hello_list_splice(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     src_key.verify_type(KeyType::List, true)?;
     dest_key.verify_type(KeyType::List, true)?;
     let count = args[3]
-        .get_integer_which(|v| v > 0)
+        .assert_integer(|v| v > 0)
         .map_err(|_| Error::new("ERR invalid count"))?;
     for _ in 0..count {
         let ele = src_key.list_pop(ListPosition::Tail);
@@ -76,7 +78,7 @@ fn hello_list_splice_auto(ctx: &mut Context, args: Vec<RStr>) -> RResult {
 fn hello_rand_array(_ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 2);
     let count = args[1]
-        .get_integer_which(|v| v > 0)
+        .assert_integer(|v| v > 0)
         .map_err(|_| Error::new("ERR invalid count"))?;
     let value: Vec<Value> = (0..count).map(|_| random::<i64>().into()).collect();
     Ok(Value::Array(value))
@@ -84,9 +86,9 @@ fn hello_rand_array(_ctx: &mut Context, args: Vec<RStr>) -> RResult {
 
 #[rcmd("hello.repl1")]
 fn hello_repl1(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
-    ctx.replicate_str("ECHO", ArgvFlags::new(), &["foo"])?;
-    ctx.call_str("INCR", ArgvFlags::new(), &["foo"]);
-    ctx.call_str("INCR", ArgvFlags::new(), &["bar"]);
+    ctx.replicate_str("ECHO", ReplicateFlag::None, &["foo"])?;
+    ctx.call_str("INCR", ReplicateFlag::None, &["foo"])?;
+    ctx.call_str("INCR", ReplicateFlag::None, &["bar"])?;
     Ok(0i64.into())
 }
 
@@ -102,7 +104,7 @@ fn hello_repl2(ctx: &mut Context, args: Vec<RStr>) -> RResult {
         let mut val = ele.get_integer().unwrap_or(0);
         val += 1;
         sum += val;
-        let new_ele = ctx.create_string(&val.to_string());
+        let new_ele = RString::from_str(&val.to_string());
         key.list_push(ListPosition::Head, &new_ele)?;
     }
     ctx.replicate_verbatim();
@@ -127,7 +129,7 @@ fn hello_toggle_case(ctx: &mut Context, args: Vec<RStr>) -> RResult {
                 }
             })
             .collect::<String>();
-        key.string_set(&ctx.create_string(&value))?;
+        key.string_set(&RString::from_str(&value))?;
     }
     ctx.replicate_verbatim();
     Ok("OK".into())
@@ -205,7 +207,7 @@ fn hello_hcopy(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     let old_val = key.hash_get(HashGetFlag::Normal, &args[2])?;
     if let Some(v) = &old_val {
         ctx.debug(&format!("old_val is {}", v.to_str()?));
-        key.hash_set(HashSetFlag::Normal, &args[3], v)?;
+        key.hash_set(HashSetFlag::Normal, &args[3], Some(v))?;
         ctx.debug(&format!("new_val is {}", v.to_str()?));
     }
     let ret: i64 = match &old_val {
@@ -219,7 +221,7 @@ fn hello_hcopy(ctx: &mut Context, args: Vec<RStr>) -> RResult {
 fn hello_leftpad(_ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 4);
     let pad_len = args[2]
-        .get_integer_which(|v| v > 0)
+        .assert_integer(|v| v > 0)
         .map_err(|_| Error::new("ERR invalid padding length"))? as usize;
     let the_str: &str = args[1].to_str()?;
     let the_char: &str = args[3].to_str()?;

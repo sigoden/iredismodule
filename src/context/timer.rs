@@ -1,16 +1,19 @@
 use super::Context;
 use crate::error::Error;
-use crate::handle_status;
 use crate::raw;
+use crate::{handle_status, FromPtr};
 
 use std::convert::TryInto;
 use std::os::raw::c_void;
 use std::time::Duration;
 
 impl Context {
+    /// Create a new timer that will fire after `period` milliseconds, and will call
+    /// the specified function using `data` as argument. The returned timer ID can be
+    /// used to get information from the timer or to stop it before it fires.
     pub fn create_timer<F, T>(
         &self,
-        period: Duration,
+        period_ms: Duration,
         callback: F,
         data: T,
     ) -> Result<raw::RedisModuleTimerID, Error>
@@ -24,7 +27,7 @@ impl Context {
         let timer_id = unsafe {
             raw::RedisModule_CreateTimer.unwrap()(
                 self.ptr,
-                period
+                period_ms
                     .as_millis()
                     .try_into()
                     .map_err(|_e| Error::new("invalid timer period"))?,
@@ -35,6 +38,10 @@ impl Context {
 
         Ok(timer_id as raw::RedisModuleTimerID)
     }
+
+    /// Stop a timer, returns Ok if the timer was found, belonged to the
+    /// calling module, and was stopped. Returns Ok with value touched when
+    /// the timer was created, otherwise Err is returned.
     pub fn stop_timer<T>(&self, id: raw::RedisModuleTimerID) -> Result<T, Error> {
         let mut data: *mut c_void = std::ptr::null_mut();
 
@@ -46,7 +53,11 @@ impl Context {
         let data: T = take_data(data);
         return Ok(data);
     }
-
+    /// Obtain information about a timer: its remaining time before firing
+    /// (in milliseconds), and the private data pointer associated with the timer.
+    /// If the timer specified does not exist or belongs to a different module
+    /// no information is returned and the function returns Err, otherwise
+    /// Ok is returned.
     pub fn get_timer_info<T>(&self, id: raw::RedisModuleTimerID) -> Result<(Duration, &T), Error> {
         let mut remaining: u64 = 0;
         let mut data: *mut c_void = std::ptr::null_mut();

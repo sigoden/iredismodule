@@ -1,6 +1,6 @@
 //! Define ScanCursor struct
 
-use crate::{raw, Ptr};
+use crate::{raw, GetPtr};
 
 /// A cursor be used with scan
 pub struct ScanCursor {
@@ -19,7 +19,7 @@ impl ScanCursor {
     }
 }
 
-impl Ptr for ScanCursor {
+impl GetPtr for ScanCursor {
     type PtrType = raw::RedisModuleScanCursor;
     fn get_ptr(&self) -> *mut Self::PtrType {
         self.ptr

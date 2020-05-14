@@ -3,7 +3,32 @@
 This crate provides an idiomatic Rust API for the [Redis Modules API](https://redis.io/topics/modules-intro).
 It allows writing Redis modules in Rust, without needing to use raw pointers or unsafe code.
 
-# Running the example module
+## Get started
+
+```rust
+use iredismodule_macros::rcmd;
+use iredismodule::prelude::*; 
+
+/// Define command
+#[rcmd("hello.simple", "readonly", 0, 0, 0)] 
+fn hello_simple(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
+    let db = ctx.get_select_db();
+    Ok(db.into())
+}
+
+// Register module
+define_module! {
+    name: "simple",
+    version: 1,
+    data_types: [],
+    init_funcs: [],
+    commands: [
+        hello_simple_cmd,
+    ]
+}
+```
+
+## Running the example module
 
 1. [Install Rust](https://www.rust-lang.org/tools/install) 
 2. [Install Redis](https://redis.io/download), most likely using your favorite package manager (Homebrew on Mac, APT or YUM on Linux)
@@ -13,7 +38,7 @@ It allows writing Redis modules in Rust, without needing to use raw pointers or 
    * Mac: `redis-server --loadmodule ./target/debug/examples/helloworld.dylib`	
 5. Open a Redis CLI, and run `HELLO.SIMPLE`. 
 
-# Writing your own module
+## Writing your own module
 
 See the [examples](examples) directory for some sample modules.
 

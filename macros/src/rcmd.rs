@@ -1,4 +1,4 @@
-use proc_macro::{TokenStream};
+use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
 use syn::{parse_macro_input, Ident, Lit};
@@ -14,8 +14,8 @@ struct CmdAttributeOpts {
 
 pub fn rcmd(attr: TokenStream, input: TokenStream) -> TokenStream {
     let item_fn = parse_macro_input!(input as syn::ItemFn);
-    let attr_args =  parse_macro_input!(attr as syn::AttributeArgs);
-    let opts =  rcmd_parse_attrs(attr_args).expect("fail to parse attr");
+    let attr_args = parse_macro_input!(attr as syn::AttributeArgs);
+    let opts = rcmd_parse_attrs(attr_args).expect("fail to parse attr");
     let fn_name = item_fn.sig.ident.clone();
     let vis = item_fn.vis.clone();
 
@@ -32,9 +32,11 @@ pub fn rcmd(attr: TokenStream, input: TokenStream) -> TokenStream {
             argv: *mut *mut iredismodule::raw::RedisModuleString,
             argc: std::os::raw::c_int
         ) -> std::os::raw::c_int {
+            use iredismodule::FromPtr;
             let mut context = iredismodule::context::Context::from_ptr(ctx);
             let response = #fn_name(&mut context, iredismodule::parse_args(argv, argc));
-            context.reply(response) as std::os::raw::c_int
+            context.reply(response);
+            iredismodule::raw::REDISMODULE_OK as std::os::raw::c_int
         }
     };
     let create_fn = quote! {
@@ -51,8 +53,15 @@ pub fn rcmd(attr: TokenStream, input: TokenStream) -> TokenStream {
 }
 
 fn rcmd_parse_attrs(args: syn::AttributeArgs) -> Option<CmdAttributeOpts> {
-    let lits: Vec<&Lit> = args.iter()
-        .filter(|v| if let syn::NestedMeta::Lit(_) = v { true } else { false })
+    let lits: Vec<&Lit> = args
+        .iter()
+        .filter(|v| {
+            if let syn::NestedMeta::Lit(_) = v {
+                true
+            } else {
+                false
+            }
+        })
         .map(|v| match v {
             syn::NestedMeta::Lit(i) => i,
             _ => unreachable!(),
@@ -60,27 +69,21 @@ fn rcmd_parse_attrs(args: syn::AttributeArgs) -> Option<CmdAttributeOpts> {
         .collect();
 
     match lits.as_slice() {
-        [Lit::Str(name)] => {
-            Some(CmdAttributeOpts {
-                name: name.value(),
-                flags: "".to_owned(),
-                first_key: 0,
-                last_key: 0,
-                key_step: 0,
-            })
-        },
-        [Lit::Str(name), Lit::Str(flags)] => {
-            Some(CmdAttributeOpts {
-                name: name.value(),
-                flags: flags.value(),
-                first_key: 0,
-                last_key: 0,
-                key_step: 0,
-            })
-        },
-        [Lit::Str(name), Lit::Str(flags), 
-            Lit::Int(first_key), Lit::Int(last_key), Lit::Int(key_step)
-            ] => {
+        [Lit::Str(name)] => Some(CmdAttributeOpts {
+            name: name.value(),
+            flags: "".to_owned(),
+            first_key: 0,
+            last_key: 0,
+            key_step: 0,
+        }),
+        [Lit::Str(name), Lit::Str(flags)] => Some(CmdAttributeOpts {
+            name: name.value(),
+            flags: flags.value(),
+            first_key: 0,
+            last_key: 0,
+            key_step: 0,
+        }),
+        [Lit::Str(name), Lit::Str(flags), Lit::Int(first_key), Lit::Int(last_key), Lit::Int(key_step)] => {
             Some(CmdAttributeOpts {
                 name: name.value(),
                 flags: flags.value(),
@@ -88,8 +91,7 @@ fn rcmd_parse_attrs(args: syn::AttributeArgs) -> Option<CmdAttributeOpts> {
                 last_key: last_key.base10_parse().unwrap(),
                 key_step: key_step.base10_parse().unwrap(),
             })
-        },
+        }
         _ => None,
     }
 }
-
