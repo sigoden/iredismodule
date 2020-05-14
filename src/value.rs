@@ -14,7 +14,7 @@ pub enum Value {
 
 impl From<()> for Value {
     fn from(_: ()) -> Self {
-        Value::Null
+        Value::NoReply
     }
 }
 

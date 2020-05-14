@@ -94,7 +94,7 @@ fn helloacl_authasync(ctx: &mut Context, args: Vec<RStr>) -> RResult {
         bc.abort()?;
         return Ok("-ERR can't start thread".into());
     }
-    Ok(Value::NoReply)
+    Ok(().into())
 }
 
 #[rwrap("call")]

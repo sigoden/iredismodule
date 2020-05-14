@@ -60,7 +60,7 @@ fn helloblock_rediscommand(ctx: &mut Context, args: Vec<RStr>) -> RResult {
         bc.abort()?;
         return Ok("-ERR can't start thread".into());
     }
-    Ok(Value::NoReply)
+    Ok(().into())
 }
 
 fn hellokeys_thread_main(bc: BlockClient) {
@@ -105,7 +105,7 @@ fn hellokeys_rediscommand(ctx: &mut Context, args: Vec<RStr>) -> RResult {
         bc.abort()?;
         return Ok("-ERR Can't start thread".into());
     }
-    Ok(Value::NoReply)
+    Ok(().into())
 }
 
 define_module! {

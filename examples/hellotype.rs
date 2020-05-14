@@ -170,7 +170,7 @@ fn hellotype_brange(ctx: &mut Context, mut args: Vec<RStr>) -> RResult {
         &args_bc,
         privdata,
     );
-    Ok(Value::NoReply)
+    Ok(().into())
 }
 
 #[rwrap("call")]
