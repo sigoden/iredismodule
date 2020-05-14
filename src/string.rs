@@ -25,26 +25,13 @@ impl FromPtr for RString {
 
 impl RString {
     /// Generate RString from str
-    pub fn from_str(value: &str) -> RString {
-        let str = CString::new(value).unwrap();
+    pub fn from_str<T: AsRef<str>>(value: T) -> RString {
+        let value_ = CString::new(value.as_ref()).unwrap();
         let ptr = unsafe {
             raw::RedisModule_CreateString.unwrap()(
                 0 as *mut raw::RedisModuleCtx,
-                str.as_ptr(),
-                value.len(),
-            )
-        };
-        Self::from_ptr(ptr)
-    }
-    /// Generate RString from ptr and len
-    pub unsafe fn from_raw_parts(data: *mut u8, len: usize) -> RString {
-        let value = std::slice::from_raw_parts(data, len);
-        let str = CString::new(value).unwrap();
-        let ptr = {
-            raw::RedisModule_CreateString.unwrap()(
-                0 as *mut raw::RedisModuleCtx,
-                str.as_ptr(),
-                value.len(),
+                value_.as_ptr(),
+                value.as_ref().len(),
             )
         };
         Self::from_ptr(ptr)
@@ -147,7 +134,7 @@ impl RStr {
     pub fn get_buffer(&self) -> &[u8] {
         let mut len = 0;
         let bytes = unsafe { raw::RedisModule_StringPtrLen.unwrap()(self.ptr, &mut len) };
-        unsafe { slice::from_raw_parts(bytes as *const u8, len) }
+        unsafe { std::slice::from_raw_parts(bytes as *const u8, len) }
     }
     pub fn to_str(&self) -> Result<&str, Error> {
         let buffer = self.get_buffer();

@@ -21,12 +21,11 @@
 //!         io.save_signed(self.data);
 //!     }
 //!     fn free(_: Box<Self>) {}
-//!     fn aof_rewrite(&self, io: &mut IO, key: &RStr) {
-//!         let keyname = key.to_str().unwrap();
+//!     fn aof_rewrite<T: AsRef<str>>(&self, io: &mut IO, key: T) {
 //!         io.emit_aof(
 //!             "HELLOTYPE.INSERT",
-//!             ReplicateFlag::new(),
-//!             &[keyname, self.data.to_string().as_str() ],
+//!             CallFlags::new(),
+//!             &[key, self.data.to_string().as_str() ],
 //!         )
 //!     }
 //! }
@@ -70,7 +69,7 @@ pub trait TypeMethod {
     }
     /// A callback function pointer that rewrites data as commands.
     #[allow(unused_variables)]
-    fn aof_rewrite(&self, io: &mut IO, key: &RStr) {
+    fn aof_rewrite<T: AsRef<str>>(&self, io: &mut IO, key: T) {
         unimplemented!()
     }
     /// A callback function pointer that report memory usage

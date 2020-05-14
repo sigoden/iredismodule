@@ -8,7 +8,7 @@ use crate::scan_cursor::ScanCursor;
 use crate::string::{RStr, RString};
 use crate::user::User;
 use crate::value::Value;
-use crate::{handle_status, FromPtr, GetPtr, LogLevel, RResult, ReplicateFlag, ServerEvent};
+use crate::{handle_status, FromPtr, GetPtr, LogLevel, RResult, CallFlags, ServerEvent};
 
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int, c_long, c_void};
@@ -111,15 +111,15 @@ impl Context {
         }
     }
     /// Exported API to call any Redis command from modules.
-    pub fn call(
+    pub fn call<T: AsRef<str>>(
         &self,
-        command: &str,
-        flags: ReplicateFlag,
+        command: T,
+        flags: CallFlags,
         args: &[&RStr],
     ) -> Result<CallReply, Error> {
         let args: Vec<*mut raw::RedisModuleString> = args.iter().map(|s| s.get_ptr()).collect();
 
-        let cmd = CString::new(command).unwrap();
+        let cmd = CString::new(command.as_ref()).unwrap();
         let flags: CString = flags.into();
 
         let reply: *mut raw::RedisModuleCallReply = unsafe {
@@ -141,7 +141,7 @@ impl Context {
     pub fn call_str<T: AsRef<str>>(
         &self,
         command: &str,
-        flags: ReplicateFlag,
+        flags: CallFlags,
         args: &[T],
     ) -> Result<CallReply, Error> {
         let str_args: Vec<RString> = args.iter().map(|v| RString::from_str(v.as_ref())).collect();
@@ -186,15 +186,15 @@ impl Context {
     ///
     /// The command returns Err if the format specifiers are invalid
     /// or the command name does not belong to a known command.
-    pub fn replicate(
+    pub fn replicate<T: AsRef<str>>(
         &self,
-        command: &str,
-        flags: ReplicateFlag,
+        command: T,
+        flags: CallFlags,
         args: &[&RStr],
     ) -> Result<(), Error> {
         let args: Vec<*mut raw::RedisModuleString> = args.iter().map(|s| s.get_ptr()).collect();
 
-        let cmd = CString::new(command).unwrap();
+        let cmd = CString::new(command.as_ref()).unwrap();
         let flags: CString = flags.into();
 
         let result = unsafe {
@@ -213,7 +213,7 @@ impl Context {
     pub fn replicate_str<T: AsRef<str>>(
         &self,
         command: &str,
-        flags: ReplicateFlag,
+        flags: CallFlags,
         args: &[T],
     ) -> Result<(), Error> {
         let str_args: Vec<RString> = args.iter().map(|v| RString::from_str(v.as_ref())).collect();
@@ -513,7 +513,7 @@ impl Context {
     }
     /// Signals that the key is modified from user's perspective (i.e. invalidate WATCH
     /// and client side caching).
-    pub fn signal_modified_key(&self, key: &RStr) -> Result<(), Error> {
+        pub fn signal_modified_key(&self, key: &RStr) -> Result<(), Error> {
         handle_status(
             unsafe { raw::RedisModule_SignalModifiedKey.unwrap()(self.ptr, key.get_ptr()) },
             "fail to signal key modified",
@@ -905,8 +905,8 @@ impl Context {
     }
 
     /// Notify keyspace event to redis core to broadcast
-    pub fn notify_keyspace_event(&self, type_: i32, event: &str, key: &RStr) -> Result<(), Error> {
-        let event = CString::new(event).unwrap();
+    pub fn notify_keyspace_event<T: AsRef<str>>(&self, type_: i32, event: T, key: &RStr) -> Result<(), Error> {
+        let event = CString::new(event.as_ref()).unwrap();
         handle_status(
             unsafe {
                 raw::RedisModule_NotifyKeyspaceEvent.unwrap()(

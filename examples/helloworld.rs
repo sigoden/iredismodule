@@ -13,7 +13,7 @@ fn hello_simple(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
 #[rcmd("hello.push.native", "write deny-oom", 1, 1, 1)]
 fn hello_push_native(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 3);
-    let mut key = ctx.open_write_key(&args[1]);
+    let key = ctx.open_write_key(&args[1]);
     key.list_push(ListPosition::Tail, &args[2])?;
     let len = key.value_length();
     Ok(len.into())
@@ -23,7 +23,7 @@ fn hello_push_native(ctx: &mut Context, args: Vec<RStr>) -> RResult {
 fn hello_push_call(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 3);
     let call_args: Vec<&RStr> = args.iter().skip(1).collect();
-    ctx.call("RPUSH", ReplicateFlag::None, &call_args)
+    ctx.call("RPUSH", CallFlags::None, &call_args)
         .unwrap()
         .into()
 }
@@ -37,7 +37,7 @@ fn hello_push_call2(ctx: &mut Context, args: Vec<RStr>) -> RResult {
 fn hello_list_sum_len(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 2);
     let call_args = [&args[1].to_str()?, "0", "-1"];
-    let reply = ctx.call_str("LRANGE", ReplicateFlag::None, &call_args)?;
+    let reply = ctx.call_str("LRANGE", CallFlags::None, &call_args)?;
 
     let elem_len = reply.get_length();
     let str_len: usize = (0..elem_len)
@@ -86,16 +86,16 @@ fn hello_rand_array(_ctx: &mut Context, args: Vec<RStr>) -> RResult {
 
 #[rcmd("hello.repl1")]
 fn hello_repl1(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
-    ctx.replicate_str("ECHO", ReplicateFlag::None, &["foo"])?;
-    ctx.call_str("INCR", ReplicateFlag::None, &["foo"])?;
-    ctx.call_str("INCR", ReplicateFlag::None, &["bar"])?;
+    ctx.replicate_str("ECHO", CallFlags::None, &["foo"])?;
+    ctx.call_str("INCR", CallFlags::None, &["foo"])?;
+    ctx.call_str("INCR", CallFlags::None, &["bar"])?;
     Ok(0i64.into())
 }
 
 #[rcmd("hello.repl2", "write", 1, 1, 1)]
 fn hello_repl2(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 2);
-    let mut key = ctx.open_write_key(&args[1]);
+    let key = ctx.open_write_key(&args[1]);
     key.verify_type(KeyType::List, false)?;
     let list_len = key.value_length();
     let mut sum = 0;
@@ -114,7 +114,7 @@ fn hello_repl2(ctx: &mut Context, args: Vec<RStr>) -> RResult {
 #[rcmd("hello.toggle.case", "write", 1, 1, 1)]
 fn hello_toggle_case(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 2);
-    let mut key = ctx.open_write_key(&args[1]);
+    let key = ctx.open_write_key(&args[1]);
     key.verify_type(KeyType::String, true)?;
     if key.get_type() == KeyType::String {
         let value = key.string_get()?;
@@ -141,7 +141,7 @@ fn hello_more_expire(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     let addms = args[2]
         .get_integer()
         .map_err(|_e| Error::new("ERR invalid expire time"))?;
-    let mut key = ctx.open_write_key(&args[1]);
+    let key = ctx.open_write_key(&args[1]);
     let expire = key.get_expire();
     if let Some(d) = expire {
         ctx.debug(&format!("current duration {}", d.as_secs()));
@@ -204,10 +204,10 @@ fn hello_hcopy(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 4);
     let key = ctx.open_write_key(&args[1]);
     key.verify_type(KeyType::ZSet, true)?;
-    let old_val = key.hash_get(HashGetFlag::Normal, &args[2])?;
+    let old_val = key.hash_get(HashGetFlag::None, &args[2])?;
     if let Some(v) = &old_val {
         ctx.debug(&format!("old_val is {}", v.to_str()?));
-        key.hash_set(HashSetFlag::Normal, &args[3], Some(v))?;
+        key.hash_set(HashSetFlag::None, &args[3], Some(v))?;
         ctx.debug(&format!("new_val is {}", v.to_str()?));
     }
     let ret: i64 = match &old_val {

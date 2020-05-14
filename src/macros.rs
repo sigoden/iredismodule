@@ -20,6 +20,14 @@ macro_rules! assert_len {
     };
 }
 
+/// Generate &Rstr
+#[macro_export]
+macro_rules! rstr {
+    ($value:expr) => {
+        &RString::from_str($value)
+    };
+}
+
 /// Create a redis module will be so easy
 #[macro_export]
 macro_rules! define_module {

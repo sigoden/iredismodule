@@ -4,7 +4,6 @@ use crate::error::Error;
 use crate::raw;
 use crate::value::Value;
 use crate::{FromPtr, GetPtr, RResult};
-use std::slice;
 
 /// Wrap the pointer of a RedisModuleCallReply
 #[repr(C)]
@@ -46,7 +45,7 @@ impl CallReply {
             let reply_string: *mut u8 =
                 raw::RedisModule_CallReplyStringPtr.unwrap()(self.ptr, &mut len) as *mut u8;
             String::from_utf8(
-                slice::from_raw_parts(reply_string, len)
+                std::slice::from_raw_parts(reply_string, len)
                     .into_iter()
                     .map(|v| *v)
                     .collect(),

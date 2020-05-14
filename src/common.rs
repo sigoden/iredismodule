@@ -1,6 +1,5 @@
 use std::ffi::CString;
 use std::os::raw::{c_int, c_void};
-use std::slice;
 use std::time::Duration;
 
 use crate::error::Error;
@@ -25,7 +24,7 @@ pub fn milliseconds() -> Duration {
 
 /// Parse the argv/argc of redis command func
 pub fn parse_args<'a>(argv: *mut *mut raw::RedisModuleString, argc: c_int) -> Vec<RStr> {
-    unsafe { slice::from_raw_parts(argv, argc as usize) }
+    unsafe { std::slice::from_raw_parts(argv, argc as usize) }
         .into_iter()
         .map(|&arg| RStr::from_ptr(arg))
         .collect()
@@ -41,12 +40,10 @@ pub fn handle_status(status: i32, message: &str) -> Result<(), Error> {
 }
 
 /// Check whether module name is used
-pub fn is_module_busy(name: &str) -> Result<(), Error> {
+pub fn is_module_busy(name: &str) -> bool {
     let name = CString::new(name).unwrap();
-    handle_status(
-        unsafe { raw::RedisModule_IsModuleNameBusy.unwrap()(name.as_ptr()) },
-        "fail to check busy",
-    )
+    let ret = unsafe { raw::RedisModule_IsModuleNameBusy.unwrap()(name.as_ptr()) };
+    ret == 0
 }
 /// Performs similar operation to FLUSHALL, and optionally start a new AOF file (if enabled)
 ///
@@ -167,7 +164,7 @@ impl Into<CString> for LogLevel {
 }
 
 /// Controls the Whether replicate the command
-pub enum ReplicateFlag {
+pub enum CallFlags {
     /// Tells the function do not replicate the command
     None,
     /// Tells the function to replicate the command to replicas and AOF
@@ -178,13 +175,13 @@ pub enum ReplicateFlag {
     Replicas,
 }
 
-impl Into<CString> for ReplicateFlag {
+impl Into<CString> for CallFlags {
     fn into(self) -> CString {
         match self {
-            ReplicateFlag::None => CString::new("v").unwrap(),
-            ReplicateFlag::All => CString::new("v!").unwrap(),
-            ReplicateFlag::Aof => CString::new("vR").unwrap(),
-            ReplicateFlag::Replicas => CString::new("vA").unwrap(),
+            CallFlags::None => CString::new("v").unwrap(),
+            CallFlags::All => CString::new("v!").unwrap(),
+            CallFlags::Aof => CString::new("vR").unwrap(),
+            CallFlags::Replicas => CString::new("vA").unwrap(),
         }
     }
 }

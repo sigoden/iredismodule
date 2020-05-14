@@ -95,7 +95,7 @@ impl ReadKey {
 
     // Get the string value of the eky
     pub fn string_get(&self) -> Result<RString, Error> {
-        unsafe {
+        let value = unsafe {
             let mut len = 0;
             let data = raw::RedisModule_StringDMA.unwrap()(
                 self.ptr,
@@ -105,8 +105,9 @@ impl ReadKey {
             if data.is_null() {
                 return Err(Error::new("fail to get string value"));
             }
-            Ok(RString::from_raw_parts(data, len as usize))
-        }
+            { std::str::from_utf8(std::slice::from_raw_parts(data, len as usize))? }
+        };
+        Ok(RString::from_str(value))
     }
 
     /// Get fields from an hash value.
@@ -192,27 +193,18 @@ impl ReadKey {
                 }
             };
             let ctx = self.get_context();
-            ctx.debug(&format!(
-                "dir = {:?} min={} max={}",
-                dir,
-                min.to_str().unwrap(),
-                max.to_str().unwrap()
-            ));
             let check_end = raw::RedisModule_ZsetRangeEndReached.unwrap();
             let get_elem = raw::RedisModule_ZsetRangeCurrentElement.unwrap();
             handle_status(
                 init(self.ptr, min.get_ptr(), max.get_ptr()),
                 "fail to execute zset_lex_range",
             )?;
-            ctx.debug(&format!("range start"));
             while check_end(self.ptr) == 0 {
                 let mut score = 0.0;
-                ctx.debug(&format!("range step"));
                 let elem = get_elem(self.ptr, &mut score);
                 result.push((RString::from_ptr(elem), score));
                 next(self.ptr);
             }
-            ctx.debug(&format!("range stop"));
             raw::RedisModule_ZsetRangeStop.unwrap()(self.ptr)
         }
         Ok(result)
@@ -342,7 +334,7 @@ impl WriteKey {
         }
     }
     /// Set the specified module type object as the value of the key, deleting the old value if any.
-    pub fn set_value<T>(&mut self, redis_type: &RType<T>, value: T) -> Result<&mut T, Error> {
+    pub fn set_value<T>(&self, redis_type: &RType<T>, value: T) -> Result<&mut T, Error> {
         let value = Box::into_raw(Box::new(value)) as *mut c_void;
         handle_status(
             unsafe {
@@ -373,7 +365,7 @@ impl WriteKey {
     ///
     ///  If old_value is non-NULL, the old value is returned by reference.
     pub fn replace_value<T>(
-        &mut self,
+        &self,
         redis_type: &RType<T>,
         value: T,
     ) -> Result<(&mut T, Box<T>), Error> {
@@ -394,7 +386,7 @@ impl WriteKey {
     }
     /// Remove the key, and setup the key to accept new writes as an empty
     /// key (that will be created on demand).
-    pub fn delete(&mut self) -> Result<(), Error> {
+    pub fn delete(&self) -> Result<(), Error> {
         handle_status(
             unsafe { raw::RedisModule_DeleteKey.unwrap()(self.ptr) },
             "fail to execute delete",
@@ -403,7 +395,7 @@ impl WriteKey {
     /// Unlink the key (that is delete it in a non-blocking way, not reclaiming
     /// memory immediately) and setup the key to  accept new writes as
     /// an empty key (that will be created on demand).
-    pub fn unlink(&mut self) -> Result<(), Error> {
+    pub fn unlink(&self) -> Result<(), Error> {
         handle_status(
             unsafe { raw::RedisModule_UnlinkKey.unwrap()(self.ptr) },
             "fail to execute unlink",
@@ -414,21 +406,21 @@ impl WriteKey {
     /// cancelled if there was one (the same as the PERSIST command).
     /// Note that the expire must be provided as a positive integer representing
     /// the number of milliseconds of TTL the key should have.
-    pub fn set_expire(&mut self, expire_ms: Duration) -> Result<(), Error> {
+    pub fn set_expire(&self, expire_ms: Duration) -> Result<(), Error> {
         handle_status(
             unsafe { raw::RedisModule_SetExpire.unwrap()(self.ptr, expire_ms.as_millis() as i64) },
             "fail to execute set_expire",
         )
     }
     /// Set the specified string 'str' as the value of the key, deleting the old value if any.
-    pub fn string_set(&mut self, value: &RStr) -> Result<(), Error> {
+    pub fn string_set(&self, value: &RStr) -> Result<(), Error> {
         handle_status(
             unsafe { raw::RedisModule_StringSet.unwrap()(self.ptr, value.get_ptr()) },
             "fail to execute string_set",
         )
     }
     /// Push an element into a list
-    pub fn list_push(&mut self, position: ListPosition, value: &RStr) -> Result<(), Error> {
+    pub fn list_push(&self, position: ListPosition, value: &RStr) -> Result<(), Error> {
         handle_status(
             unsafe {
                 raw::RedisModule_ListPush.unwrap()(self.ptr, position as i32, value.get_ptr())
@@ -437,7 +429,7 @@ impl WriteKey {
         )
     }
     /// Pop an element from the list, and returns it.
-    pub fn list_pop(&mut self, pos: ListPosition) -> Result<RString, Error> {
+    pub fn list_pop(&self, pos: ListPosition) -> Result<RString, Error> {
         let p = unsafe { raw::RedisModule_ListPop.unwrap()(self.ptr, pos as i32) };
         if p.is_null() {
             return Err(Error::new("fail to pop list"));
@@ -583,7 +575,7 @@ pub enum KeyType {
 #[derive(Debug, PartialEq)]
 pub enum HashSetFlag {
     /// Set the value
-    Normal,
+    None,
     /// The operation is performed only if the field was not already existing in the hash.
     NX,
     /// The operation is performed only if the field was already existing,
@@ -595,7 +587,7 @@ pub enum HashSetFlag {
 impl Into<c_int> for HashSetFlag {
     fn into(self) -> c_int {
         match self {
-            HashSetFlag::Normal => raw::REDISMODULE_HASH_NONE as c_int,
+            HashSetFlag::None => raw::REDISMODULE_HASH_NONE as c_int,
             HashSetFlag::NX => raw::REDISMODULE_HASH_NX as c_int,
             HashSetFlag::XX => raw::REDISMODULE_HASH_XX as c_int,
         }
@@ -605,14 +597,14 @@ impl Into<c_int> for HashSetFlag {
 /// Control the behavior of `ReadKey::hash_get`
 #[derive(Debug, PartialEq)]
 pub enum HashGetFlag {
-    Normal,
+    None,
     Exists,
 }
 
 impl Into<c_int> for HashGetFlag {
     fn into(self) -> c_int {
         match self {
-            HashGetFlag::Normal => raw::REDISMODULE_HASH_NONE as c_int,
+            HashGetFlag::None => raw::REDISMODULE_HASH_NONE as c_int,
             HashGetFlag::Exists => raw::REDISMODULE_HASH_EXISTS as c_int,
         }
     }

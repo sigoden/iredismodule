@@ -86,7 +86,6 @@ where
 {
     let ctx = &Context::from_ptr(ctx);
     if data.is_null() {
-        ctx.debug("Timer callback data is null");
         return;
     }
     let cb_data: TimerProcData<F, T> = take_data(data);

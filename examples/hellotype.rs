@@ -72,9 +72,9 @@ impl TypeMethod for HelloTypeNode {
         eles.iter().for_each(|v| io.save_signed(**v));
     }
     fn free(_: Box<Self>) {}
-    fn aof_rewrite(&self, io: &mut IO, key: &RStr) {
+    fn aof_rewrite<T: AsRef<str>>(&self, io: &mut IO, key: T)  {
         let eles: Vec<&i64> = self.iter().collect();
-        let keyname = key.to_str().unwrap();
+        let keyname = key.as_ref();
         eles.iter()
             .for_each(|v| io.emit_aof("HELLOTYPE.INSERT", &[keyname, &v.to_string()]))
     }
@@ -91,7 +91,7 @@ impl TypeMethod for HelloTypeNode {
 #[rcmd("hellotype.insert", "write deny-oom", 1, 1, 1)]
 fn hellotype_insert(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 3);
-    let mut key = ctx.open_write_key(&args[1]);
+    let key = ctx.open_write_key(&args[1]);
     let exist = key.verify_module_type(&HELLOTYPE)?;
     let value = args[2]
         .get_integer()

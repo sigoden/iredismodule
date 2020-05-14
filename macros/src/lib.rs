@@ -166,9 +166,9 @@ pub fn rcmd(attr: TokenStream, input: TokenStream) -> TokenStream {
 ///         eles.iter().for_each(|v| io.save_signed(**v));
 ///     }
 ///     fn free(_: Box<Self>) {}
-///     fn aof_rewrite(&self, io: &mut IO, key: &RStr) {
+///     fn aof_rewrite<T: AsRef<str>>(&self, io: &mut IO, key: T) {
 ///         let eles: Vec<&i64> = self.iter().collect();
-///         let keyname = key.to_str().unwrap();
+///         let keyname = key.as_ref();
 ///         eles.iter().for_each(|v| {
 ///             io.emit_aof(
 ///                 "HELLOTYPE.INSERT",

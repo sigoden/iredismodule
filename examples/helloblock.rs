@@ -71,7 +71,7 @@ fn hellokeys_thread_main(bc: BlockClient) {
     loop {
         ctx.lock();
         let reply = ctx
-            .call_str("SCAN", ReplicateFlag::None, &[cursor.to_string()])
+            .call_str("SCAN", CallFlags::None, &[cursor.to_string()])
             .unwrap();
         ctx.unlock();
         let cr_cursor = reply.get_array_element(0).unwrap();

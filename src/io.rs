@@ -6,7 +6,7 @@ use std::os::raw::{c_char, c_uchar};
 use crate::context::Context;
 use crate::raw;
 use crate::string::{RStr, RString};
-use crate::{FromPtr, GetPtr, LogLevel, ReplicateFlag};
+use crate::{FromPtr, GetPtr, LogLevel, CallFlags};
 
 /// Wrap the pointer of a RedisModuleIO
 #[repr(C)]
@@ -86,16 +86,16 @@ impl IO {
     /// by a module. The command works exactly like `Context::Call` in the way
     /// the parameters are passed, but it does not return anything as the error
     /// handling is performed by Redis itself.
-    pub fn emit_aof<T: AsRef<str>>(&mut self, command: &str, args: &[T]) {
+    pub fn emit_aof<T: AsRef<str>>(&mut self, command: T, args: &[T]) {
         let terminated_args: Vec<CString> = args
             .iter()
             .map(|s| CString::new(s.as_ref()).unwrap())
             .collect();
 
         let inner_args: Vec<_> = terminated_args.iter().map(|s| s.as_ptr()).collect();
-        let flags: CString = ReplicateFlag::None.into();
+        let flags: CString = CallFlags::None.into();
 
-        let cmd = CString::new(command).unwrap();
+        let cmd = CString::new(command.as_ref()).unwrap();
 
         unsafe {
             let p_call = raw::RedisModule_EmitAOF.unwrap();
