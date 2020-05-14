@@ -620,6 +620,8 @@ pub enum ZsetRangeDirection {
 /// Control the behavier of zadd
 #[derive(Debug, PartialEq)]
 pub enum ZaddInputFlag {
+    /// The default mode
+    None = 0 as isize,
     /// Element must already exist. Do nothing otherwise.
     XX = raw::REDISMODULE_ZADD_XX as isize,
     /// Element must not exist. Do nothing otherwise.
@@ -643,7 +645,7 @@ impl From<c_int> for ZaddOuputFlag {
             raw::REDISMODULE_ZADD_ADDED => ZaddOuputFlag::Added,
             raw::REDISMODULE_ZADD_UPDATED => ZaddOuputFlag::Updated,
             raw::REDISMODULE_ZADD_NOP => ZaddOuputFlag::Nop,
-            _ => panic!("invalid zadd flag"),
+            _ => panic!("invalid ZaddOutputFlag flag"),
         }
     }
 }

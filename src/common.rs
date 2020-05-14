@@ -43,7 +43,7 @@ pub fn handle_status(status: i32, message: &str) -> Result<(), Error> {
 pub fn is_module_busy(name: &str) -> bool {
     let name = CString::new(name).unwrap();
     let ret = unsafe { raw::RedisModule_IsModuleNameBusy.unwrap()(name.as_ptr()) };
-    ret == 0
+    ret == 1
 }
 /// Performs similar operation to FLUSHALL, and optionally start a new AOF file (if enabled)
 ///

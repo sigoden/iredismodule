@@ -16,8 +16,8 @@ pub enum Error {
 }
 
 impl Error {
-    pub fn new(message: &str) -> Error {
-        Error::Custom(CustomError::new(message))
+    pub fn new<T: AsRef<str>>(message: T) -> Error {
+        Error::Custom(CustomError::new(message.as_ref()))
     }
 }
 

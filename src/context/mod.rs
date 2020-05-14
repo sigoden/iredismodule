@@ -140,7 +140,7 @@ impl Context {
     /// Same as `Context::call`, but args is str-like
     pub fn call_str<T: AsRef<str>>(
         &self,
-        command: &str,
+        command: T,
         flags: CallFlags,
         args: &[T],
     ) -> Result<CallReply, Error> {
@@ -212,7 +212,7 @@ impl Context {
     /// Same as `Context::replicate`, but args is str-like
     pub fn replicate_str<T: AsRef<str>>(
         &self,
-        command: &str,
+        command: T,
         flags: CallFlags,
         args: &[T],
     ) -> Result<(), Error> {

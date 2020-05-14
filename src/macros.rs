@@ -20,11 +20,11 @@ macro_rules! assert_len {
     };
 }
 
-/// Generate &Rstr
+/// Generate RString for String or str
 #[macro_export]
 macro_rules! rstr {
     ($value:expr) => {
-        &RString::from_str($value)
+        RString::from_str($value)
     };
 }
 
