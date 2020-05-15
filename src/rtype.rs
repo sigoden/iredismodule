@@ -1,14 +1,15 @@
 //! Redis data type supports
 //!
+//! see [modules-native-types](https://redis.io/topics/modules-native-types)
+//!
 //! # Examples
 //!
 //! ```rust,no_run
-//!
 //! pub struct MyType {
 //!     pub data: i64,
 //! }
 //!
-//! #[rtypedef("mytype-00", 0)]
+//! #[rtypedef("mytype123", 0)]
 //! impl TypeMethod for MyType {
 //!     fn rdb_load(io: &mut IO, encver: u32) -> Option<Box<Self>> {
 //!         if encver != 0 {
@@ -24,7 +25,6 @@
 //!     fn aof_rewrite<T: AsRef<str>>(&self, io: &mut IO, key: T) {
 //!         io.emit_aof(
 //!             "HELLOTYPE.INSERT",
-//!             CallFlags::new(),
 //!             &[key, self.data.to_string().as_str() ],
 //!         )
 //!     }
@@ -59,47 +59,31 @@ pub trait TypeMethod {
     const AUX_SAVE_TRIGGERS: AuxSaveTriggerFlag = AuxSaveTriggerFlag::AuxBeforeRdb;
     /// A callback function pointer that loads data from RDB files
     #[allow(unused_variables)]
-    fn rdb_load(io: &mut IO, encver: u32) -> Option<Box<Self>> {
-        unimplemented!()
-    }
+    fn rdb_load(io: &mut IO, encver: u32) -> Option<Box<Self>> { unreachable!() }
     /// A callback function pointer that saves data to RDB files.
     #[allow(unused_variables)]
-    fn rdb_save(&self, io: &mut IO) {
-        unimplemented!()
-    }
+    fn rdb_save(&self, io: &mut IO) {}
     /// A callback function pointer that rewrites data as commands.
     #[allow(unused_variables)]
-    fn aof_rewrite<T: AsRef<str>>(&self, io: &mut IO, key: T) {
-        unimplemented!()
-    }
+    fn aof_rewrite<T: AsRef<str>>(&self, io: &mut IO, key: T) {}
     /// A callback function pointer that report memory usage
     ///
     /// It should currently be omitted since it is not yet implemented inside the Redis modules core.
-    fn mem_usage(&self) -> usize {
-        unimplemented!()
-    }
+    fn mem_usage(&self) -> usize { 0 }
     /// A callback function pointer that is used for `DEBUG DIGEST`.
     ///
     /// It should currently be omitted since it is not yet implemented inside the Redis modules core.
     #[allow(unused_variables)]
-    fn digest(&self, digest: &mut Digest) {
-        unimplemented!()
-    }
+    fn digest(&self, digest: &mut Digest) {}
     /// A callback function pointer that can free a type value.
     #[allow(unused_variables)]
-    fn free(value: Box<Self>) {
-        unimplemented!()
-    }
+    fn free(value: Box<Self>) {}
     /// A callback function pointer that loads out of keyspace data from RDB files.
     #[allow(unused_variables)]
-    fn aux_save(rdb: &mut IO, when: i32) {
-        unimplemented!()
-    }
+    fn aux_save(rdb: &mut IO, when: i32) {}
     /// A callback function pointer that saves out of keyspace data to RDB files.
     #[allow(unused_variables)]
-    fn aux_load(rdb: &mut IO, encver: u32, when: i32) {
-        unimplemented!()
-    }
+    fn aux_load(rdb: &mut IO, encver: u32, when: i32) {}
 }
 
 /// Biflags for [`aux_save_triggers`](../raw/struct.RedisModuleTypeMethods.html#structfield.aux_save_triggers)

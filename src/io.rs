@@ -6,7 +6,7 @@ use std::os::raw::{c_char, c_uchar};
 use crate::context::Context;
 use crate::raw;
 use crate::string::{RStr, RString};
-use crate::{FromPtr, GetPtr, LogLevel, CallFlags};
+use crate::{FromPtr, GetPtr, LogLevel};
 
 /// Wrap the pointer of a RedisModuleIO
 #[repr(C)]
@@ -50,16 +50,42 @@ impl IO {
         unsafe { raw::RedisModule_LoadSigned.unwrap()(self.ptr) }
     }
     /// In the context of the rdb_save method of a module type, saves a
-    /// string into the RDB file.
-    pub fn save_string(&mut self, value: &RString) {
+    /// redis string into the RDB file.
+    pub fn save_rstring(&mut self, value: RString) {
         unsafe { raw::RedisModule_SaveString.unwrap()(self.ptr, value.get_ptr()) }
     }
-    /// In the context of the rdb_load method of a module data type, loads a string
-    /// from the RDB file, that was previously saved with `IO::save_string`.
-    pub fn load_string(&mut self) -> RString {
+    /// In the context of the rdb_load method of a module data type, loads a redis string
+    /// from the RDB file, that was previously saved with `IO::save_rstring`.
+    pub fn load_rstring(&mut self) -> RString {
         let ptr: *mut raw::RedisModuleString =
             unsafe { raw::RedisModule_LoadString.unwrap()(self.ptr) };
         RString::from_ptr(ptr)
+    }
+    /// In the context of the rdb_save method of a module type, saves a
+    /// string into the RDB file.
+    pub fn save_string(&mut self, value: &str) {
+        let value_ = CString::new(value).unwrap();
+        unsafe {
+             raw::RedisModule_SaveStringBuffer.unwrap()( 
+                 self.ptr, 
+                 value_.as_ptr(), 
+                 value.len()
+            )
+         }
+    }
+    /// In the context of the rdb_load method of a module data type, loads a string
+    /// from the RDB file, that was previously saved with `IO::save_string`.
+    pub fn load_string(&mut self) -> String {
+        let data: &[u8] = unsafe {
+            let mut len = 0;
+            let ptr = raw::RedisModule_LoadStringBuffer.unwrap()( 
+                 self.ptr, 
+                 &mut len,
+
+            );
+            std::slice::from_raw_parts(ptr as *const u8, len)
+         };
+         String::from_utf8(data.to_vec()).unwrap()
     }
     /// In the context of the rdb_save method of a module type, saves a
     /// double into the RDB file.
@@ -93,7 +119,7 @@ impl IO {
             .collect();
 
         let inner_args: Vec<_> = terminated_args.iter().map(|s| s.as_ptr()).collect();
-        let flags: CString = CallFlags::None.into();
+        let flags: CString = CString::new("v").unwrap();
 
         let cmd = CString::new(command.as_ref()).unwrap();
 
@@ -200,20 +226,20 @@ impl Digest {
     ///     }
     ///     EndSequence();
     ///
-    pub fn add_string_buffer(&mut self, ele: &str) {
-        let s = CString::new(ele).unwrap();
+    pub fn add_string<T: AsRef<str>>(&mut self, s: T) {
+        let s_ = CString::new(s.as_ref()).unwrap();
         unsafe {
             raw::RedisModule_DigestAddStringBuffer.unwrap()(
                 self.ptr,
-                s.as_ptr() as *mut c_uchar,
-                ele.len(),
+                s_.as_ptr() as *mut c_uchar,
+                s.as_ref().len(),
             )
         }
     }
     /// Like `Digest::digest_add_string_buffer` but takes a long long as input
     /// that gets converted into a string before adding it to the digest.
-    pub fn add_long_long(&mut self, ll: i64) {
-        unsafe { raw::RedisModule_DigestAddLongLong.unwrap()(self.ptr, ll) }
+    pub fn add_integer(&mut self, i: i64) {
+        unsafe { raw::RedisModule_DigestAddLongLong.unwrap()(self.ptr, i) }
     }
     /// See `Context:add_string_buffer`
     pub fn end_sequeue(&mut self) {

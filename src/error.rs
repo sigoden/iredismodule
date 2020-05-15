@@ -5,7 +5,6 @@ use std;
 use std::error;
 use std::fmt;
 use std::fmt::Display;
-use std::str;
 
 /// The core error component
 #[derive(Debug)]
@@ -57,7 +56,7 @@ impl Display for Error {
             Error::WrongType => write!(
                 f,
                 "{}",
-                str::from_utf8(raw::REDISMODULE_ERRORMSG_WRONGTYPE).unwrap()
+                std::str::from_utf8(raw::REDISMODULE_ERRORMSG_WRONGTYPE).unwrap()
             ),
             Error::WrongArity => write!(f, "ERR wrong number of arguments"),
             Error::Custom(ref err) => write!(f, "{}", err),

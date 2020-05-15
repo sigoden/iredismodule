@@ -4,9 +4,9 @@
 #[derive(Debug, PartialEq)]
 pub enum Value {
     String(String),
-    Buffer(Vec<u8>),
+    BulkString(Vec<u8>),
     Integer(i64),
-    Float(f64),
+    Double(f64),
     Array(Vec<Value>),
     Null,
     NoReply,
@@ -14,7 +14,7 @@ pub enum Value {
 
 impl From<()> for Value {
     fn from(_: ()) -> Self {
-        Value::NoReply
+        Value::Null
     }
 }
 
@@ -32,7 +32,7 @@ impl From<usize> for Value {
 
 impl From<f64> for Value {
     fn from(f: f64) -> Self {
-        Value::Float(f)
+        Value::Double(f)
     }
 }
 
@@ -56,7 +56,7 @@ impl From<&String> for Value {
 
 impl From<Vec<u8>> for Value {
     fn from(b: Vec<u8>) -> Self {
-        Value::Buffer(b)
+        Value::BulkString(b)
     }
 }
 

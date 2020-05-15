@@ -29,7 +29,7 @@
 | RedisModule_ListPush | :white_check_mark: |
 | RedisModule_ListPop | :white_check_mark: |
 | RedisModule_Call | :white_check_mark: |
-| RedisModule_CallReplyProto | :arrow_down: |
+| RedisModule_CallReplyProto | :white_check_mark: |
 | RedisModule_FreeCallReply | :sparkle: |
 | RedisModule_CallReplyType | :sparkle: |
 | RedisModule_CallReplyInteger | :sparkle: |

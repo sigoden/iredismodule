@@ -4,6 +4,12 @@ use iredismodule::rtype::TypeMethod;
 use iredismodule_macros::{rcmd, rtypedef, rwrap};
 use std::time::Duration;
 
+// ========================== Internal data structure  =======================
+// This is just a linked list of 64 bit integers where elements are inserted
+// in-place, so it's ordered. There is no pop/push operation but just insert
+// because it is enough to show the implementation of new data types without
+// making things complex.
+
 pub struct HelloTypeNode {
     head: Link,
     len: usize,
@@ -52,6 +58,7 @@ impl<'a> Iterator for HelloTypeNodeIter<'a> {
     }
 }
 
+/// ========================== "hellotype" type methods ======================= 
 #[rtypedef("hellotype", 0)]
 impl TypeMethod for HelloTypeNode {
     fn rdb_load(io: &mut IO, encver: u32) -> Option<Box<Self>> {
@@ -78,21 +85,26 @@ impl TypeMethod for HelloTypeNode {
         eles.iter()
             .for_each(|v| io.emit_aof("HELLOTYPE.INSERT", &[keyname, &v.to_string()]))
     }
+    /// The goal of this function is to return the amount of memory used by
+    /// the HelloType value.
     fn mem_usage(&self) -> usize {
         std::mem::size_of::<Self>() * self.len()
     }
     fn digest(&self, digest: &mut Digest) {
         let eles: Vec<&i64> = self.iter().collect();
-        eles.iter().for_each(|v| digest.add_long_long(**v));
+        eles.iter().for_each(|v| digest.add_integer(**v));
         digest.end_sequeue();
     }
 }
 
+// ========================= "hellotype" type commands ======================= 
+
+/// HELLOTYPE.INSERT key value
 #[rcmd("hellotype.insert", "write deny-oom", 1, 1, 1)]
 fn hellotype_insert(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 3);
     let key = ctx.open_write_key(&args[1]);
-    let exist = key.verify_module_type(&HELLOTYPE)?;
+    let exist = key.check_module_type(&HELLOTYPE)?;
     let value = args[2]
         .get_integer()
         .map_err(|_e| Error::new("ERR invalid value: must be a signed 64 bit integer"))?;
@@ -109,11 +121,12 @@ fn hellotype_insert(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     Ok(hto.len().into())
 }
 
+/// HELLOTYPE.RANGE key skip limit
 #[rcmd("hellotype.range", "readonly", 1, 1, 1)]
 fn hellotype_range(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 4);
     let key = ctx.open_write_key(&args[1]);
-    key.verify_module_type(&HELLOTYPE)?;
+    key.check_module_type(&HELLOTYPE)?;
     let first = args[2]
         .assert_integer(|v| v > 0)
         .map_err(|_| Error::new("ERR invalid first parameters"))? as usize;
@@ -135,11 +148,12 @@ fn hellotype_range(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     Ok(Value::Array(eles))
 }
 
+/// HELLOTYPE.LEN key
 #[rcmd("hellotype.len", "readonly", 1, 1, 1)]
 fn hellotype_len(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 2);
     let key = ctx.open_write_key(&args[1]);
-    key.verify_module_type(&HELLOTYPE)?;
+    key.check_module_type(&HELLOTYPE)?;
     let hto = key.get_value::<HelloTypeNode>(&HELLOTYPE)?;
     if hto.is_none() {
         return Ok(0i64.into());
@@ -148,11 +162,16 @@ fn hellotype_len(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     Ok(len.into())
 }
 
+// ====================== Example of a blocking command ==================== 
+
+/// HELLOTYPE.BRANGE key offset limit timeout -- This is a blocking verison of
+/// the RANGE operation, in order to show how to use the API
+/// Context:block_client_on_keys.
 #[rcmd("hellotype.brange", "readonly", 1, 1, 1)]
 fn hellotype_brange(ctx: &mut Context, mut args: Vec<RStr>) -> RResult {
     assert_len!(args, 5);
     let key = ctx.open_write_key(&args[1]);
-    let exists = key.verify_module_type(&HELLOTYPE)?;
+    let exists = key.check_module_type(&HELLOTYPE)?;
     let timeout = args[4]
         .assert_integer(|v| v > 0)
         .map_err(|_| Error::new("ERR invalid timeout parameter"))?;
@@ -170,24 +189,28 @@ fn hellotype_brange(ctx: &mut Context, mut args: Vec<RStr>) -> RResult {
         &args_bc,
         privdata,
     );
-    Ok(().into())
+    Ok(Value::NoReply)
 }
 
+/// Reply callback for blocking command HELLOTYPE.BRANGE, this will get
+/// called when the key we blocked for is ready: we need to check if we
+/// can really serve the client, and reply OK or ERR accordingly.
 #[rwrap("call")]
 fn helloblock_reply(ctx: &mut Context, mut args: Vec<RStr>) -> RResult {
     let keyname = ctx.get_blocked_client_ready_key().unwrap();
     let key = ctx.open_read_key(&keyname);
-    key.verify_module_type(&HELLOTYPE)?;
+    key.check_module_type(&HELLOTYPE)?;
     args.remove(args.len() - 1);
     return hellotype_range(ctx, args);
 }
 
+/// Timeout callback for blocking command HELLOTYPE.BRANGE
 #[rwrap("call")]
-fn helloblock_timeout(ctx: &mut Context, _: Vec<RStr>) -> RResult {
-    ctx.reply(Ok(Value::String("Request timeout".into())));
-    Ok(().into())
+fn helloblock_timeout(_ctx: &mut Context, _: Vec<RStr>) -> RResult {
+    Ok(Value::String("Request timeout".into()))
 }
 
+/// Private data freeing callback for HELLOTYPE.BRANGE command.
 #[rwrap("free")]
 fn helloblock_free(ctx: &mut Context, data: Box<String>) {
     ctx.debug(&format!("free: {}", data.as_str()));

@@ -21,24 +21,6 @@ pub trait FromPtr {
 pub fn milliseconds() -> Duration {
     Duration::from_millis(unsafe { raw::RedisModule_Milliseconds.unwrap()() } as u64)
 }
-
-/// Parse the argv/argc of redis command func
-pub fn parse_args<'a>(argv: *mut *mut raw::RedisModuleString, argc: c_int) -> Vec<RStr> {
-    unsafe { std::slice::from_raw_parts(argv, argc as usize) }
-        .into_iter()
-        .map(|&arg| RStr::from_ptr(arg))
-        .collect()
-}
-
-/// Check ret return code of redis module api
-pub fn handle_status(status: i32, message: &str) -> Result<(), Error> {
-    if status == raw::REDISMODULE_OK as i32 {
-        Ok(())
-    } else {
-        Err(Error::new(message))
-    }
-}
-
 /// Check whether module name is used
 pub fn is_module_busy(name: &str) -> bool {
     let name = CString::new(name).unwrap();
@@ -164,24 +146,21 @@ impl Into<CString> for LogLevel {
 }
 
 /// Controls the Whether replicate the command
-pub enum CallFlags {
-    /// Tells the function do not replicate the command
-    None,
+pub enum CallFlag {
     /// Tells the function to replicate the command to replicas and AOF
-    All,
+    AofAndReplicas,
     /// Tells the function to replicate the command to AOF only
     Aof,
     /// Tells the function to replicate the command to replicas
     Replicas,
 }
 
-impl Into<CString> for CallFlags {
+impl Into<CString> for CallFlag {
     fn into(self) -> CString {
         match self {
-            CallFlags::None => CString::new("v").unwrap(),
-            CallFlags::All => CString::new("v!").unwrap(),
-            CallFlags::Aof => CString::new("vR").unwrap(),
-            CallFlags::Replicas => CString::new("vA").unwrap(),
+            CallFlag::AofAndReplicas => CString::new("v!").unwrap(),
+            CallFlag::Aof => CString::new("vR").unwrap(),
+            CallFlag::Replicas => CString::new("vA").unwrap(),
         }
     }
 }
@@ -232,22 +211,19 @@ pub fn log<T: AsRef<str>>(level: LogLevel, message: T) {
     }
 }
 
-/// Log with notice loglevel
-pub fn notice<T: AsRef<str>>(message: T) {
-    log(LogLevel::Notice, message.as_ref());
+/// Parse the argv/argc of redis command func
+pub fn parse_args<'a>(argv: *mut *mut raw::RedisModuleString, argc: c_int) -> Vec<RStr> {
+    unsafe { std::slice::from_raw_parts(argv, argc as usize) }
+        .into_iter()
+        .map(|&arg| RStr::from_ptr(arg))
+        .collect()
 }
 
-/// Log with debug loglevel
-pub fn debug<T: AsRef<str>>(message: T) {
-    log(LogLevel::Debug, message.as_ref());
-}
-
-/// Log with verbose loglevel
-pub fn verbose<T: AsRef<str>>(message: T) {
-    log(LogLevel::Verbose, message.as_ref());
-}
-
-/// Log with warning loglevel
-pub fn warning<T: AsRef<str>>(message: T) {
-    log(LogLevel::Warning, message.as_ref());
+/// Check ret return code of redis module api
+pub fn handle_status(status: i32, message: &str) -> Result<(), Error> {
+    if status == raw::REDISMODULE_OK as i32 {
+        Ok(())
+    } else {
+        Err(Error::new(message))
+    }
 }

@@ -5,7 +5,7 @@ use rand::random;
 use std::time::Duration;
 
 fn timer_handler(ctx: &Context, data: String) {
-    ctx.debug(&data);
+    ctx.notice(&data);
 }
 
 #[rcmd("hellotimer.timer")]

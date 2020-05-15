@@ -56,7 +56,15 @@ name = "helloacl"
 crate-type = ["cdylib"]
 
 [[example]]
-name = "moduletest"
+name = "testbase"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "testtype"
+crate-type = ["cdylib"]
+
+[[example]]
+name = "testexample"
 crate-type = ["cdylib"]
 
 [workspace]

@@ -8,7 +8,7 @@ use crate::scan_cursor::ScanCursor;
 use crate::string::{RStr, RString};
 use crate::user::User;
 use crate::value::Value;
-use crate::{handle_status, FromPtr, GetPtr, LogLevel, RResult, CallFlags, ServerEvent};
+use crate::{handle_status, FromPtr, GetPtr, LogLevel, RResult, CallFlag, ServerEvent};
 
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int, c_long, c_void};
@@ -77,14 +77,14 @@ impl Context {
             Ok(Value::Integer(v)) => unsafe {
                 raw::RedisModule_ReplyWithLongLong.unwrap()(self.ptr, v);
             },
-            Ok(Value::Float(v)) => unsafe {
+            Ok(Value::Double(v)) => unsafe {
                 raw::RedisModule_ReplyWithDouble.unwrap()(self.ptr, v);
             },
             Ok(Value::String(v)) => unsafe {
                 let msg = CString::new(v).unwrap();
                 raw::RedisModule_ReplyWithSimpleString.unwrap()(self.ptr, msg.as_ptr());
             },
-            Ok(Value::Buffer(v)) => unsafe {
+            Ok(Value::BulkString(v)) => unsafe {
                 raw::RedisModule_ReplyWithStringBuffer.unwrap()(
                     self.ptr,
                     v.as_ptr() as *const c_char,
@@ -114,13 +114,17 @@ impl Context {
     pub fn call<T: AsRef<str>>(
         &self,
         command: T,
-        flags: CallFlags,
-        args: &[&RStr],
+        flags: Option<CallFlag>,
+        args: &[T],
     ) -> Result<CallReply, Error> {
-        let args: Vec<*mut raw::RedisModuleString> = args.iter().map(|s| s.get_ptr()).collect();
+        let str_args: Vec<RString> = args.iter().map(|v| RString::from_str(v.as_ref())).collect();
+        let args: Vec<*mut raw::RedisModuleString> = str_args.iter().map(|v| v.get_rstr().get_ptr()).collect();
 
         let cmd = CString::new(command.as_ref()).unwrap();
-        let flags: CString = flags.into();
+        let flags: CString = match flags {
+            Some(v) => v.into(),
+            None => CString::new("v").unwrap(),
+        };
 
         let reply: *mut raw::RedisModuleCallReply = unsafe {
             raw::RedisModule_Call.unwrap()(
@@ -136,17 +140,6 @@ impl Context {
         } else {
             Ok(CallReply::from_ptr(reply))
         }
-    }
-    /// Same as `Context::call`, but args is str-like
-    pub fn call_str<T: AsRef<str>>(
-        &self,
-        command: T,
-        flags: CallFlags,
-        args: &[T],
-    ) -> Result<CallReply, Error> {
-        let str_args: Vec<RString> = args.iter().map(|v| RString::from_str(v.as_ref())).collect();
-        let str_args: Vec<&RStr> = str_args.iter().map(|v| v.to_rstr()).collect();
-        self.call(command, flags, &str_args)
     }
 
     /// Replicate the specified command and arguments to slaves and AOF, as effect
@@ -189,13 +182,17 @@ impl Context {
     pub fn replicate<T: AsRef<str>>(
         &self,
         command: T,
-        flags: CallFlags,
-        args: &[&RStr],
+        flags: Option<CallFlag>,
+        args: &[T],
     ) -> Result<(), Error> {
-        let args: Vec<*mut raw::RedisModuleString> = args.iter().map(|s| s.get_ptr()).collect();
+        let str_args: Vec<RString> = args.iter().map(|v| RString::from_str(v.as_ref())).collect();
+        let args: Vec<*mut raw::RedisModuleString> = str_args.iter().map(|v| v.get_rstr().get_ptr()).collect();
 
         let cmd = CString::new(command.as_ref()).unwrap();
-        let flags: CString = flags.into();
+        let flags: CString = match flags {
+            Some(v) => v.into(),
+            None => CString::new("v").unwrap(),
+        };
 
         let result = unsafe {
             let p_call = raw::RedisModule_Replicate.unwrap();
@@ -208,17 +205,6 @@ impl Context {
             )
         };
         handle_status(result, "fail to replicate")
-    }
-    /// Same as `Context::replicate`, but args is str-like
-    pub fn replicate_str<T: AsRef<str>>(
-        &self,
-        command: T,
-        flags: CallFlags,
-        args: &[T],
-    ) -> Result<(), Error> {
-        let str_args: Vec<RString> = args.iter().map(|v| RString::from_str(v.as_ref())).collect();
-        let str_args: Vec<&RStr> = str_args.iter().map(|v| v.to_rstr()).collect();
-        self.replicate(command, flags, &str_args)
     }
     /// This function will replicate the command exactly as it was invoked
     /// by the client. Note that this function will not wrap the command into
@@ -572,7 +558,7 @@ impl Context {
     /// The function will return 1 if there are more elements to scan and
     /// 0 otherwise, possibly setting errno if the call failed.
     ///
-    /// It is also possible to restart and existing cursor using RM_CursorRestart.
+    /// It is also possible to restart and existing cursor using `ScanCursor::restart`.
     ///
     /// IMPORTANT: This API is very similar to the Redis SCAN command from the
     /// point of view of the guarantees it provides. This means that the API

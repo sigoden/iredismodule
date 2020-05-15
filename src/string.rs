@@ -6,8 +6,6 @@ use crate::error::Error;
 use std::ffi::CString;
 use std::ops::Deref;
 use std::os::raw::c_char;
-
-use std::slice;
 use std::str;
 
 /// Repersent module owned RedisModuleString
@@ -37,7 +35,7 @@ impl RString {
         Self::from_ptr(ptr)
     }
     /// Get RStr repersentation
-    pub fn to_rstr(&self) -> &RStr {
+    pub fn get_rstr(&self) -> &RStr {
         &self.rstr
     }
     /// Append the specified buffer to the string 'str'.
@@ -66,6 +64,13 @@ impl Deref for RString {
     type Target = RStr;
     fn deref(&self) -> &Self::Target {
         &self.rstr
+    }
+}
+
+impl std::fmt::Display for RString {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let value = self.to_str().map_err(|_| std::fmt::Error)?;
+        write!(f, "{}", value)
     }
 }
 
@@ -138,6 +143,13 @@ impl RStr {
     }
     pub fn to_str(&self) -> Result<&str, Error> {
         let buffer = self.get_buffer();
-        Ok(str::from_utf8(&buffer)?)
+        Ok(std::str::from_utf8(&buffer)?)
+    }
+}
+
+impl std::fmt::Display for RStr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let value = self.to_str().map_err(|_| std::fmt::Error)?;
+        write!(f, "{}", value)
     }
 }

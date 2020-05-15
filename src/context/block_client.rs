@@ -78,7 +78,7 @@ impl Context {
     ///       callback in that case).
     ///
     pub fn block_client_on_keys<T>(
-        &mut self,
+        &self,
         reply_callbck: raw::RedisModuleCmdFunc,
         timeout_callback: raw::RedisModuleCmdFunc,
         free_privdata: raw::FreePrivateDataFunc,
@@ -124,7 +124,7 @@ impl Context {
     ///       even if client was killed, timed-out or disconnected. Failing to do so
     ///       will result in memory leaks.
     pub fn block_client(
-        &mut self,
+        &self,
         reply_callbck: raw::RedisModuleCmdFunc,
         timeout_callback: raw::RedisModuleCmdFunc,
         free_privdata: raw::FreePrivateDataFunc,

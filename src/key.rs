@@ -3,7 +3,6 @@ use std::ops::Deref;
 use std::os::raw::{c_int, c_void};
 use std::time::Duration;
 
-use crate::context::Context;
 use crate::error::Error;
 use crate::raw;
 use crate::rtype::RType;
@@ -52,7 +51,7 @@ impl ReadKey {
     /// the key, returns the module type low-level value stored at key, as
     /// it was set by the user via `set_value`.
     pub fn get_value<T>(&self, redis_type: &RType<T>) -> Result<Option<&mut T>, Error> {
-        let exist = self.verify_module_type(redis_type)?;
+        let exist = self.check_module_type(redis_type)?;
         if !exist {
             return Ok(None);
         }
@@ -61,10 +60,8 @@ impl ReadKey {
         Ok(Some(value))
     }
 
-    /// Check the key type.
-    ///
-    /// When `allow_null` is set, key have no value will pass the check.
-    pub fn verify_type(&self, expect_type: KeyType, allow_null: bool) -> Result<(), Error> {
+    /// Assert the key type.
+    pub fn assert_type(&self, expect_type: KeyType, allow_null: bool) -> Result<(), Error> {
         let key_type = self.get_type();
         if key_type != expect_type {
             if !allow_null || key_type != KeyType::Empty {
@@ -77,7 +74,7 @@ impl ReadKey {
     /// Check the type of key is `KeyType::Module` and the it's specifi module type is `redis_type`
     ///
     /// The bool indicate whether the value is empty
-    pub fn verify_module_type<T>(&self, redis_type: &RType<T>) -> Result<bool, Error> {
+    pub fn check_module_type<T>(&self, redis_type: &RType<T>) -> Result<bool, Error> {
         let key_type = self.get_type();
         if key_type == KeyType::Empty {
             return Ok(false);
@@ -111,13 +108,13 @@ impl ReadKey {
     }
 
     /// Get fields from an hash value.
-    pub fn hash_get(&self, flag: HashGetFlag, field: &RStr) -> Result<Option<RString>, Error> {
+    pub fn hash_get(&self, field: &RStr) -> Result<Option<RString>, Error> {
         let value: *mut raw::RedisModuleString = std::ptr::null_mut();
         unsafe {
             handle_status(
                 raw::RedisModule_HashGet.unwrap()(
                     self.ptr,
-                    flag.into(),
+                    0,
                     field.get_ptr(),
                     &value,
                     0,
@@ -129,6 +126,23 @@ impl ReadKey {
             return Ok(None);
         }
         Ok(Some(RString::from_ptr(value)))
+    }
+    /// Check fileds exists
+    pub fn hash_check(&self, field: &RStr) -> Result<bool, Error> {
+        let mut i = 0;
+        unsafe {
+            handle_status(
+                raw::RedisModule_HashGet.unwrap()(
+                    self.ptr,
+                    raw::REDISMODULE_HASH_EXISTS as i32,
+                    field.get_ptr(),
+                    &mut i,
+                    0,
+                ),
+                "fail to execute hash_check",
+            )?;
+        }
+        Ok(i != 0)
     }
     /// Get range of zset (key, score) pairs order by score
     pub fn zset_score_range(
@@ -192,7 +206,6 @@ impl ReadKey {
                     ),
                 }
             };
-            let ctx = self.get_context();
             let check_end = raw::RedisModule_ZsetRangeEndReached.unwrap();
             let get_elem = raw::RedisModule_ZsetRangeCurrentElement.unwrap();
             handle_status(
@@ -296,9 +309,6 @@ impl ReadKey {
             "fail to get lru",
         )?;
         Ok(Duration::from_millis(time_ms as u64))
-    }
-    fn get_context(&self) -> Context {
-        Context::from_ptr(self.ctx)
     }
 }
 
@@ -441,7 +451,7 @@ impl WriteKey {
     /// If value is none, it will clear the field.
     pub fn hash_set(
         &self,
-        flag: HashSetFlag,
+        flag: Option<HashSetFlag>,
         field: &RStr,
         value: Option<&RStr>,
     ) -> Result<(), Error> {
@@ -449,11 +459,15 @@ impl WriteKey {
             Some(v) => v.get_ptr(),
             None => 0 as *mut raw::RedisModuleString,
         };
+        let flag_: i32 = match flag {
+            Some(v) => v as i32,
+            None => raw::REDISMODULE_HASH_NONE as i32,
+        };
         unsafe {
             handle_status(
                 raw::RedisModule_HashSet.unwrap()(
                     self.ptr,
-                    flag.into(),
+                    flag_,
                     field.get_ptr(),
                     value_,
                     0,
@@ -469,16 +483,19 @@ impl WriteKey {
         &self,
         score: f64,
         ele: &RStr,
-        flag: ZaddInputFlag,
+        flag: Option<ZaddInputFlag>,
     ) -> Result<ZaddOuputFlag, Error> {
         let out_flag;
+        let mut flag_ = match flag {
+            Some(v) => v as i32,
+            None => 0,
+        };
         unsafe {
-            let mut flag = flag as c_int;
             handle_status(
-                raw::RedisModule_ZsetAdd.unwrap()(self.ptr, score, ele.get_ptr(), &mut flag),
+                raw::RedisModule_ZsetAdd.unwrap()(self.ptr, score, ele.get_ptr(), &mut flag_),
                 "fail to execute zset_add",
             )?;
-            out_flag = flag.into();
+            out_flag = flag_.into();
         }
         Ok(out_flag)
     }
@@ -490,23 +507,26 @@ impl WriteKey {
         &self,
         ele: &RStr,
         score: f64,
-        flag: ZaddInputFlag,
+        flag: Option<ZaddInputFlag>,
     ) -> Result<(ZaddOuputFlag, f64), Error> {
         let out_flag;
         let mut new_score = 0.0;
+        let mut flag_ = match flag {
+            Some(v) => v as i32,
+            None => 0,
+        };
         unsafe {
-            let mut flag = flag as c_int;
             handle_status(
                 raw::RedisModule_ZsetIncrby.unwrap()(
                     self.ptr,
                     score,
                     ele.get_ptr(),
-                    &mut flag,
+                    &mut flag_,
                     &mut new_score,
                 ),
                 "fail to execute zset_incrby",
             )?;
-            out_flag = flag.into();
+            out_flag = flag_.into();
         }
         Ok((out_flag, new_score))
     }
@@ -574,40 +594,12 @@ pub enum KeyType {
 /// Control the behaiver of WriteKey::hash_set
 #[derive(Debug, PartialEq)]
 pub enum HashSetFlag {
-    /// Set the value
-    None,
     /// The operation is performed only if the field was not already existing in the hash.
     NX,
     /// The operation is performed only if the field was already existing,
     /// so that a new value could be associated to an existing filed,
     /// but no new fields are created.
     XX,
-}
-
-impl Into<c_int> for HashSetFlag {
-    fn into(self) -> c_int {
-        match self {
-            HashSetFlag::None => raw::REDISMODULE_HASH_NONE as c_int,
-            HashSetFlag::NX => raw::REDISMODULE_HASH_NX as c_int,
-            HashSetFlag::XX => raw::REDISMODULE_HASH_XX as c_int,
-        }
-    }
-}
-
-/// Control the behavior of `ReadKey::hash_get`
-#[derive(Debug, PartialEq)]
-pub enum HashGetFlag {
-    None,
-    Exists,
-}
-
-impl Into<c_int> for HashGetFlag {
-    fn into(self) -> c_int {
-        match self {
-            HashGetFlag::None => raw::REDISMODULE_HASH_NONE as c_int,
-            HashGetFlag::Exists => raw::REDISMODULE_HASH_EXISTS as c_int,
-        }
-    }
 }
 
 /// Control the order of zset_range
@@ -620,8 +612,6 @@ pub enum ZsetRangeDirection {
 /// Control the behavier of zadd
 #[derive(Debug, PartialEq)]
 pub enum ZaddInputFlag {
-    /// The default mode
-    None = 0 as isize,
     /// Element must already exist. Do nothing otherwise.
     XX = raw::REDISMODULE_ZADD_XX as isize,
     /// Element must not exist. Do nothing otherwise.

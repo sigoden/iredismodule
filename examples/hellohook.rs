@@ -37,7 +37,7 @@ extern "C" fn flushdb_callback_c(
     if subevent == raw::REDISMODULE_SUBEVENT_FLUSHDB_START as u64 {
         if ci.dbnum != -1 {
             let reply = context
-                .call_str::<String>("DBSIZE", CallFlags::None, &vec![])
+                .call("DBSIZE", None, &vec![])
                 .unwrap();
             let num_keys = reply.get_integer();
             println!(
