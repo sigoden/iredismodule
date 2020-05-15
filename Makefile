@@ -13,4 +13,6 @@ examples: examples/*.rs
 publish:
 	cargo fix && cargo fmt
 	cargo publish
+publish-macros:
+	cargo fix && cargo fmt
 	cd macros && cargo publish
