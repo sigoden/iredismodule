@@ -3,6 +3,7 @@ use iredismodule::raw;
 use iredismodule::ServerEvent;
 use iredismodule_macros::rwrap;
 
+/// Client state change callback.
 extern "C" fn client_change_callback_c(
     _ctx: *mut raw::RedisModuleCtx,
     _eid: raw::RedisModuleEvent,

@@ -12,12 +12,11 @@ use crate::{handle_status, CallFlag, FromPtr, GetPtr, LogLevel, RResult, ServerE
 
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int, c_long, c_void};
+use std::sync::Mutex;
 
 mod block_client;
 mod cluster;
-mod mutex;
 mod timer;
-pub use mutex::MutexContext;
 
 /// Wrap raw pointer `raw::RedisModuleCtx`
 #[repr(C)]
@@ -911,5 +910,40 @@ impl Context {
             },
             "fail to notify keyspace event",
         )
+    }
+}
+
+/// A implemention of thread safe context
+pub struct ThreadSafeContext {
+    inner: Mutex<Context>,
+    ptr: *mut raw::RedisModuleCtx,
+}
+
+impl ThreadSafeContext {
+    pub fn get_ctx(&self) -> &Mutex<Context> {
+        &self.inner
+    }
+    pub fn reply(&self, r: RResult) {
+        Context::from_ptr(self.ptr).reply(r)
+    }
+}
+
+impl FromPtr for ThreadSafeContext {
+    type PtrType = raw::RedisModuleCtx;
+    fn from_ptr(ptr: *mut Self::PtrType) -> Self {
+        ThreadSafeContext {
+            inner: Mutex::new(Context::from_ptr(ptr)),
+            ptr,
+        }
+    }
+}
+
+impl Drop for ThreadSafeContext {
+    fn drop(&mut self) {
+        unsafe {
+            raw::RedisModule_FreeThreadSafeContext.unwrap()(
+                self.get_ctx().lock().unwrap().get_ptr(),
+            )
+        };
     }
 }

@@ -94,16 +94,17 @@ fn helloblock_rediscommand(ctx: &mut Context, args: Vec<RStr>) -> RResult {
 /// would be trivial just using any data structure implementing a dictionary
 /// in order to filter the duplicated items.
 fn hellokeys_thread_main(bc: BlockClient) {
-    let mut ctx = bc.get_threadsafe_context();
+    let context = bc.get_threadsafe_context();
     let mut cursor = 0;
     let mut reply_data: Vec<Value> = vec![];
     loop {
-        ctx.lock();
-        let reply = ctx.call("SCAN", None, &[&cursor.to_string()]).unwrap();
+        let reply = {
+            let ctx = context.get_ctx().lock().unwrap();
+            ctx.call("SCAN", None, &[&cursor.to_string()]).unwrap()
+        };
         let cr_cursor = reply.get_array_element(0).unwrap();
         let cr_keys = reply.get_array_element(1).unwrap();
         cursor = cr_cursor.get_string().unwrap().parse::<i32>().unwrap();
-        ctx.unlock();
         let items = cr_keys.get_length();
         for i in 0..items {
             reply_data.push(RResult::from(cr_keys.get_array_element(i).unwrap().into()).unwrap())
@@ -112,7 +113,7 @@ fn hellokeys_thread_main(bc: BlockClient) {
             break;
         }
     }
-    ctx.reply(Ok(Value::Array(reply_data)));
+    context.reply(Ok(Value::Array(reply_data)));
     bc.unblock::<i32>(None).unwrap();
 }
 

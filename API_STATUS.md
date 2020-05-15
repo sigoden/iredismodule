@@ -197,8 +197,8 @@
 | RedisModule_AbortBlock | :white_check_mark:  :rocket: |
 | RedisModule_GetThreadSafeContext | :white_check_mark:  :rocket: |
 | RedisModule_FreeThreadSafeContext | :white_check_mark:  :rocket: |
-| RedisModule_ThreadSafeContextLock | :white_check_mark:  :rocket: |
-| RedisModule_ThreadSafeContextUnlock | :white_check_mark:  :rocket: |
+| RedisModule_ThreadSafeContextLock | :arrow_down: |
+| RedisModule_ThreadSafeContextUnlock | :arrow_down: |
 | RedisModule_SubscribeToKeyspaceEvents | :white_check_mark:  :rocket: |
 | RedisModule_NotifyKeyspaceEvent | :white_check_mark:  :rocket: |
 | RedisModule_GetNotifyKeyspaceEvents | :white_check_mark:  :rocket: |

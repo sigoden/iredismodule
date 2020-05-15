@@ -1,6 +1,6 @@
 //! Block client implentation
 
-use crate::context::MutexContext;
+use crate::context::ThreadSafeContext;
 use crate::error::Error;
 use crate::raw;
 use crate::{handle_status, FromPtr, GetPtr};
@@ -97,9 +97,9 @@ impl BlockClient {
 
     /// Return a context which can be used inside threads to make Redis context
     /// calls with certain modules APIs.
-    pub fn get_threadsafe_context(&self) -> MutexContext {
+    pub fn get_threadsafe_context(&self) -> ThreadSafeContext {
         let ctx: *mut raw::RedisModuleCtx =
             unsafe { raw::RedisModule_GetThreadSafeContext.unwrap()(self.ptr) };
-        MutexContext::from_ptr(ctx)
+        ThreadSafeContext::from_ptr(ctx)
     }
 }
