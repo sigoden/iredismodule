@@ -39,9 +39,9 @@ fn test_example_helloworld(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
     check!(reply.get_type() == ReplyType::Integer);
     ctx.call("set", None, &["test:helloworld:key3", "abc"])?;
     let reply = ctx.call("hello.toggle.case", None, &["test:helloworld:key3"])?;
-    check!(reply.get_string().as_str() == "OK");
+    check!(reply.get_type() == ReplyType::String);
     let reply = ctx.call("hello.more.expire", None, &["test:helloworld:key3", "10000"])?;
-    check!(reply.get_string().as_str() == "OK");
+    check!(reply.get_type() == ReplyType::String);
     ctx.call("zadd", None, &[
         "test:helloworld:key4", "1", "a", "2", "b", "3", "c", "4", "d"
     ])?;
@@ -69,8 +69,7 @@ fn test_example_hellotype(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
     check!(reply.get_type() == ReplyType::Array);
     let reply = ctx.call("hellotype.len", None, &["test:hellotype:key1"])?;
     check!(reply.get_type() == ReplyType::Integer);
-    let reply = ctx.call("hellotype.brange", None, &["test:hellotype:key1", ""])?;
-    check!(reply.get_type() == ReplyType::Integer);
+    ctx.call("hellotype.brange", None, &["test:hellotype:key1", "1", "2", "5"])?;
     Ok("OK".into())
 }
 
@@ -89,8 +88,32 @@ fn test_example_helloblock(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
     Ok("OK".into())
 }
 
-#[rcmd("test.example")]
-fn test_example(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
+#[rcmd("test.testbase")]
+fn test_testbase(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
+    let reply = ctx.call("test.misc", None, &[])?;
+    check!(reply.get_type() == ReplyType::String);
+    let reply = ctx.call("test.key", None, &[])?;
+    check!(reply.get_type() == ReplyType::String);
+    let reply = ctx.call("test.call_reply", None, &[])?;
+    check!(reply.get_type() == ReplyType::String);
+    let reply = ctx.call("test.value", None, &[])?;
+    check!(reply.get_type() == ReplyType::String);
+    Ok("OK".into())
+}
+
+#[rcmd("test.testtype")]
+fn test_testtype(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
+    let reply = ctx.call("test.type", None, &[])?;
+    check!(reply.get_type() == ReplyType::String);
+    Ok("OK".into())
+}
+
+#[rcmd("test.all")]
+fn test_all(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
+    let reply = ctx.call("test.testbase", None, &[])?;
+    check!(reply.get_type() == ReplyType::String);
+    let reply = ctx.call("test.testtype", None, &[])?;
+    check!(reply.get_type() == ReplyType::String);
     let reply = ctx.call("test.example_simple", None, &[])?;
     check!(reply.get_type() == ReplyType::String);
     let reply = ctx.call("test.example_helloworld", None, &[])?;
@@ -105,7 +128,7 @@ fn test_example(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
 }
 
 define_module! {
-    name: "testexample",
+    name: "testall",
     version: 1,
     data_types: [],
     init_funcs: [],
@@ -115,7 +138,9 @@ define_module! {
         test_example_hellotype_cmd,
         test_example_hellotimer_cmd,
         test_example_helloblock_cmd,
-        test_example_cmd,
+        test_testbase_cmd,
+        test_testtype_cmd,
+        test_all_cmd, 
     ]
 }
 

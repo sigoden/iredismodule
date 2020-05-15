@@ -106,9 +106,7 @@ fn hellokeys_thread_main(bc: BlockClient) {
             .unwrap();
         let cr_cursor = reply.get_array_element(0).unwrap();
         let cr_keys = reply.get_array_element(1).unwrap();
-        cursor = cr_cursor.get_string().parse::<i32>().unwrap();
-        println!("{:?}", cr_cursor.get_proto());
-        ctx.notice(format!("cursor={:?}", cr_cursor.get_proto()));
+        cursor = cr_cursor.get_string().unwrap().parse::<i32>().unwrap();
         ctx.unlock();
         let items = cr_keys.get_length();
         for i in 0..items {

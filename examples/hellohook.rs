@@ -39,7 +39,7 @@ extern "C" fn flushdb_callback_c(
             let reply = context
                 .call("DBSIZE", None, &vec![])
                 .unwrap();
-            let num_keys = reply.get_integer();
+            let num_keys = reply.get_integer().unwrap();
             println!(
                 "FLUSHDB event of database {} started ({} keys in DB)\n",
                 ci.dbnum, num_keys

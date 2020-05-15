@@ -39,39 +39,39 @@ impl CallReply {
         }
     }
     /// Get the string value from a string type reply
-    pub fn get_string(&self) -> String {
+    pub fn get_string(&self) -> Result<String, Error> {
         if self.get_type() != ReplyType::String {
-            panic!("Reply type is not string")
+            return Err(Error::new("Reply type is not string"));
         }
         let buf = self.get_proto();
         if buf[0] == 36 {
-            String::from_utf8(proto_to_buff_string(buf)).unwrap()
+           return Ok(String::from_utf8(proto_to_buff_string(buf)).unwrap())
         } else {
-            proto_to_string(buf)
+            return Ok(proto_to_string(buf));
         }
     }
     /// Return the bulk string buffer
-    pub fn get_bulk_string(&self) -> Vec<u8> {
+    pub fn get_bulk_string(&self) -> Result<Vec<u8>, Error> {
         if self.get_type() != ReplyType::String {
-            panic!("Reply type is not bulk string")
+            return Err(Error::new("Reply type is not bulk string"));
         }
-        proto_to_buff_string(self.get_proto())
+        Ok(proto_to_buff_string(self.get_proto()))
     }
     /// Return the double value
-    pub fn get_double(&self) -> f64 {
+    pub fn get_double(&self) -> Result<f64, Error> {
         if self.get_type() != ReplyType::String {
-            panic!("Reply type is not bulk string")
+            return Err(Error::new("Reply type is not double"));
         }
         let value = proto_to_buff_string(self.get_proto());
-        let value_str = std::str::from_utf8(&value).unwrap();
-        value_str.parse::<f64>().unwrap()
+        let value_str = std::str::from_utf8(&value)?;
+        Ok(value_str.parse::<f64>()?)
     }
     /// Get the integer value from a integer type reply
-    pub fn get_integer(&self) -> i64 {
+    pub fn get_integer(&self) -> Result<i64, Error> {
         if self.get_type() != ReplyType::Integer {
-            panic!("Reply type is not integer")
+            return Err(Error::new("Reply type is not integer"));
         }
-        unsafe { raw::RedisModule_CallReplyInteger.unwrap()(self.ptr) }
+        Ok(unsafe { raw::RedisModule_CallReplyInteger.unwrap()(self.ptr) })
     }
     /// Return the 'idx'-th nested call reply element of an array reply, or None
     /// if the reply type is wrong or the index is out of range
@@ -110,7 +110,7 @@ impl Into<RResult> for CallReply {
     fn into(self) -> RResult {
         let reply_type = self.get_type();
         match reply_type {
-            ReplyType::Error => Err(Error::new(&self.get_string())),
+            ReplyType::Error => Err(Error::new(&self.get_string().unwrap())),
             ReplyType::Unknown => Err(Error::new("Unkown reply type")),
             ReplyType::Array => {
                 let length = self.get_length();
@@ -121,7 +121,7 @@ impl Into<RResult> for CallReply {
                 }
                 Ok(Value::Array(vec))
             }
-            ReplyType::Integer => Ok(Value::Integer(self.get_integer() as i64)),
+            ReplyType::Integer => Ok(Value::Integer(self.get_integer().unwrap())),
             ReplyType::String => {
                 let buf = self.get_proto();
                 if buf[0] == 36 { // bulk string

@@ -7,6 +7,9 @@ examples: examples/*.rs
 	cargo build --example hellotype
 	cargo build --example helloworld
 	cargo build --example simple
+	cargo build --example testall
 	cargo build --example testbase
-	cargo build --example testexample
 	cargo build --example testtype
+publish:
+	cargo publish
+	cd macros && cargo publish

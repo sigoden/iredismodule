@@ -140,20 +140,20 @@ fn test_reply_error(_ctx: &mut Context, _args: Vec<RStr>) -> RResult {
 fn test_call_reply(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
     let call_reply_string = ctx.call("test.reply_string", None, &[])?;
     check!(call_reply_string.get_type() == ReplyType::String);
-    check!(call_reply_string.get_string() == "abc".to_string());
+    check!(call_reply_string.get_string().unwrap() == "abc".to_string());
     let call_reply_integer = ctx.call("test.reply_integer", None, &[])?;
     check!(call_reply_integer.get_type() == ReplyType::Integer);
-    check!(call_reply_integer.get_integer() == 123);
+    check!(call_reply_integer.get_integer().unwrap() == 123);
     let call_reply_double = ctx.call("test.reply_double", None, &[])?;
     check!(call_reply_double.get_type() == ReplyType::String);
-    check!(call_reply_double.get_double() == 1.23);
+    check!(call_reply_double.get_double().unwrap() == 1.23);
     let call_reply_bulk_string = ctx.call("test.reply_bulk_string", None, &[])?;
     check!(call_reply_bulk_string.get_type() == ReplyType::String);
-    check!(call_reply_bulk_string.get_bulk_string().iter().zip([1u8,2u8,3u8].iter()).all(|(x, y)| x == y));
+    check!(call_reply_bulk_string.get_bulk_string().unwrap().iter().zip([1u8,2u8,3u8].iter()).all(|(x, y)| x == y));
     let call_reply_array = ctx.call("test.reply_array", None, &[])?;
     check!(call_reply_array.get_length() == 10);
-    check!(call_reply_array.get_array_element(0).unwrap().get_integer() == 0);
-    check!(call_reply_array.get_array_element(9).unwrap().get_integer() == 9);
+    check!(call_reply_array.get_array_element(0).unwrap().get_integer().unwrap() == 0);
+    check!(call_reply_array.get_array_element(9).unwrap().get_integer().unwrap() == 9);
     check!(call_reply_array.get_type() == ReplyType::Array);
     let call_reply_null = ctx.call("test.reply_null", None, &[])?;
     check!(call_reply_null.get_type() == ReplyType::Null);
