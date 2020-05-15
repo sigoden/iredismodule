@@ -11,5 +11,6 @@ examples: examples/*.rs
 	cargo build --example testbase
 	cargo build --example testtype
 publish:
+	cargo fix && cargo fmt
 	cargo publish
 	cd macros && cargo publish

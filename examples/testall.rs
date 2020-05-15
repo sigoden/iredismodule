@@ -1,13 +1,19 @@
+use iredismodule::call_reply::ReplyType;
 use iredismodule::prelude::*;
 use iredismodule_macros::rcmd;
-use iredismodule::call_reply::ReplyType;
 
 macro_rules! check {
     ($cond:expr) => {
-        if $cond { } else { return Err(Error::new(format!("failed at line {}", line!()))) }
+        if $cond {
+        } else {
+            return Err(Error::new(format!("failed at line {}", line!())));
+        }
     };
     ($cond:expr, $desc:expr) => {
-        if $cond { } else { return Err(Error::new(format!("{} at line {}", $desc, line!()))) }
+        if $cond {
+        } else {
+            return Err(Error::new(format!("{} at line {}", $desc, line!())));
+        }
     };
 }
 
@@ -29,7 +35,11 @@ fn test_example_helloworld(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
     check!(reply.get_type() == ReplyType::Integer);
     let reply = ctx.call("hello.push.sum.len", None, &["test:helloword:key1"])?;
     check!(reply.get_type() == ReplyType::Integer);
-    let reply = ctx.call("hello.list.splice", None, &["test:helloword:key1", "test:helloword:key2", "2"])?;
+    let reply = ctx.call(
+        "hello.list.splice",
+        None,
+        &["test:helloword:key1", "test:helloword:key2", "2"],
+    )?;
     check!(reply.get_type() == ReplyType::Integer);
     let reply = ctx.call("hello.rand.array", None, &["5"])?;
     check!(reply.get_type() == ReplyType::Array);
@@ -40,23 +50,42 @@ fn test_example_helloworld(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
     ctx.call("set", None, &["test:helloworld:key3", "abc"])?;
     let reply = ctx.call("hello.toggle.case", None, &["test:helloworld:key3"])?;
     check!(reply.get_type() == ReplyType::String);
-    let reply = ctx.call("hello.more.expire", None, &["test:helloworld:key3", "10000"])?;
+    let reply = ctx.call(
+        "hello.more.expire",
+        None,
+        &["test:helloworld:key3", "10000"],
+    )?;
     check!(reply.get_type() == ReplyType::String);
-    ctx.call("zadd", None, &[
-        "test:helloworld:key4", "1", "a", "2", "b", "3", "c", "4", "d"
-    ])?;
+    ctx.call(
+        "zadd",
+        None,
+        &[
+            "test:helloworld:key4",
+            "1",
+            "a",
+            "2",
+            "b",
+            "3",
+            "c",
+            "4",
+            "d",
+        ],
+    )?;
     let reply = ctx.call("hello.zsumrange", None, &["test:helloworld:key4", "1", "4"])?;
     check!(reply.get_type() == ReplyType::Array);
     let reply = ctx.call("hello.lexrange", None, &["test:helloworld:key4", "-", "[c"])?;
     check!(reply.get_type() == ReplyType::Array);
     ctx.call("hset", None, &["test:helloworld:key5", "field1", "abc"])?;
-    let reply = ctx.call("hello.hcopy", None, &["test:helloworld:key5", "field1", "field2"])?;
+    let reply = ctx.call(
+        "hello.hcopy",
+        None,
+        &["test:helloworld:key5", "field1", "field2"],
+    )?;
     check!(reply.get_type() == ReplyType::Integer);
     let reply = ctx.call("hello.leftpad", None, &["123", "8", "0"])?;
     check!(reply.get_type() == ReplyType::String);
     Ok("OK".into())
 }
-
 
 #[rcmd("test.example_hellotype")]
 fn test_example_hellotype(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
@@ -69,7 +98,11 @@ fn test_example_hellotype(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
     check!(reply.get_type() == ReplyType::Array);
     let reply = ctx.call("hellotype.len", None, &["test:hellotype:key1"])?;
     check!(reply.get_type() == ReplyType::Integer);
-    ctx.call("hellotype.brange", None, &["test:hellotype:key1", "1", "2", "5"])?;
+    ctx.call(
+        "hellotype.brange",
+        None,
+        &["test:hellotype:key1", "1", "2", "5"],
+    )?;
     Ok("OK".into())
 }
 
@@ -140,7 +173,6 @@ define_module! {
         test_example_helloblock_cmd,
         test_testbase_cmd,
         test_testtype_cmd,
-        test_all_cmd, 
+        test_all_cmd,
     ]
 }
-

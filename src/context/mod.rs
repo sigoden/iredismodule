@@ -8,7 +8,7 @@ use crate::scan_cursor::ScanCursor;
 use crate::string::{RStr, RString};
 use crate::user::User;
 use crate::value::Value;
-use crate::{handle_status, FromPtr, GetPtr, LogLevel, RResult, CallFlag, ServerEvent};
+use crate::{handle_status, CallFlag, FromPtr, GetPtr, LogLevel, RResult, ServerEvent};
 
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int, c_long, c_void};
@@ -118,7 +118,8 @@ impl Context {
         args: &[T],
     ) -> Result<CallReply, Error> {
         let str_args: Vec<RString> = args.iter().map(|v| RString::from_str(v.as_ref())).collect();
-        let args: Vec<*mut raw::RedisModuleString> = str_args.iter().map(|v| v.get_rstr().get_ptr()).collect();
+        let args: Vec<*mut raw::RedisModuleString> =
+            str_args.iter().map(|v| v.get_rstr().get_ptr()).collect();
 
         let cmd = CString::new(command.as_ref()).unwrap();
         let flags: CString = match flags {
@@ -186,7 +187,8 @@ impl Context {
         args: &[T],
     ) -> Result<(), Error> {
         let str_args: Vec<RString> = args.iter().map(|v| RString::from_str(v.as_ref())).collect();
-        let args: Vec<*mut raw::RedisModuleString> = str_args.iter().map(|v| v.get_rstr().get_ptr()).collect();
+        let args: Vec<*mut raw::RedisModuleString> =
+            str_args.iter().map(|v| v.get_rstr().get_ptr()).collect();
 
         let cmd = CString::new(command.as_ref()).unwrap();
         let flags: CString = match flags {
@@ -499,7 +501,7 @@ impl Context {
     }
     /// Signals that the key is modified from user's perspective (i.e. invalidate WATCH
     /// and client side caching).
-        pub fn signal_modified_key(&self, key: &RStr) -> Result<(), Error> {
+    pub fn signal_modified_key(&self, key: &RStr) -> Result<(), Error> {
         handle_status(
             unsafe { raw::RedisModule_SignalModifiedKey.unwrap()(self.ptr, key.get_ptr()) },
             "fail to signal key modified",
@@ -891,7 +893,12 @@ impl Context {
     }
 
     /// Notify keyspace event to redis core to broadcast
-    pub fn notify_keyspace_event<T: AsRef<str>>(&self, type_: i32, event: T, key: &RStr) -> Result<(), Error> {
+    pub fn notify_keyspace_event<T: AsRef<str>>(
+        &self,
+        type_: i32,
+        event: T,
+        key: &RStr,
+    ) -> Result<(), Error> {
         let event = CString::new(event.as_ref()).unwrap();
         handle_status(
             unsafe {

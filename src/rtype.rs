@@ -59,7 +59,9 @@ pub trait TypeMethod {
     const AUX_SAVE_TRIGGERS: AuxSaveTriggerFlag = AuxSaveTriggerFlag::AuxBeforeRdb;
     /// A callback function pointer that loads data from RDB files
     #[allow(unused_variables)]
-    fn rdb_load(io: &mut IO, encver: u32) -> Option<Box<Self>> { unreachable!() }
+    fn rdb_load(io: &mut IO, encver: u32) -> Option<Box<Self>> {
+        unreachable!()
+    }
     /// A callback function pointer that saves data to RDB files.
     #[allow(unused_variables)]
     fn rdb_save(&self, io: &mut IO) {}
@@ -69,7 +71,9 @@ pub trait TypeMethod {
     /// A callback function pointer that report memory usage
     ///
     /// It should currently be omitted since it is not yet implemented inside the Redis modules core.
-    fn mem_usage(&self) -> usize { 0 }
+    fn mem_usage(&self) -> usize {
+        0
+    }
     /// A callback function pointer that is used for `DEBUG DIGEST`.
     ///
     /// It should currently be omitted since it is not yet implemented inside the Redis modules core.

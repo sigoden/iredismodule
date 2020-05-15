@@ -24,7 +24,6 @@ fn helloblock_timeout(_ctx: &mut Context, _: Vec<RStr>) -> RResult {
 #[rwrap("free")]
 fn helloblock_free(_: &mut Context, _: Box<i32>) {}
 
-
 /// An example blocked client disconnection callback.
 ///
 /// Note that in the case of the HELLO.BLOCK command, the blocked client is now
@@ -32,7 +31,7 @@ fn helloblock_free(_: &mut Context, _: Box<i32>) {}
 /// much we can do, however normally we could instead implement a way to
 /// signal the thread that the client disconnected, and sleep the specified
 /// amount of seconds with a while loop calling sleep(1), so that once we
-/// detect the client disconnection, we can terminate the thread ASAP. 
+/// detect the client disconnection, we can terminate the thread ASAP.
 extern "C" fn helloblock_disconnected(
     ctx: *mut raw::RedisModuleCtx,
     bc: *mut raw::RedisModuleBlockedClient,
@@ -42,21 +41,20 @@ extern "C" fn helloblock_disconnected(
 }
 
 /// The thread entry point that actually executes the blocking part
-/// of the command HELLO.BLOCK. 
+/// of the command HELLO.BLOCK.
 fn helloblock_thread_main(bc: BlockClient, delay: u64) {
     thread::sleep(Duration::from_secs(delay));
     let r: i32 = random();
 
     // Here you should cleanup your state / threads, and if possible
     // call unblock, or notify the thread that will
-    // call the function ASAP. 
+    // call the function ASAP.
     bc.unblock(Some(r)).unwrap();
 }
 
-
 /// HELLO.BLOCK <delay> <timeout> -- Block for <count> seconds, then reply with
 /// a random number. Timeout is the command timeout, so that you can test
-/// what happens when the delay is greater than the timeout. 
+/// what happens when the delay is greater than the timeout.
 #[rcmd("hello.block")]
 fn helloblock_rediscommand(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 3);
@@ -76,7 +74,7 @@ fn helloblock_rediscommand(ctx: &mut Context, args: Vec<RStr>) -> RResult {
         .unwrap();
     // Here we set a disconnection handler, however since this module will
     // block in sleep() in a thread, there is not much we can do in the
-    // callback, so this is just to show you the API. 
+    // callback, so this is just to show you the API.
     bc.set_disconnect_callback(helloblock_disconnected);
     if thread::Builder::new()
         .spawn(move || helloblock_thread_main(bc, delay))
@@ -101,9 +99,7 @@ fn hellokeys_thread_main(bc: BlockClient) {
     let mut reply_data: Vec<Value> = vec![];
     loop {
         ctx.lock();
-        let reply = ctx
-            .call("SCAN", None, &[&cursor.to_string()])
-            .unwrap();
+        let reply = ctx.call("SCAN", None, &[&cursor.to_string()]).unwrap();
         let cr_cursor = reply.get_array_element(0).unwrap();
         let cr_keys = reply.get_array_element(1).unwrap();
         cursor = cr_cursor.get_string().unwrap().parse::<i32>().unwrap();

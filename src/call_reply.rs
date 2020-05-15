@@ -45,7 +45,7 @@ impl CallReply {
         }
         let buf = self.get_proto();
         if buf[0] == 36 {
-           return Ok(String::from_utf8(proto_to_buff_string(buf)).unwrap())
+            return Ok(String::from_utf8(proto_to_buff_string(buf)).unwrap());
         } else {
             return Ok(proto_to_string(buf));
         }
@@ -85,7 +85,7 @@ impl CallReply {
     }
     // Return raw proto buffer
     pub fn get_proto(&self) -> Vec<u8> {
-        unsafe { 
+        unsafe {
             let mut len = 0;
             let ptr = raw::RedisModule_CallReplyProto.unwrap()(self.ptr, &mut len);
             let data: &[u8] = std::slice::from_raw_parts(ptr as *const u8, len);
@@ -124,27 +124,34 @@ impl Into<RResult> for CallReply {
             ReplyType::Integer => Ok(Value::Integer(self.get_integer().unwrap())),
             ReplyType::String => {
                 let buf = self.get_proto();
-                if buf[0] == 36 { // bulk string
+                if buf[0] == 36 {
+                    // bulk string
                     Ok(Value::BulkString(proto_to_buff_string(buf)))
-                } else if buf[0] == 43 { // simple string
+                } else if buf[0] == 43 {
+                    // simple string
                     Ok(Value::String(proto_to_string(buf)))
                 } else {
                     Err(Error::new("Invalid string reply"))
                 }
-            },
+            }
             ReplyType::Null => Ok(Value::Null),
         }
     }
 }
 
 fn proto_to_buff_string(buf: Vec<u8>) -> Vec<u8> {
-    if buf[1] == 45 { // empty bulk string
+    if buf[1] == 45 {
+        // empty bulk string
         return vec![];
     }
-    let len_buf = buf.iter().skip(1).take_while(|v| **v != 13).cloned().collect::<Vec<u8>>();
+    let len_buf = buf
+        .iter()
+        .skip(1)
+        .take_while(|v| **v != 13)
+        .cloned()
+        .collect::<Vec<u8>>();
     let len: usize = String::from_utf8(len_buf).unwrap().parse().unwrap();
-    buf
-        .into_iter()
+    buf.into_iter()
         .skip_while(|v| *v != 10)
         .skip(1)
         .take(len)

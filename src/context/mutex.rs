@@ -20,7 +20,7 @@ impl FromPtr for MutexContext {
     type PtrType = raw::RedisModuleCtx;
     fn from_ptr(ptr: *mut Self::PtrType) -> Self {
         MutexContext {
-            ctx: Context::from_ptr(ptr)
+            ctx: Context::from_ptr(ptr),
         }
     }
 }

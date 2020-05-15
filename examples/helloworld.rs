@@ -8,7 +8,7 @@ use std::time::Duration;
 /// It just returns the currently selected DB id, a functionality which is
 /// missing in Redis. The command uses two important API calls: one to
 /// fetch the currently selected DB, the other in order to send the client
-/// an integer reply as response. 
+/// an integer reply as response.
 #[rcmd("hello.simple")]
 fn hello_simple(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
     let db = ctx.get_select_db();
@@ -20,7 +20,7 @@ fn hello_simple(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
 /// pushing elements into non-existing keys, and so forth.
 ///
 /// You'll find this command to be roughly as fast as the actual RPUSH
-/// command. 
+/// command.
 #[rcmd("hello.push.native", "write deny-oom", 1, 1, 1)]
 fn hello_push_native(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 3);
@@ -34,20 +34,21 @@ fn hello_push_native(ctx: &mut Context, args: Vec<RStr>) -> RResult {
 /// a Redis command instead of working with the key in a low level way. This
 /// approach is useful when you need to call Redis commands that are not
 /// available as low level APIs, or when you don't need the maximum speed
-/// possible but instead prefer implementation simplicity. 
+/// possible but instead prefer implementation simplicity.
 #[rcmd("hello.push.call", "write deny-oom", 1, 1, 1)]
 fn hello_push_call(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 3);
     let call_args: Vec<&RStr> = args.iter().skip(1).collect();
-    let args = call_args.iter().map(|v| v.to_str().unwrap()).collect::<Vec<&str>>();
-    ctx.call("RPUSH", None, &args)
-        .unwrap()
-        .into()
+    let args = call_args
+        .iter()
+        .map(|v| v.to_str().unwrap())
+        .collect::<Vec<&str>>();
+    ctx.call("RPUSH", None, &args).unwrap().into()
 }
 
 /// HELLO.PUSH.CALL2
 /// This is exaxctly as HELLO.PUSH.CALL, but shows how we can reply to the
-/// client using directly a reply object that Call() returned. 
+/// client using directly a reply object that Call() returned.
 #[rcmd("hello.push.call2", "write deny-oom", 1, 1, 1)]
 fn hello_push_call2(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     hello_push_call(ctx, args)
@@ -55,7 +56,7 @@ fn hello_push_call2(ctx: &mut Context, args: Vec<RStr>) -> RResult {
 
 /// HELLO.LIST.SUM.LEN returns the total length of all the items inside
 /// a Redis list, by using the high level Call() API.
-/// This command is an example of the array reply access. 
+/// This command is an example of the array reply access.
 #[rcmd("hello.push.sum.len", "readonly", 1, 1, 1)]
 fn hello_list_sum_len(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 2);
@@ -72,7 +73,7 @@ fn hello_list_sum_len(ctx: &mut Context, args: Vec<RStr>) -> RResult {
 /// HELLO.LIST.SPLICE srclist dstlist count
 /// Moves 'count' elements from the tail of 'srclist' to the head of
 /// 'dstlist'. If less than count elements are available, it moves as much
-/// elements as possible. 
+/// elements as possible.
 #[rcmd("hello.list.splice", "write deny-oom", 1, 2, 1)]
 fn hello_list_splice(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 4);
@@ -96,10 +97,9 @@ fn hello_list_splice(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     Ok(len.into())
 }
 
-
 /// HELLO.RAND.ARRAY <count>
 /// Shows how to generate arrays as commands replies.
-/// It just outputs <count> random numbers. 
+/// It just outputs <count> random numbers.
 #[rcmd("hello.rand.array")]
 fn hello_rand_array(_ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 2);
@@ -113,7 +113,7 @@ fn hello_rand_array(_ctx: &mut Context, args: Vec<RStr>) -> RResult {
 /// This is a simple command to test replication. Because of AofAndReplicas flag,
 /// the two INCRs get replicated.
 /// Also note how the ECHO is replicated in an unexpected position (check
-/// comments the function implementation). 
+/// comments the function implementation).
 #[rcmd("hello.repl1")]
 fn hello_repl1(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
     ctx.replicate("ECHO", None, &["foo"])?;
@@ -131,7 +131,7 @@ fn hello_repl1(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
 /// a numerical value) by 1, returning the sum of all the elements
 /// as reply.
 ///
-/// Usage: HELLO.REPL2 <list-key> 
+/// Usage: HELLO.REPL2 <list-key>
 #[rcmd("hello.repl2", "write", 1, 1, 1)]
 fn hello_repl2(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 2);
@@ -155,7 +155,7 @@ fn hello_repl2(ctx: &mut Context, args: Vec<RStr>) -> RResult {
 /// it toggles the case of each character from lower to upper case or the
 /// other way around.
 ///
-/// HELLO.TOGGLE.CASE key 
+/// HELLO.TOGGLE.CASE key
 #[rcmd("hello.toggle.case", "write", 1, 1, 1)]
 fn hello_toggle_case(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 2);
@@ -183,7 +183,7 @@ fn hello_toggle_case(ctx: &mut Context, args: Vec<RStr>) -> RResult {
 /// HELLO.MORE.EXPIRE key milliseconds.
 ///
 /// If they key has already an associated TTL, extends it by "milliseconds"
-/// milliseconds. Otherwise no operation is performed. 
+/// milliseconds. Otherwise no operation is performed.
 #[rcmd("hello.more.expire", "write", 1, 1, 1)]
 fn hello_more_expire(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     assert_len!(args, 3);

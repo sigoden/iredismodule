@@ -15,7 +15,7 @@ lazy_static! {
     static ref GLOBAL_USER: Mutex<Option<User>> = Mutex::new(None);
     static ref GLOBAL_ID: Mutex<u64> = Mutex::new(0);
 }
-/// HELLOACL.RESET 
+/// HELLOACL.RESET
 /// Synchronously delete and re-create a module user.
 #[rcmd("helloacl.reset")]
 fn helloacl_reset(_ctx: &mut Context, _args: Vec<RStr>) -> RResult {
@@ -26,7 +26,7 @@ fn helloacl_reset(_ctx: &mut Context, _args: Vec<RStr>) -> RResult {
     Ok("OK".into())
 }
 
-/// HELLOACL.REVOKE 
+/// HELLOACL.REVOKE
 /// Synchronously revoke access from a user.
 #[rcmd("helloacl.revoke")]
 fn helloacl_revoke(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
@@ -37,14 +37,14 @@ fn helloacl_revoke(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
     ctx.deauthenticate_and_close_client(*id);
     Ok("Ok".into())
 }
-/// Callback handler for user changes, use this to notify a module of 
+/// Callback handler for user changes, use this to notify a module of
 /// changes to users authenticated by the module
 extern "C" fn helloac_user_changed(_client_id: u64, _privdata: *mut c_void) {
     update_global_auth_client_id(0);
 }
 
-/// HELLOACL.AUTHGLOBAL 
-/// Synchronously assigns a module user to the current context. 
+/// HELLOACL.AUTHGLOBAL
+/// Synchronously assigns a module user to the current context.
 #[rcmd("helloacl.authglobal", "no-auth")]
 fn helloacl_authglobal(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
     let id = GLOBAL_ID.lock().unwrap();
@@ -60,7 +60,7 @@ fn helloacl_authglobal(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
 
     Ok("Ok".into())
 }
-/// Reply callback for auth command HELLOACL.AUTHASYNC 
+/// Reply callback for auth command HELLOACL.AUTHASYNC
 #[rwrap("call")]
 fn helloacl_reply(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
     let name = ctx.get_block_client_private_data::<String>();
@@ -68,7 +68,7 @@ fn helloacl_reply(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
     Ok("Ok".into())
 }
 
-/// Timeout callback for auth command HELLOACL.AUTHASYNC 
+/// Timeout callback for auth command HELLOACL.AUTHASYNC
 #[rwrap("call")]
 fn helloacl_timeout(_ctx: &mut Context, _args: Vec<RStr>) -> RResult {
     Ok("Request timeout".into())
@@ -82,7 +82,7 @@ fn helloacl_thread_main(bc: BlockClient, user: String) {
     bc.unblock(Some(user)).unwrap()
 }
 
-/// HELLOACL.AUTHASYNC 
+/// HELLOACL.AUTHASYNC
 /// Asynchronously assigns an ACL user to the current context.
 #[rcmd("helloacl.authasync", "no-auth")]
 fn helloacl_authasync(ctx: &mut Context, args: Vec<RStr>) -> RResult {

@@ -102,7 +102,9 @@ impl ReadKey {
             if data.is_null() {
                 return Err(Error::new("fail to get string value"));
             }
-            { std::str::from_utf8(std::slice::from_raw_parts(data, len as usize))? }
+            {
+                std::str::from_utf8(std::slice::from_raw_parts(data, len as usize))?
+            }
         };
         Ok(RString::from_str(value))
     }
@@ -112,13 +114,7 @@ impl ReadKey {
         let value: *mut raw::RedisModuleString = std::ptr::null_mut();
         unsafe {
             handle_status(
-                raw::RedisModule_HashGet.unwrap()(
-                    self.ptr,
-                    0,
-                    field.get_ptr(),
-                    &value,
-                    0,
-                ),
+                raw::RedisModule_HashGet.unwrap()(self.ptr, 0, field.get_ptr(), &value, 0),
                 "fail to execute hash_get",
             )?;
         }
@@ -465,13 +461,7 @@ impl WriteKey {
         };
         unsafe {
             handle_status(
-                raw::RedisModule_HashSet.unwrap()(
-                    self.ptr,
-                    flag_,
-                    field.get_ptr(),
-                    value_,
-                    0,
-                ),
+                raw::RedisModule_HashSet.unwrap()(self.ptr, flag_, field.get_ptr(), value_, 0),
                 "fail to execute hash_set",
             )?;
         }

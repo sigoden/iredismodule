@@ -1,7 +1,7 @@
 use iredismodule::prelude::*;
 use iredismodule_macros::rcmd;
 
-#[rcmd("simple.hello", "readonly", 0, 0, 0)] 
+#[rcmd("simple.hello", "readonly", 0, 0, 0)]
 fn simple_hello(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
     let db = ctx.get_select_db();
     Ok(db.into())

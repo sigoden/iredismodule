@@ -36,9 +36,7 @@ extern "C" fn flushdb_callback_c(
         unsafe { &mut *(data as *mut raw::RedisModuleFlushInfo) };
     if subevent == raw::REDISMODULE_SUBEVENT_FLUSHDB_START as u64 {
         if ci.dbnum != -1 {
-            let reply = context
-                .call("DBSIZE", None, &vec![])
-                .unwrap();
+            let reply = context.call("DBSIZE", None, &vec![]).unwrap();
             let num_keys = reply.get_integer().unwrap();
             println!(
                 "FLUSHDB event of database {} started ({} keys in DB)\n",

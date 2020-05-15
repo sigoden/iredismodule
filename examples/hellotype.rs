@@ -58,7 +58,7 @@ impl<'a> Iterator for HelloTypeNodeIter<'a> {
     }
 }
 
-/// ========================== "hellotype" type methods ======================= 
+/// ========================== "hellotype" type methods =======================
 #[rtypedef("hellotype", 0)]
 impl TypeMethod for HelloTypeNode {
     fn rdb_load(io: &mut IO, encver: u32) -> Option<Box<Self>> {
@@ -79,7 +79,7 @@ impl TypeMethod for HelloTypeNode {
         eles.iter().for_each(|v| io.save_signed(**v));
     }
     fn free(_: Box<Self>) {}
-    fn aof_rewrite<T: AsRef<str>>(&self, io: &mut IO, key: T)  {
+    fn aof_rewrite<T: AsRef<str>>(&self, io: &mut IO, key: T) {
         let eles: Vec<&i64> = self.iter().collect();
         let keyname = key.as_ref();
         eles.iter()
@@ -97,7 +97,7 @@ impl TypeMethod for HelloTypeNode {
     }
 }
 
-// ========================= "hellotype" type commands ======================= 
+// ========================= "hellotype" type commands =======================
 
 /// HELLOTYPE.INSERT key value
 #[rcmd("hellotype.insert", "write deny-oom", 1, 1, 1)]
@@ -162,7 +162,7 @@ fn hellotype_len(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     Ok(len.into())
 }
 
-// ====================== Example of a blocking command ==================== 
+// ====================== Example of a blocking command ====================
 
 /// HELLOTYPE.BRANGE key offset limit timeout -- This is a blocking verison of
 /// the RANGE operation, in order to show how to use the API

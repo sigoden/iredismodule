@@ -1,19 +1,25 @@
-use iredismodule::prelude::*;
-use iredismodule_macros::{rcmd, rtypedef};
+use iredismodule::io::{Digest, IO};
 use iredismodule::key::KeyType;
+use iredismodule::prelude::*;
 use iredismodule::rtype::TypeMethod;
-use iredismodule::io::{IO, Digest};
+use iredismodule_macros::{rcmd, rtypedef};
 
 macro_rules! check {
     ($cond:expr) => {
-        if $cond { } else { return Err(Error::new(format!("failed at line {}", line!()))) }
+        if $cond {
+        } else {
+            return Err(Error::new(format!("failed at line {}", line!())));
+        }
     };
     ($cond:expr, $desc:expr) => {
-        if $cond { } else { return Err(Error::new(format!("{} at line {}", $desc, line!()))) }
+        if $cond {
+        } else {
+            return Err(Error::new(format!("{} at line {}", $desc, line!())));
+        }
     };
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct MyType {
     pub v1: u64,
     pub v2: i64,
@@ -35,9 +41,7 @@ impl TypeMethod for MyType {
         let v4 = io.load_double();
         let v5 = io.load_float();
 
-        Some(Box::new(MyType {
-            v1, v2, v3, v4, v5
-        }))
+        Some(Box::new(MyType { v1, v2, v3, v4, v5 }))
     }
     fn rdb_save(&self, io: &mut IO) {
         println!("mytype123 save rdb");
@@ -113,14 +117,11 @@ fn test_get_type(ctx: &mut Context, args: Vec<RStr>) -> RResult {
 
 #[rcmd("test.type", "readonly")]
 fn test_type(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
-    ctx.call("test.set_type", None, &[
-        "test:type",
-        "123",
-        "-321",
-        "abc",
-        "1.23",
-        "3.21",
-    ])?;
+    ctx.call(
+        "test.set_type",
+        None,
+        &["test:type", "123", "-321", "abc", "1.23", "3.21"],
+    )?;
     let reply = ctx.call("test.get_type", None, &["test:type"])?;
     check!(reply.get_array_element(0).unwrap().get_integer().unwrap() as u64 == 123);
     check!(reply.get_array_element(1).unwrap().get_integer().unwrap() == -321);
@@ -144,4 +145,3 @@ define_module! {
         test_type_cmd,
     ]
 }
-

@@ -1,17 +1,22 @@
-use iredismodule::prelude::*;
-use iredismodule_macros::rcmd;
+use iredismodule::call_reply::ReplyType;
 use iredismodule::key::KeyType;
 use iredismodule::key::{ListPosition, ZsetRangeDirection};
-use iredismodule::call_reply::ReplyType;
+use iredismodule::prelude::*;
+use iredismodule_macros::rcmd;
 use std::time::Duration;
-
 
 macro_rules! check {
     ($cond:expr) => {
-        if $cond { } else { return Err(Error::new(format!("failed at line {}", line!()))) }
+        if $cond {
+        } else {
+            return Err(Error::new(format!("failed at line {}", line!())));
+        }
     };
     ($cond:expr, $desc:expr) => {
-        if $cond { } else { return Err(Error::new(format!("{} at line {}", $desc, line!()))) }
+        if $cond {
+        } else {
+            return Err(Error::new(format!("{} at line {}", $desc, line!())));
+        }
     };
 }
 
@@ -79,7 +84,6 @@ fn test_key(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
     check!(value_hash.unwrap().to_str().unwrap() == "value1");
     let exist_hash = key_hash.hash_check(&rstr!("field1"))?;
     check!(exist_hash == true);
-
 
     check!(key_string.get_keyname().to_str().unwrap() == "test:key_string");
 
@@ -149,11 +153,30 @@ fn test_call_reply(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
     check!(call_reply_double.get_double().unwrap() == 1.23);
     let call_reply_bulk_string = ctx.call("test.reply_bulk_string", None, &[])?;
     check!(call_reply_bulk_string.get_type() == ReplyType::String);
-    check!(call_reply_bulk_string.get_bulk_string().unwrap().iter().zip([1u8,2u8,3u8].iter()).all(|(x, y)| x == y));
+    check!(call_reply_bulk_string
+        .get_bulk_string()
+        .unwrap()
+        .iter()
+        .zip([1u8, 2u8, 3u8].iter())
+        .all(|(x, y)| x == y));
     let call_reply_array = ctx.call("test.reply_array", None, &[])?;
     check!(call_reply_array.get_length() == 10);
-    check!(call_reply_array.get_array_element(0).unwrap().get_integer().unwrap() == 0);
-    check!(call_reply_array.get_array_element(9).unwrap().get_integer().unwrap() == 9);
+    check!(
+        call_reply_array
+            .get_array_element(0)
+            .unwrap()
+            .get_integer()
+            .unwrap()
+            == 0
+    );
+    check!(
+        call_reply_array
+            .get_array_element(9)
+            .unwrap()
+            .get_integer()
+            .unwrap()
+            == 9
+    );
     check!(call_reply_array.get_type() == ReplyType::Array);
     let call_reply_null = ctx.call("test.reply_null", None, &[])?;
     check!(call_reply_null.get_type() == ReplyType::Null);
@@ -162,7 +185,6 @@ fn test_call_reply(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
     Ok("OK".into())
 }
 
-
 #[rcmd("test.reply_value")]
 fn test_reply_value(_ctx: &mut Context, _args: Vec<RStr>) -> RResult {
     let values: Vec<Value> = vec![
@@ -170,7 +192,11 @@ fn test_reply_value(_ctx: &mut Context, _args: Vec<RStr>) -> RResult {
         vec![1u8, 2u8, 3u8].into(),
         123i64.into(),
         1.23.into(),
-        Value::from(vec![Value::from(1i64),Value::from(2i64), Value::from(3i64)]),
+        Value::from(vec![
+            Value::from(1i64),
+            Value::from(2i64),
+            Value::from(3i64),
+        ]),
         ().into(),
     ];
     Ok(values.into())
@@ -180,19 +206,36 @@ fn test_reply_value(_ctx: &mut Context, _args: Vec<RStr>) -> RResult {
 fn test_value(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
     let call_reply = ctx.call("test.reply_value", None, &[])?;
     let value0: RResult = call_reply.get_array_element(0).unwrap().into();
-    if let Value::String(_) = value0.unwrap() {} else { check!(false) };
+    if let Value::String(_) = value0.unwrap() {
+    } else {
+        check!(false)
+    };
     let value1: RResult = call_reply.get_array_element(1).unwrap().into();
-    if let Value::BulkString(_) = value1.unwrap() {} else { check!(false) };
+    if let Value::BulkString(_) = value1.unwrap() {
+    } else {
+        check!(false)
+    };
     let value2: RResult = call_reply.get_array_element(2).unwrap().into();
-    if let Value::Integer(_) = value2.unwrap() {} else { check!(false) };
+    if let Value::Integer(_) = value2.unwrap() {
+    } else {
+        check!(false)
+    };
     let value3: RResult = call_reply.get_array_element(3).unwrap().into();
-    if let Value::BulkString(_) = value3.unwrap() {} else { check!(false) };
+    if let Value::BulkString(_) = value3.unwrap() {
+    } else {
+        check!(false)
+    };
     let value4: RResult = call_reply.get_array_element(4).unwrap().into();
-    if let Value::Array(_) = value4.unwrap() {} else { check!(false) };
+    if let Value::Array(_) = value4.unwrap() {
+    } else {
+        check!(false)
+    };
     let value5: RResult = call_reply.get_array_element(5).unwrap().into();
-    if let Value::Null = value5.unwrap() {} else { check!(false) };
+    if let Value::Null = value5.unwrap() {
+    } else {
+        check!(false)
+    };
     Ok("OK".into())
-    
 }
 
 define_module! {

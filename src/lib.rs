@@ -4,15 +4,15 @@
 //! # Example
 //! ```rust,no_run
 //! use iredismodule_macros::rcmd;
-//! use iredismodule::prelude::*; 
-//! 
+//! use iredismodule::prelude::*;
+//!
 //! /// Define command
-//! #[rcmd("hello.simple", "readonly", 0, 0, 0)] 
+//! #[rcmd("hello.simple", "readonly", 0, 0, 0)]
 //! fn hello_simple(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
 //!     let db = ctx.get_select_db();
 //!     Ok(db.into())
 //! }
-//! 
+//!
 //! // Register module
 //! define_module! {
 //!     name: "simple",
@@ -49,7 +49,7 @@ static ALLOC: crate::alloc::RedisAlloc = crate::alloc::RedisAlloc;
 pub use common::{
     avoid_replica_traffic, get_client_info_by_id, get_notify_keyspace_events,
     get_used_memory_ratio, handle_status, is_module_busy, latency_add_sample, log, milliseconds,
-    parse_args, reset_dataset, FromPtr, GetPtr, LogLevel, CallFlag, ServerEvent,
+    parse_args, reset_dataset, CallFlag, FromPtr, GetPtr, LogLevel, ServerEvent,
 };
 
 /// Result of redis comamnd call

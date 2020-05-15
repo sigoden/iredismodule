@@ -66,26 +66,18 @@ impl IO {
     pub fn save_string(&mut self, value: &str) {
         let value_ = CString::new(value).unwrap();
         unsafe {
-             raw::RedisModule_SaveStringBuffer.unwrap()( 
-                 self.ptr, 
-                 value_.as_ptr(), 
-                 value.len()
-            )
-         }
+            raw::RedisModule_SaveStringBuffer.unwrap()(self.ptr, value_.as_ptr(), value.len())
+        }
     }
     /// In the context of the rdb_load method of a module data type, loads a string
     /// from the RDB file, that was previously saved with `IO::save_string`.
     pub fn load_string(&mut self) -> String {
         let data: &[u8] = unsafe {
             let mut len = 0;
-            let ptr = raw::RedisModule_LoadStringBuffer.unwrap()( 
-                 self.ptr, 
-                 &mut len,
-
-            );
+            let ptr = raw::RedisModule_LoadStringBuffer.unwrap()(self.ptr, &mut len);
             std::slice::from_raw_parts(ptr as *const u8, len)
-         };
-         String::from_utf8(data.to_vec()).unwrap()
+        };
+        String::from_utf8(data.to_vec()).unwrap()
     }
     /// In the context of the rdb_save method of a module type, saves a
     /// double into the RDB file.
