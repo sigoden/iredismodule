@@ -15,27 +15,27 @@
 | RedisModule_Free | :sparkle: |
 | RedisModule_Strdup | :arrow_down: |
 | RedisModule_GetApi | :arrow_down: |
-| RedisModule_CreateCommand | :sparkle: |
+| RedisModule_CreateCommand | :white_check_mark: |
 | RedisModule_SetModuleAttribs | :arrow_down: |
 | RedisModule_IsModuleNameBusy | :white_check_mark: |
-| RedisModule_WrongArity | :sparkle: |
-| RedisModule_ReplyWithLongLong | :sparkle: |
+| RedisModule_WrongArity | :white_check_mark: |
+| RedisModule_ReplyWithLongLong | :white_check_mark: |
 | RedisModule_GetSelectedDb | :white_check_mark: |
 | RedisModule_SelectDb | :white_check_mark: |
 | RedisModule_OpenKey | :white_check_mark: |
 | RedisModule_CloseKey | :sparkle: |
 | RedisModule_KeyType | :white_check_mark: |
-| RedisModule_ValueLength | :sparkle: |
+| RedisModule_ValueLength | :white_check_mark:  |
 | RedisModule_ListPush | :white_check_mark: |
 | RedisModule_ListPop | :white_check_mark: |
 | RedisModule_Call | :white_check_mark: |
 | RedisModule_CallReplyProto | :white_check_mark: |
 | RedisModule_FreeCallReply | :sparkle: |
-| RedisModule_CallReplyType | :sparkle: |
-| RedisModule_CallReplyInteger | :sparkle: |
-| RedisModule_CallReplyLength | :sparkle: |
-| RedisModule_CallReplyArrayElement | :sparkle: |
-| RedisModule_CreateString | :sparkle: |
+| RedisModule_CallReplyType | :white_check_mark: |
+| RedisModule_CallReplyInteger | :white_check_mark: |
+| RedisModule_CallReplyLength | :white_check_mark: |
+| RedisModule_CallReplyArrayElement | :white_check_mark: |
+| RedisModule_CreateString | :white_check_mark: |
 | RedisModule_CreateStringFromLongLong | :arrow_down: |
 | RedisModule_CreateStringFromDouble | :arrow_down: |
 | RedisModule_CreateStringFromLongDouble | :arrow_down: |
@@ -55,11 +55,11 @@
 | RedisModule_ReplyWithEmptyString | :sparkle: |
 | RedisModule_ReplyWithVerbatimString | :arrow_down: |
 | RedisModule_ReplyWithNull | :sparkle: |
-| RedisModule_ReplyWithDouble | :arrow_down: |
+| RedisModule_ReplyWithDouble | :sparkle:  |
 | RedisModule_ReplyWithLongDouble |  :sparkle: |
 | RedisModule_ReplyWithCallReply | :arrow_down: |
 | RedisModule_StringToDouble | :arrow_down: |
-| RedisModule_StringToLongDouble | :sparkle: |
+| RedisModule_StringToLongDouble | :arrow_down: |
 | RedisModule_AutoMemory | :arrow_down: |
 | RedisModule_Replicate | :white_check_mark: |
 | RedisModule_ReplicateVerbatim | :white_check_mark: |
@@ -112,9 +112,9 @@
 | RedisModule_LoadSigned | :white_check_mark: |
 | RedisModule_EmitAOF | :white_check_mark: |
 | RedisModule_SaveString | :white_check_mark: |
-| RedisModule_SaveStringBuffer | ::arrow_down: |
+| RedisModule_SaveStringBuffer | :arrow_down: |
 | RedisModule_LoadString | :white_check_mark: |
-| RedisModule_LoadStringBuffer | ::arrow_down: |
+| RedisModule_LoadStringBuffer | :arrow_down: |
 | RedisModule_SaveDouble | :white_check_mark: |
 | RedisModule_LoadDouble | :white_check_mark: |
 | RedisModule_SaveFloat | :white_check_mark: |
@@ -197,8 +197,8 @@
 | RedisModule_AbortBlock | :white_check_mark:  :rocket: |
 | RedisModule_GetThreadSafeContext | :white_check_mark:  :rocket: |
 | RedisModule_FreeThreadSafeContext | :white_check_mark:  :rocket: |
-| RedisModule_ThreadSafeContextLock | :arrow_down: |
-| RedisModule_ThreadSafeContextUnlock | :arrow_down: |
+| RedisModule_ThreadSafeContextLock | :arrow_down: :rocket: |
+| RedisModule_ThreadSafeContextUnlock | :arrow_down: :rocket: |
 | RedisModule_SubscribeToKeyspaceEvents | :white_check_mark:  :rocket: |
 | RedisModule_NotifyKeyspaceEvent | :white_check_mark:  :rocket: |
 | RedisModule_GetNotifyKeyspaceEvents | :white_check_mark:  :rocket: |
