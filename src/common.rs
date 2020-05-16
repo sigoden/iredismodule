@@ -198,19 +198,6 @@ impl Into<raw::RedisModuleEvent> for ServerEvent {
     }
 }
 
-/// Produces a log message to the standard Redis log
-///
-/// There is a fixed limit to the length of the log line this function is able
-/// to emit, this limit is not specified but is guaranteed to be more than
-/// a few lines of text.
-pub fn log<T: AsRef<str>>(level: LogLevel, message: T) {
-    let level: CString = level.into();
-    let fmt = CString::new(message.as_ref()).unwrap();
-    unsafe {
-        raw::RedisModule_Log.unwrap()(0 as *mut raw::RedisModuleCtx, level.as_ptr(), fmt.as_ptr())
-    }
-}
-
 /// Parse the argv/argc of redis command func
 pub fn parse_args<'a>(argv: *mut *mut raw::RedisModuleString, argc: c_int) -> Vec<RStr> {
     unsafe { std::slice::from_raw_parts(argv, argc as usize) }
@@ -220,10 +207,10 @@ pub fn parse_args<'a>(argv: *mut *mut raw::RedisModuleString, argc: c_int) -> Ve
 }
 
 /// Check ret return code of redis module api
-pub fn handle_status(status: i32, message: &str) -> Result<(), Error> {
+pub fn handle_status<T: AsRef<str>>(status: i32, message: T) -> Result<(), Error> {
     if status == raw::REDISMODULE_OK as i32 {
         Ok(())
     } else {
-        Err(Error::new(message))
+        Err(Error::new(message.as_ref()))
     }
 }

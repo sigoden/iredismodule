@@ -136,7 +136,10 @@ impl Context {
             )
         };
         if reply.is_null() {
-            Err(Error::new("fail to call command"))
+            Err(Error::new(format!(
+                "fail to call command {}",
+                command.as_ref()
+            )))
         } else {
             Ok(CallReply::from_ptr(reply))
         }
@@ -205,7 +208,7 @@ impl Context {
                 args.len(),
             )
         };
-        handle_status(result, "fail to replicate")
+        handle_status(result, format!("fail to replicate {}", command.as_ref()))
     }
     /// This function will replicate the command exactly as it was invoked
     /// by the client. Note that this function will not wrap the command into

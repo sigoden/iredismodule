@@ -116,9 +116,9 @@ fn hello_rand_array(_ctx: &mut Context, args: Vec<RStr>) -> RResult {
 /// comments the function implementation).
 #[rcmd("hello.repl1")]
 fn hello_repl1(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
-    ctx.replicate("ECHO", None, &["foo"])?;
-    ctx.call("INCR", Some(CallFlag::AofAndReplicas), &["foo"])?;
-    ctx.call("INCR", Some(CallFlag::AofAndReplicas), &["bar"])?;
+    ctx.replicate("ECHO", None, &["test:foo"])?;
+    ctx.call("INCR", Some(CallFlag::AofAndReplicas), &["test:foo"])?;
+    ctx.call("INCR", Some(CallFlag::AofAndReplicas), &["test:bar"])?;
     Ok(0i64.into())
 }
 

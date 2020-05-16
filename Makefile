@@ -7,9 +7,7 @@ examples: examples/*.rs
 	cargo build --example hellotype
 	cargo build --example helloworld
 	cargo build --example simple
-	cargo build --example testall
-	cargo build --example testbase
-	cargo build --example testtype
+	cargo build --example testmodule
 publish:
 	cargo fix && cargo fmt
 	cargo publish

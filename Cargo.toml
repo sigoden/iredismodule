@@ -1,6 +1,6 @@
 [package]
 name = "iredismodule"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["sigoden <sigoden@gmail.com>"]
 edition = "2018"
 build = "build.rs"
@@ -56,15 +56,7 @@ name = "helloacl"
 crate-type = ["cdylib"]
 
 [[example]]
-name = "testbase"
-crate-type = ["cdylib"]
-
-[[example]]
-name = "testtype"
-crate-type = ["cdylib"]
-
-[[example]]
-name = "testall"
+name = "testmodule"
 crate-type = ["cdylib"]
 
 [workspace]
