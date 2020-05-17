@@ -49,7 +49,7 @@ static ALLOC: crate::alloc::RedisAlloc = crate::alloc::RedisAlloc;
 pub use common::{
     avoid_replica_traffic, get_client_info_by_id, get_notify_keyspace_events,
     get_used_memory_ratio, handle_status, is_module_busy, latency_add_sample, milliseconds,
-    parse_args, reset_dataset, CallFlag, FromPtr, GetPtr, LogLevel, ServerEvent,
+    parse_args, reset_dataset, CallFlag, FromPtr, GetPtr, LogLevel, NextArg, ServerEvent,
 };
 
 /// Result of redis comamnd call

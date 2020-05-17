@@ -214,3 +214,44 @@ pub fn handle_status<T: AsRef<str>>(status: i32, message: T) -> Result<(), Error
         Err(Error::new(message.as_ref()))
     }
 }
+
+/// Help iterator for process args
+pub trait NextArg: Iterator {
+    fn next_arg(&mut self) -> Result<RStr, Error>;
+    fn next_string(&mut self) -> Result<String, Error>;
+    fn next_i64(&mut self) -> Result<i64, Error>;
+    fn next_u64(&mut self) -> Result<u64, Error>;
+    fn next_f64(&mut self) -> Result<f64, Error>;
+    fn done(&mut self) -> Result<(), Error>;
+}
+
+impl<T: Iterator<Item = RStr>> NextArg for T {
+    fn next_arg(&mut self) -> Result<RStr, Error> {
+        let v = self.next().ok_or(Error::WrongArity)?;
+        Ok(v)
+    }
+    fn next_string(&mut self) -> Result<String, Error> {
+        let v = self.next().ok_or(Error::WrongArity)?;
+        Ok(v.to_str()?.to_string())
+    }
+
+    fn next_i64(&mut self) -> Result<i64, Error> {
+        let v = self.next().ok_or(Error::WrongArity)?;
+        Ok(v.to_str()?.parse::<i64>()?)
+    }
+
+    fn next_u64(&mut self) -> Result<u64, Error> {
+        let v = self.next().ok_or(Error::WrongArity)?;
+        Ok(v.to_str()?.parse::<u64>()?)
+    }
+
+    fn next_f64(&mut self) -> Result<f64, Error> {
+        let v = self.next().ok_or(Error::WrongArity)?;
+        Ok(v.to_str()?.parse::<f64>()?)
+    }
+
+    /// Return an error if there are any more arguments
+    fn done(&mut self) -> Result<(), Error> {
+        self.next().map_or(Ok(()), |_| Err(Error::WrongArity))
+    }
+}
