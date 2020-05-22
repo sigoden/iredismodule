@@ -7,6 +7,14 @@ use iredismodule::rtype::TypeMethod;
 use iredismodule_macros::{rcmd, rtypedef};
 use std::time::Duration;
 
+/// Generate RString for String or str
+#[macro_export]
+macro_rules! rstr {
+    ($value:expr) => {
+        RString::from_str($value)
+    };
+}
+
 macro_rules! check {
     ($cond:expr) => {
         if $cond {
@@ -76,11 +84,10 @@ fn test_key(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
 
     let key_nonexist = ctx.open_read_key(&rstr!("test:key_nonexist"));
     check!(key_zset.get_type() == KeyType::ZSet);
-    check!(key_string.assert_type(KeyType::String, false).is_ok());
-    check!(key_string.assert_type(KeyType::Hash, false).is_err());
-    check!(key_nonexist.assert_type(KeyType::Empty, false).is_ok());
-    check!(key_nonexist.assert_type(KeyType::String, false).is_err());
-    check!(key_nonexist.assert_type(KeyType::String, true).is_ok());
+    check!(key_string.check_type(KeyType::String).is_ok());
+    check!(key_string.check_type(KeyType::Hash).is_err());
+    check!(key_nonexist.check_type(KeyType::Empty).is_ok());
+    check!(key_nonexist.check_type(KeyType::String).ok() == Some(false));
 
     let value_string = key_string.string_get()?;
     check!(value_string.to_str().unwrap() == "abc");
@@ -310,7 +317,9 @@ impl TypeMethod for MyType {
 
 #[rcmd("test.set_type", "write deny-oom", 1, 1, 1)]
 fn test_set_type(ctx: &mut Context, args: Vec<RStr>) -> RResult {
-    assert_len!(args, 7);
+    if args.len() != 7 {
+        return Err(Error::WrongArity);
+    }
     let key = ctx.open_write_key(&args[1]);
     key.check_module_type(&MYTYPE123)?;
     let value = MyType {

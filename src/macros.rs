@@ -1,33 +1,5 @@
 //! Helper macros
 
-/// Assert the length of args, throw `Error::WrongArity` when failed
-///
-/// # Examples
-/// ```rust,no_run
-/// #[rcmd("hello.repl2", "write", 1, 1, 1)]
-/// fn hello_repl2(ctx: &mut Context, args: Vec<RStr>) -> RResult {
-///     assert_len!(args, 2);
-///     ...
-/// }
-///
-/// ```
-#[macro_export]
-macro_rules! assert_len {
-    ($args:expr, $n:expr) => {
-        if $args.len() != $n {
-            return Err(Error::WrongArity);
-        }
-    };
-}
-
-/// Generate RString for String or str
-#[macro_export]
-macro_rules! rstr {
-    ($value:expr) => {
-        RString::from_str($value)
-    };
-}
-
 /// Create a redis module will be so easy
 #[macro_export]
 macro_rules! define_module {

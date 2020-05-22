@@ -102,7 +102,9 @@ impl TypeMethod for HelloTypeNode {
 /// HELLOTYPE.INSERT key value
 #[rcmd("hellotype.insert", "write deny-oom", 1, 1, 1)]
 fn hellotype_insert(ctx: &mut Context, args: Vec<RStr>) -> RResult {
-    assert_len!(args, 3);
+    if args.len() != 3 {
+        return Err(Error::WrongArity);
+    }
     let key = ctx.open_write_key(&args[1]);
     let exist = key.check_module_type(&HELLOTYPE)?;
     let value = args[2]
@@ -124,7 +126,9 @@ fn hellotype_insert(ctx: &mut Context, args: Vec<RStr>) -> RResult {
 /// HELLOTYPE.RANGE key skip limit
 #[rcmd("hellotype.range", "readonly", 1, 1, 1)]
 fn hellotype_range(ctx: &mut Context, args: Vec<RStr>) -> RResult {
-    assert_len!(args, 4);
+    if args.len() != 4 {
+        return Err(Error::WrongArity);
+    }
     let key = ctx.open_write_key(&args[1]);
     key.check_module_type(&HELLOTYPE)?;
     let first = args[2]
@@ -151,7 +155,9 @@ fn hellotype_range(ctx: &mut Context, args: Vec<RStr>) -> RResult {
 /// HELLOTYPE.LEN key
 #[rcmd("hellotype.len", "readonly", 1, 1, 1)]
 fn hellotype_len(ctx: &mut Context, args: Vec<RStr>) -> RResult {
-    assert_len!(args, 2);
+    if args.len() != 2 {
+        return Err(Error::WrongArity);
+    }
     let key = ctx.open_write_key(&args[1]);
     key.check_module_type(&HELLOTYPE)?;
     let hto = key.get_value::<HelloTypeNode>(&HELLOTYPE)?;
@@ -169,7 +175,9 @@ fn hellotype_len(ctx: &mut Context, args: Vec<RStr>) -> RResult {
 /// Context:block_client_on_keys.
 #[rcmd("hellotype.brange", "readonly", 1, 1, 1)]
 fn hellotype_brange(ctx: &mut Context, mut args: Vec<RStr>) -> RResult {
-    assert_len!(args, 5);
+    if args.len() != 5 {
+        return Err(Error::WrongArity);
+    }
     let key = ctx.open_write_key(&args[1]);
     let exists = key.check_module_type(&HELLOTYPE)?;
     let timeout = args[4]

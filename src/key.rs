@@ -60,15 +60,19 @@ impl ReadKey {
         Ok(Some(value))
     }
 
-    /// Assert the key type.
-    pub fn assert_type(&self, expect_type: KeyType, allow_null: bool) -> Result<(), Error> {
+    /// Check the key type.
+    ///
+    /// The bool indicate whether the value is empty
+    pub fn check_type(&self, expect_type: KeyType) -> Result<bool, Error> {
         let key_type = self.get_type();
         if key_type != expect_type {
-            if !allow_null || key_type != KeyType::Empty {
+            if key_type == KeyType::Empty {
+                return Ok(false);
+            } else {
                 return Err(Error::WrongType);
             }
         }
-        Ok(())
+        Ok(true)
     }
 
     /// Check the type of key is `KeyType::Module` and the it's specifi module type is `redis_type`

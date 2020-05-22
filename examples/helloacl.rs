@@ -86,7 +86,9 @@ fn helloacl_thread_main(bc: BlockClient, user: String) {
 /// Asynchronously assigns an ACL user to the current context.
 #[rcmd("helloacl.authasync", "no-auth")]
 fn helloacl_authasync(ctx: &mut Context, args: Vec<RStr>) -> RResult {
-    assert_len!(args, 2);
+    if args.len() != 2 {
+        return Err(Error::WrongArity);
+    }
     let bc = ctx
         .block_client(
             Some(helloacl_reply_c),

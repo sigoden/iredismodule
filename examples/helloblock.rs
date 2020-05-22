@@ -57,7 +57,9 @@ fn helloblock_thread_main(bc: BlockClient, delay: u64) {
 /// what happens when the delay is greater than the timeout.
 #[rcmd("hello.block")]
 fn helloblock_rediscommand(ctx: &mut Context, args: Vec<RStr>) -> RResult {
-    assert_len!(args, 3);
+    if args.len() != 3 {
+        return Err(Error::WrongArity);
+    }
     let delay = args[1]
         .get_integer()
         .map_err(|_| Error::new("ERR invalid delay"))? as u64;
@@ -123,7 +125,9 @@ fn hellokeys_thread_main(bc: BlockClient) {
 /// there.
 #[rcmd("hello.keys")]
 fn hellokeys_rediscommand(ctx: &mut Context, args: Vec<RStr>) -> RResult {
-    assert_len!(args, 1);
+    if args.len() != 1 {
+        return Err(Error::WrongArity);
+    }
     // Note that when blocking the client we do not set any callback: no
     // timeout is possible since we passed '0', nor we need a reply callback
     // because we'll use the thread safe context to accumulate a reply.

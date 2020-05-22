@@ -23,7 +23,9 @@ fn hello_simple(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
 /// command.
 #[rcmd("hello.push.native", "write deny-oom", 1, 1, 1)]
 fn hello_push_native(ctx: &mut Context, args: Vec<RStr>) -> RResult {
-    assert_len!(args, 3);
+    if args.len() != 3 {
+        return Err(Error::WrongArity);
+    }
     let key = ctx.open_write_key(&args[1]);
     key.list_push(ListPosition::Tail, &args[2])?;
     let len = key.value_length();
@@ -37,7 +39,9 @@ fn hello_push_native(ctx: &mut Context, args: Vec<RStr>) -> RResult {
 /// possible but instead prefer implementation simplicity.
 #[rcmd("hello.push.call", "write deny-oom", 1, 1, 1)]
 fn hello_push_call(ctx: &mut Context, args: Vec<RStr>) -> RResult {
-    assert_len!(args, 3);
+    if args.len() != 3 {
+        return Err(Error::WrongArity);
+    }
     let call_args: Vec<&RStr> = args.iter().skip(1).collect();
     let args = call_args
         .iter()
@@ -59,7 +63,9 @@ fn hello_push_call2(ctx: &mut Context, args: Vec<RStr>) -> RResult {
 /// This command is an example of the array reply access.
 #[rcmd("hello.push.sum.len", "readonly", 1, 1, 1)]
 fn hello_list_sum_len(ctx: &mut Context, args: Vec<RStr>) -> RResult {
-    assert_len!(args, 2);
+    if args.len() != 2 {
+        return Err(Error::WrongArity);
+    }
     let call_args = [&args[1].to_str()?, "0", "-1"];
     let reply = ctx.call("LRANGE", None, &call_args)?;
 
@@ -76,11 +82,13 @@ fn hello_list_sum_len(ctx: &mut Context, args: Vec<RStr>) -> RResult {
 /// elements as possible.
 #[rcmd("hello.list.splice", "write deny-oom", 1, 2, 1)]
 fn hello_list_splice(ctx: &mut Context, args: Vec<RStr>) -> RResult {
-    assert_len!(args, 4);
+    if args.len() != 4 {
+        return Err(Error::WrongArity);
+    }
     let src_key = ctx.open_write_key(&args[1]);
     let dest_key = ctx.open_write_key(&args[2]);
-    src_key.assert_type(KeyType::List, true)?;
-    dest_key.assert_type(KeyType::List, true)?;
+    src_key.check_type(KeyType::List)?;
+    dest_key.check_type(KeyType::List)?;
     let count = args[3]
         .assert_integer(|v| v > 0)
         .map_err(|_| Error::new("ERR invalid count"))?;
@@ -102,7 +110,9 @@ fn hello_list_splice(ctx: &mut Context, args: Vec<RStr>) -> RResult {
 /// It just outputs <count> random numbers.
 #[rcmd("hello.rand.array")]
 fn hello_rand_array(_ctx: &mut Context, args: Vec<RStr>) -> RResult {
-    assert_len!(args, 2);
+    if args.len() != 2 {
+        return Err(Error::WrongArity);
+    }
     let count = args[1]
         .assert_integer(|v| v > 0)
         .map_err(|_| Error::new("ERR invalid count"))?;
@@ -134,9 +144,12 @@ fn hello_repl1(ctx: &mut Context, _args: Vec<RStr>) -> RResult {
 /// Usage: HELLO.REPL2 <list-key>
 #[rcmd("hello.repl2", "write", 1, 1, 1)]
 fn hello_repl2(ctx: &mut Context, args: Vec<RStr>) -> RResult {
-    assert_len!(args, 2);
+    if args.len() != 2 {
+        return Err(Error::WrongArity);
+    }
     let key = ctx.open_write_key(&args[1]);
-    key.assert_type(KeyType::List, false)?;
+    let exist = key.check_type(KeyType::List)?;
+    if !exist { return Err(Error::WrongArity) }
     let list_len = key.value_length();
     let mut sum = 0;
     for _ in 0..list_len {
@@ -158,9 +171,11 @@ fn hello_repl2(ctx: &mut Context, args: Vec<RStr>) -> RResult {
 /// HELLO.TOGGLE.CASE key
 #[rcmd("hello.toggle.case", "write", 1, 1, 1)]
 fn hello_toggle_case(ctx: &mut Context, args: Vec<RStr>) -> RResult {
-    assert_len!(args, 2);
+    if args.len() != 2 {
+        return Err(Error::WrongArity);
+    }
     let key = ctx.open_write_key(&args[1]);
-    key.assert_type(KeyType::String, true)?;
+    key.check_type(KeyType::String)?;
     if key.get_type() == KeyType::String {
         let value = key.string_get()?;
         let value = value
@@ -186,7 +201,9 @@ fn hello_toggle_case(ctx: &mut Context, args: Vec<RStr>) -> RResult {
 /// milliseconds. Otherwise no operation is performed.
 #[rcmd("hello.more.expire", "write", 1, 1, 1)]
 fn hello_more_expire(ctx: &mut Context, args: Vec<RStr>) -> RResult {
-    assert_len!(args, 3);
+    if args.len() != 3 {
+        return Err(Error::WrongArity);
+    }
     let addms = args[2]
         .get_integer()
         .map_err(|_e| Error::new("ERR invalid expire time"))?;
@@ -210,9 +227,12 @@ fn hello_more_expire(ctx: &mut Context, args: Vec<RStr>) -> RResult {
 /// should match.
 #[rcmd("hello.zsumrange", "readonly", 1, 1, 1)]
 fn hello_zsumrange(ctx: &mut Context, args: Vec<RStr>) -> RResult {
-    assert_len!(args, 4);
+    if args.len() != 4 {
+        return Err(Error::WrongArity);
+    }
     let key = ctx.open_write_key(&args[1]);
-    key.assert_type(KeyType::ZSet, false)?;
+    let exist = key.check_type(KeyType::ZSet)?;
+    if !exist { return Err(Error::WrongArity) }
     let tail_args = args
         .iter()
         .skip(2)
@@ -250,9 +270,12 @@ fn hello_zsumrange(ctx: &mut Context, args: Vec<RStr>) -> RResult {
 /// and having an age between min_age and max_age.
 #[rcmd("hello.lexrange", "readonly", 1, 1, 1)]
 fn hello_lexrange(ctx: &mut Context, args: Vec<RStr>) -> RResult {
-    assert_len!(args, 4);
+    if args.len() != 4 {
+        return Err(Error::WrongArity);
+    }
     let key = ctx.open_write_key(&args[1]);
-    key.assert_type(KeyType::ZSet, false)?;
+    let exist = key.check_type(KeyType::ZSet)?;
+    if !exist { return Err(Error::WrongArity) }
     let v = key.zset_lex_range(ZsetRangeDirection::FristIn, &args[2], &args[3])?;
     let result: Vec<Value> = v
         .iter()
@@ -270,9 +293,11 @@ fn hello_lexrange(ctx: &mut Context, args: Vec<RStr>) -> RResult {
 /// 0 is returned.
 #[rcmd("hello.hcopy", "write deny-oom", 1, 1, 1)]
 fn hello_hcopy(ctx: &mut Context, args: Vec<RStr>) -> RResult {
-    assert_len!(args, 4);
+    if args.len() != 4 {
+        return Err(Error::WrongArity);
+    }
     let key = ctx.open_write_key(&args[1]);
-    key.assert_type(KeyType::Hash, true)?;
+    key.check_type(KeyType::Hash)?;
     let old_val = key.hash_get(&args[2])?;
     if let Some(v) = &old_val {
         key.hash_set(None, &args[3], Some(v))?;
@@ -293,7 +318,9 @@ fn hello_hcopy(ctx: &mut Context, args: Vec<RStr>) -> RResult {
 /// open source project, the Apache web server.
 #[rcmd("hello.leftpad", "", 0, 0, 0)]
 fn hello_leftpad(_ctx: &mut Context, args: Vec<RStr>) -> RResult {
-    assert_len!(args, 4);
+    if args.len() != 4 {
+        return Err(Error::WrongArity);
+    }
     let pad_len = args[2]
         .assert_integer(|v| v > 0)
         .map_err(|_| Error::new("ERR invalid padding length"))? as usize;
