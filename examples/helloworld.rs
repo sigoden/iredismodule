@@ -149,7 +149,9 @@ fn hello_repl2(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     }
     let key = ctx.open_write_key(&args[1]);
     let exist = key.check_type(KeyType::List)?;
-    if !exist { return Err(Error::WrongArity) }
+    if !exist {
+        return Err(Error::WrongArity);
+    }
     let list_len = key.value_length();
     let mut sum = 0;
     for _ in 0..list_len {
@@ -232,7 +234,9 @@ fn hello_zsumrange(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     }
     let key = ctx.open_write_key(&args[1]);
     let exist = key.check_type(KeyType::ZSet)?;
-    if !exist { return Err(Error::WrongArity) }
+    if !exist {
+        return Err(Error::WrongArity);
+    }
     let tail_args = args
         .iter()
         .skip(2)
@@ -275,7 +279,9 @@ fn hello_lexrange(ctx: &mut Context, args: Vec<RStr>) -> RResult {
     }
     let key = ctx.open_write_key(&args[1]);
     let exist = key.check_type(KeyType::ZSet)?;
-    if !exist { return Err(Error::WrongArity) }
+    if !exist {
+        return Err(Error::WrongArity);
+    }
     let v = key.zset_lex_range(ZsetRangeDirection::FristIn, &args[2], &args[3])?;
     let result: Vec<Value> = v
         .iter()

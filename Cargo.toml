@@ -1,6 +1,6 @@
 [package]
 name = "iredismodule"
-version = "0.2.2"
+version = "0.3.0"
 authors = ["sigoden <sigoden@gmail.com>"]
 edition = "2018"
 build = "build.rs"
